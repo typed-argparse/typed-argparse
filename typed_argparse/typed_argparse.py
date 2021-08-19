@@ -2,6 +2,8 @@ import argparse
 
 from typing import List, Union
 
+from . import type_utils
+
 _NoneType = type(None)
 
 
@@ -23,12 +25,12 @@ class TypedArgs:
                 underlying_type = None
                 is_optional = False
 
-                if hasattr(annotation, "__origin__"):
-                    if annotation.__origin__ is List:
-                        underlying_type = annotation.__args__[0]
-                        annotation = annotation.__origin__
+                if type_utils.is_list(annotation):
+                    underlying_type = type_utils.get_underlying_type_of_list(annotation)
+                    annotation = list
 
-                    elif annotation.__origin__ is Union and len(annotation.__args__) == 2:
+                if hasattr(annotation, "__origin__"):
+                    if annotation.__origin__ is Union and len(annotation.__args__) == 2:
                         if annotation.__args__[0] == _NoneType:
                             is_optional = True
                             annotation = annotation.__args__[1]

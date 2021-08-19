@@ -107,7 +107,6 @@ def test_simple_type_mismatch_2() -> None:
 # -----------------------------------------------------------------------------
 
 
-@pytest.mark.skip()
 def test_lists_1() -> None:
     class MyArgs(TypedArgs):
         foo: List[str]
@@ -117,7 +116,6 @@ def test_lists_1() -> None:
     assert args.foo == ["a", "b", "c"]
 
 
-@pytest.mark.skip()
 def test_lists_2() -> None:
     class MyArgs(TypedArgs):
         num: List[int]
@@ -127,7 +125,6 @@ def test_lists_2() -> None:
     assert args.num == [1, 2, 3]
 
 
-@pytest.mark.skip()
 def test_lists__elements_type_mismatch_1() -> None:
     class MyArgs(TypedArgs):
         foo: List[str]
@@ -140,7 +137,6 @@ def test_lists__elements_type_mismatch_1() -> None:
         MyArgs(args_namespace)
 
 
-@pytest.mark.skip()
 def test_lists__elements_type_mismatch_2() -> None:
     class MyArgs(TypedArgs):
         num: List[int]
@@ -158,7 +154,6 @@ def test_lists__elements_type_mismatch_2() -> None:
 # -----------------------------------------------------------------------------
 
 
-@pytest.mark.skip()
 def test_optional_1() -> None:
     class MyArgs(TypedArgs):
         foo: Optional[str]
@@ -172,7 +167,6 @@ def test_optional_1() -> None:
     assert args.foo == "foo"
 
 
-@pytest.mark.skip()
 def test_optional_2() -> None:
     class MyArgs(TypedArgs):
         num: Optional[int]
@@ -186,7 +180,6 @@ def test_optional_2() -> None:
     assert args.num == 42
 
 
-@pytest.mark.skip()
 def test_optional__type_mismatch() -> None:
     class MyArgs(TypedArgs):
         foo: Optional[str]
@@ -199,7 +192,6 @@ def test_optional__type_mismatch() -> None:
         MyArgs(args_namespace)
 
 
-@pytest.mark.skip()
 def test_optional_as_union_type_1() -> None:
     class MyArgs(TypedArgs):
         foo: Union[str, None]
@@ -213,7 +205,6 @@ def test_optional_as_union_type_1() -> None:
     assert args.foo == "foo"
 
 
-@pytest.mark.skip()
 def test_optional_as_union_type_2() -> None:
     class MyArgs(TypedArgs):
         foo: Union[None, str]
