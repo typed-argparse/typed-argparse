@@ -50,20 +50,20 @@ The only requirement is a modern Python (3.6+).
 ```python
 import argparse
 import sys
-from typing import List
+from typing import List, Optional
 from typed_argparse import TypedArgs
 
 
 # Step 1: Add an argument type.
 class MyArgs(TypedArgs):
     foo: str
-    num: int
+    num: Optional[int]
     files: List[str]
 
 
 def parse_args(args: List[str] = sys.argv[1:]) -> MyArgs:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--foo", type=str)
+    parser.add_argument("--foo", type=str, required=True)
     parser.add_argument("--num", type=int)
     parser.add_argument("--files", type=str, nargs="*")
     # Step 2: Wrap the plain argparser result with your type.
