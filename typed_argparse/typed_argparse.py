@@ -1,6 +1,8 @@
 import argparse
 
-from typing import List
+from typing import List, Union
+
+_NoneType = type(None)
 
 
 class TypedArgs:
@@ -19,16 +21,36 @@ class TypedArgs:
                 x = getattr(args, name)
 
                 underlying_type = None
-                if hasattr(annotation, "__origin__") and annotation.__origin__ is List:
-                    underlying_type = annotation.__args__[0]
-                    annotation = annotation.__origin__
+                is_optional = False
 
-                if not isinstance(x, annotation):
-                    raise TypeError(
-                        f"Type of attribute '{name}' should be "
-                        f"{annotation.__name__}, but is "
-                        f"{type(x).__name__}"
-                    )
+                if hasattr(annotation, "__origin__"):
+                    if annotation.__origin__ is List:
+                        underlying_type = annotation.__args__[0]
+                        annotation = annotation.__origin__
+
+                    elif annotation.__origin__ is Union and len(annotation.__args__) == 2:
+                        if annotation.__args__[0] == _NoneType:
+                            is_optional = True
+                            annotation = annotation.__args__[1]
+                        elif annotation.__args__[1] == _NoneType:
+                            is_optional = True
+                            annotation = annotation.__args__[0]
+
+                if is_optional:
+                    if not isinstance(x, annotation) and not (x is None):
+                        raise TypeError(
+                            f"Type of attribute '{name}' should be "
+                            f"Optional[{annotation.__name__}], but is "
+                            f"{type(x).__name__}"
+                        )
+
+                else:
+                    if not isinstance(x, annotation):
+                        raise TypeError(
+                            f"Type of attribute '{name}' should be "
+                            f"{annotation.__name__}, but is "
+                            f"{type(x).__name__}"
+                        )
 
                 if underlying_type is not None and hasattr(x, "__iter__"):
                     if not all(isinstance(element, underlying_type) for element in x):

@@ -3,7 +3,12 @@ from typed_argparse import TypedArgs
 import argparse
 import pytest
 
-from typing import List
+from typing import List, Optional, Union
+
+
+# -----------------------------------------------------------------------------
+# Basics
+# -----------------------------------------------------------------------------
 
 
 def test_basic_1() -> None:
@@ -97,6 +102,11 @@ def test_simple_type_mismatch_2() -> None:
         MyArgs(args_namespace)
 
 
+# -----------------------------------------------------------------------------
+# Lists
+# -----------------------------------------------------------------------------
+
+
 def test_lists_1() -> None:
     class MyArgs(TypedArgs):
         foo: List[str]
@@ -139,6 +149,80 @@ def test_lists__elements_type_mismatch_2() -> None:
         MyArgs(args_namespace)
 
 
+# -----------------------------------------------------------------------------
+# Optionals
+# -----------------------------------------------------------------------------
+
+
+def test_optional_1() -> None:
+    class MyArgs(TypedArgs):
+        foo: Optional[str]
+
+    args_namespace = argparse.Namespace(foo=None)
+    args = MyArgs(args_namespace)
+    assert args.foo is None
+
+    args_namespace = argparse.Namespace(foo="foo")
+    args = MyArgs(args_namespace)
+    assert args.foo == "foo"
+
+
+def test_optional_2() -> None:
+    class MyArgs(TypedArgs):
+        num: Optional[int]
+
+    args_namespace = argparse.Namespace(num=None)
+    args = MyArgs(args_namespace)
+    assert args.num is None
+
+    args_namespace = argparse.Namespace(num=42)
+    args = MyArgs(args_namespace)
+    assert args.num == 42
+
+
+def test_optional__type_mismatch() -> None:
+    class MyArgs(TypedArgs):
+        foo: Optional[str]
+
+    args_namespace = argparse.Namespace(foo=42)
+    with pytest.raises(
+        TypeError,
+        match=r"Type of attribute 'foo' should be Optional\[str\], but is int",
+    ):
+        MyArgs(args_namespace)
+
+
+def test_optional_as_union_type_1() -> None:
+    class MyArgs(TypedArgs):
+        foo: Union[str, None]
+
+    args_namespace = argparse.Namespace(foo=None)
+    args = MyArgs(args_namespace)
+    assert args.foo is None
+
+    args_namespace = argparse.Namespace(foo="foo")
+    args = MyArgs(args_namespace)
+    assert args.foo == "foo"
+
+
+def test_optional_as_union_type_2() -> None:
+    class MyArgs(TypedArgs):
+        foo: Union[None, str]
+
+    args_namespace = argparse.Namespace(foo=None)
+    args = MyArgs(args_namespace)
+    assert args.foo is None
+
+    args_namespace = argparse.Namespace(foo="foo")
+    args = MyArgs(args_namespace)
+    assert args.foo == "foo"
+
+
+# -----------------------------------------------------------------------------
+# Misc
+# -----------------------------------------------------------------------------
+
+
 def test_get_raw_args() -> None:
     class MyArgs(TypedArgs):
         foo: str
@@ -150,7 +234,7 @@ def test_get_raw_args() -> None:
 
 def test_get_raw_args__check_for_name_collision() -> None:
     class MyArgs(TypedArgs):
-        get_raw_args: str
+        get_raw_args: str  # type: ignore   # error on purpose for testing
 
     args_namespace = argparse.Namespace(get_raw_args="foo")
     with pytest.raises(
