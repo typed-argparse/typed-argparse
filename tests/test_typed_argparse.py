@@ -3,6 +3,8 @@ from typed_argparse import TypedArgs
 import argparse
 import pytest
 
+from typing import List
+
 
 def test_basic_1() -> None:
     class MyArgs(TypedArgs):
@@ -91,5 +93,47 @@ def test_simple_type_mismatch_2() -> None:
     with pytest.raises(
         TypeError,
         match="Type of attribute 'num' should be int, but is str",
+    ):
+        MyArgs(args_namespace)
+
+
+def test_lists_1() -> None:
+    class MyArgs(TypedArgs):
+        foo: List[str]
+
+    args_namespace = argparse.Namespace(foo=["a", "b", "c"])
+    args = MyArgs(args_namespace)
+    assert args.foo == ["a", "b", "c"]
+
+
+def test_lists_2() -> None:
+    class MyArgs(TypedArgs):
+        num: List[int]
+
+    args_namespace = argparse.Namespace(num=[1, 2, 3])
+    args = MyArgs(args_namespace)
+    assert args.num == [1, 2, 3]
+
+
+def test_lists__elements_type_mismatch_1() -> None:
+    class MyArgs(TypedArgs):
+        foo: List[str]
+
+    args_namespace = argparse.Namespace(foo=["a", 2, "c"])
+    with pytest.raises(
+        TypeError,
+        match="Not all elements of attribute 'foo' are of type str",
+    ):
+        MyArgs(args_namespace)
+
+
+def test_lists__elements_type_mismatch_2() -> None:
+    class MyArgs(TypedArgs):
+        num: List[int]
+
+    args_namespace = argparse.Namespace(num=["a", 2, "c"])
+    with pytest.raises(
+        TypeError,
+        match="Not all elements of attribute 'num' are of type int",
     ):
         MyArgs(args_namespace)

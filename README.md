@@ -1,6 +1,8 @@
 # typed_argparse
 
-Typed args for argparse.
+
+💡 type-safe args for argparse without much refactoring.
+
 
 [![PyPI version](https://badge.fury.io/py/typed_argparse.svg)](https://badge.fury.io/py/typed_argparse)
 [![Build Status](https://github.com/bluenote10/typed_argparse/workflows/ci/badge.svg)](https://github.com/bluenote10/typed_argparse/actions?query=workflow%3Aci)
@@ -10,3 +12,4 @@ Typed args for argparse.
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](LICENSE)
 
 
+Status: WIP

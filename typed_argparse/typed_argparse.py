@@ -14,12 +14,26 @@ class TypedArgs:
                 missing_fields.append(name)
             else:
                 x = getattr(args, name)
+
+                underlying_type = None
+                if hasattr(annotation, "__origin__") and annotation.__origin__ is List:
+                    underlying_type = annotation.__args__[0]
+                    annotation = annotation.__origin__
+
                 if not isinstance(x, annotation):
                     raise TypeError(
                         f"Type of attribute '{name}' should be "
                         f"{annotation.__name__}, but is "
                         f"{type(x).__name__}"
                     )
+
+                if underlying_type is not None and hasattr(x, "__iter__"):
+                    if not all(isinstance(element, underlying_type) for element in x):
+                        raise TypeError(
+                            f"Not all elements of attribute '{name}' are of type "
+                            f"{underlying_type.__name__}"
+                        )
+
                 self.__dict__[name] = x
 
         # Handle missing fields
