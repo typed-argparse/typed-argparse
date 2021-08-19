@@ -21,7 +21,7 @@
 ## Motivation
 
 Want to add type annotations to a code base that makes use of `argparse` without refactoring all you CLIs?
-`typed_argparse` allows to with minimal changes:
+`typed_argparse` allows to do that with minimal changes:
 
 1. Add a type `MyArgs(TypedArgs)` that inherits from `TypedArgs` and fill it with type annotations.
 2. Wrap the result of e.g. your `parse_args` function with `MyArgs`.
