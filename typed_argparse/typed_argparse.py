@@ -13,7 +13,7 @@ class TypedArgs:
 
         missing_fields: List[str] = []
 
-        for name, annotation in self.__annotations__.items():
+        for name, attribute_type in self.__annotations__.items():
             if name == "get_raw_args":
                 raise TypeError("A type must not have an attribute called 'get_raw_args'")
 
@@ -25,32 +25,32 @@ class TypedArgs:
                 underlying_type = None
                 is_optional = False
 
-                if type_utils.is_list(annotation):
-                    underlying_type = type_utils.get_underlying_type_of_list(annotation)
-                    annotation = list
+                if type_utils.is_list(attribute_type):
+                    underlying_type = type_utils.get_underlying_type_of_list(attribute_type)
+                    attribute_type = list
 
-                if hasattr(annotation, "__origin__"):
-                    if annotation.__origin__ is Union and len(annotation.__args__) == 2:
-                        if annotation.__args__[0] == _NoneType:
+                if hasattr(attribute_type, "__origin__"):
+                    if attribute_type.__origin__ is Union and len(attribute_type.__args__) == 2:
+                        if attribute_type.__args__[0] == _NoneType:
                             is_optional = True
-                            annotation = annotation.__args__[1]
-                        elif annotation.__args__[1] == _NoneType:
+                            attribute_type = attribute_type.__args__[1]
+                        elif attribute_type.__args__[1] == _NoneType:
                             is_optional = True
-                            annotation = annotation.__args__[0]
+                            attribute_type = attribute_type.__args__[0]
 
                 if is_optional:
-                    if not isinstance(x, annotation) and not (x is None):
+                    if not isinstance(x, attribute_type) and not (x is None):
                         raise TypeError(
                             f"Type of attribute '{name}' should be "
-                            f"Optional[{annotation.__name__}], but is "
+                            f"Optional[{attribute_type.__name__}], but is "
                             f"{type(x).__name__}"
                         )
 
                 else:
-                    if not isinstance(x, annotation):
+                    if not isinstance(x, attribute_type):
                         raise TypeError(
                             f"Type of attribute '{name}' should be "
-                            f"{annotation.__name__}, but is "
+                            f"{attribute_type.__name__}, but is "
                             f"{type(x).__name__}"
                         )
 
