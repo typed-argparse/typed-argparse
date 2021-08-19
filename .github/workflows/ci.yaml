@@ -102,7 +102,7 @@ jobs:
           cd rundir
 
           echo -e "\nRunning example:"
-          FORCE_COLOR=3 python ../examples/example.py
+          python ../examples/example.py
 
       - name: Publish to PyPI
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
