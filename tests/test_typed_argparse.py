@@ -137,3 +137,24 @@ def test_lists__elements_type_mismatch_2() -> None:
         match="Not all elements of attribute 'num' are of type int",
     ):
         MyArgs(args_namespace)
+
+
+def test_get_raw_args() -> None:
+    class MyArgs(TypedArgs):
+        foo: str
+
+    args_namespace = argparse.Namespace(foo="foo")
+    args = MyArgs(args_namespace)
+    assert args.get_raw_args().foo == "foo"
+
+
+def test_get_raw_args__check_for_name_collision() -> None:
+    class MyArgs(TypedArgs):
+        get_raw_args: str
+
+    args_namespace = argparse.Namespace(get_raw_args="foo")
+    with pytest.raises(
+        TypeError,
+        match="A type must not have an attribute called 'get_raw_args'",
+    ):
+        MyArgs(args_namespace)

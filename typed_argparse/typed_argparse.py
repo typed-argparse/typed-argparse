@@ -4,12 +4,15 @@ from typing import List
 
 
 class TypedArgs:
-    def __init__(self, args: argparse.Namespace):
+    def __init__(self, args: argparse.Namespace) -> None:
         self._args = args
 
         missing_fields: List[str] = []
 
         for name, annotation in self.__annotations__.items():
+            if name == "get_raw_args":
+                raise TypeError("A type must not have an attribute called 'get_raw_args'")
+
             if not hasattr(args, name):
                 missing_fields.append(name)
             else:
@@ -54,3 +57,6 @@ class TypedArgs:
                 raise TypeError(
                     f"Arguments object has an unexpected extra attributes {extra_fields}"
                 )
+
+    def get_raw_args(self) -> argparse.Namespace:
+        return self._args
