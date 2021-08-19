@@ -1,4 +1,4 @@
-from typed_argparse import TypedArgs
+from .typed_argparse import TypedArgs
 
 VERSION = "0.1.0"
 
