@@ -1,0 +1,15 @@
+.idea/
+.vscode/
+
+__pycache__/
+*.pyc
+*.egg-info/
+
+.cov_html/
+.coverage
+coverage.xml
+
+build/
+dist/
+
+.~lock.*

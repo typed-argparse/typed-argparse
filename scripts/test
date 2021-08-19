@@ -1,0 +1,3 @@
+#!/bin/bash -eux
+
+pytest --color=yes
