@@ -21,7 +21,8 @@ def parse_args(args: List[str] = sys.argv[1:]) -> MyArgs:
 
 
 def main() -> None:
-    args = parse_args(["--foo", "foo", "--num", "42", "--files", "a", "b", "c"])
+    # args = parse_args(["--foo", "foo", "--num", "42", "--files", "a", "b", "c"])
+    args = parse_args(["--foo", "foo", "--num", "42"])
     assert args.foo == "foo"
     assert args.num == 42
     # assert args.files == ["a", "b", "c"]
