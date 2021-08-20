@@ -1,6 +1,6 @@
 import argparse
 
-from typing import List, Union
+from typing import List
 
 from . import type_utils
 
@@ -23,22 +23,18 @@ class TypedArgs:
                 x = getattr(args, name)
 
                 underlying_type = None
-                is_optional = False
 
-                if type_utils.is_list(argument_type):
-                    underlying_type = type_utils.get_underlying_type_of_list(argument_type)
+                list_check = type_utils.check_for_list(argument_type)
+                optional_check = type_utils.check_for_optional(argument_type)
+
+                if list_check.is_list:
+                    underlying_type = list_check.underlying_type
                     argument_type = list
 
-                if hasattr(argument_type, "__origin__"):
-                    if argument_type.__origin__ is Union and len(argument_type.__args__) == 2:
-                        if argument_type.__args__[0] == _NoneType:
-                            is_optional = True
-                            argument_type = argument_type.__args__[1]
-                        elif argument_type.__args__[1] == _NoneType:
-                            is_optional = True
-                            argument_type = argument_type.__args__[0]
+                if optional_check.is_optional:
+                    argument_type = optional_check.underlying_type
 
-                if is_optional:
+                if optional_check.is_optional:
                     if not isinstance(x, argument_type) and not (x is None):
                         raise TypeError(
                             f"Type of argument '{name}' should be "
