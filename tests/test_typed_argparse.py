@@ -36,7 +36,7 @@ def test_missing_field__single() -> None:
     args_namespace = argparse.Namespace()
     with pytest.raises(
         TypeError,
-        match="Arguments object is missing attribute 'foo'",
+        match="Arguments object is missing argument 'foo'",
     ):
         MyArgs(args_namespace)
 
@@ -49,7 +49,7 @@ def test_missing_field__multiple() -> None:
     args_namespace = argparse.Namespace()
     with pytest.raises(
         TypeError,
-        match=r"Arguments object is missing attributes \['foo', 'bar'\]",
+        match=r"Arguments object is missing arguments \['foo', 'bar'\]",
     ):
         MyArgs(args_namespace)
 
@@ -61,7 +61,7 @@ def test_extra_field__single() -> None:
     args_namespace = argparse.Namespace(foo="foo", bar="bar")
     with pytest.raises(
         TypeError,
-        match="Arguments object has an unexpected extra attribute 'bar'",
+        match="Arguments object has an unexpected extra argument 'bar'",
     ):
         MyArgs(args_namespace)
 
@@ -73,7 +73,7 @@ def test_extra_field__multiple() -> None:
     args_namespace = argparse.Namespace(foo="foo", bar="bar", baz="baz")
     with pytest.raises(
         TypeError,
-        match=r"Arguments object has an unexpected extra attributes \['bar', 'baz'\]",
+        match=r"Arguments object has an unexpected extra arguments \['bar', 'baz'\]",
     ):
         MyArgs(args_namespace)
 
@@ -85,7 +85,7 @@ def test_simple_type_mismatch_1() -> None:
     args_namespace = argparse.Namespace(foo=42)
     with pytest.raises(
         TypeError,
-        match="Type of attribute 'foo' should be str, but is int",
+        match="Type of argument 'foo' should be str, but is int",
     ):
         MyArgs(args_namespace)
 
@@ -97,7 +97,7 @@ def test_simple_type_mismatch_2() -> None:
     args_namespace = argparse.Namespace(num="foo")
     with pytest.raises(
         TypeError,
-        match="Type of attribute 'num' should be int, but is str",
+        match="Type of argument 'num' should be int, but is str",
     ):
         MyArgs(args_namespace)
 
@@ -132,7 +132,7 @@ def test_lists__elements_type_mismatch_1() -> None:
     args_namespace = argparse.Namespace(foo=["a", 2, "c"])
     with pytest.raises(
         TypeError,
-        match="Not all elements of attribute 'foo' are of type str",
+        match="Not all elements of argument 'foo' are of type str",
     ):
         MyArgs(args_namespace)
 
@@ -144,7 +144,7 @@ def test_lists__elements_type_mismatch_2() -> None:
     args_namespace = argparse.Namespace(num=["a", 2, "c"])
     with pytest.raises(
         TypeError,
-        match="Not all elements of attribute 'num' are of type int",
+        match="Not all elements of argument 'num' are of type int",
     ):
         MyArgs(args_namespace)
 
@@ -187,7 +187,7 @@ def test_optional__type_mismatch() -> None:
     args_namespace = argparse.Namespace(foo=42)
     with pytest.raises(
         TypeError,
-        match=r"Type of attribute 'foo' should be Optional\[str\], but is int",
+        match=r"Type of argument 'foo' should be Optional\[str\], but is int",
     ):
         MyArgs(args_namespace)
 
@@ -239,6 +239,6 @@ def test_get_raw_args__check_for_name_collision() -> None:
     args_namespace = argparse.Namespace(get_raw_args="foo")
     with pytest.raises(
         TypeError,
-        match="A type must not have an attribute called 'get_raw_args'",
+        match="A type must not have an argument called 'get_raw_args'",
     ):
         MyArgs(args_namespace)
