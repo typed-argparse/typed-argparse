@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, NamedTuple, Optional, Union, cast
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Union, cast
 
 
 _NoneType = type(None)
@@ -21,9 +21,21 @@ def _is_generic_type(x: AnyType) -> bool:
     return hasattr(x, "__origin__")
 
 
-def check_is_type(x: AnyType) -> type:
+class TypeWrapper:
+    def __init__(self, name: str, validate: Callable[[object], bool]) -> None:
+        self.name = name
+        self.validate = validate
+
+
+def get_type_wrapper(x: AnyType) -> TypeWrapper:
+    # TODO: We could try to detect typing.Literal here, but it seems tricky:
+    # https://stackoverflow.com/q/61150835/1804173
     if isinstance(x, type) or _is_generic_type(x):
-        return cast(type, x)
+        expected_type = cast(type, x)
+        return TypeWrapper(
+            name=getattr(x, "__name__", "unknown"),
+            validate=lambda x: isinstance(x, expected_type),
+        )
     else:
         raise TypeError(f"Type annotation must be a type, but is of type {type(x)}")
 
