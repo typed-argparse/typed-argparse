@@ -1,5 +1,5 @@
 # https://stackoverflow.com/questions/58723802/what-python-type-annotation-to-represent-generic-type-class
-from typing import Dict, List
+from typing import Dict, List  # Optional, Union
 
 
 def is_dict(cls: type) -> bool:
@@ -14,5 +14,7 @@ def is_dict(cls: type) -> bool:
 assert not is_dict(int)
 assert not is_dict(str)
 assert not is_dict(List[int])
+# assert not is_dict(Optional[int])
+# assert not is_dict(Union[int, str])
 assert is_dict(dict)
 assert is_dict(Dict[int, int])

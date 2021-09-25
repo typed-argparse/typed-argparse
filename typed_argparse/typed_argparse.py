@@ -17,6 +17,8 @@ class TypedArgs:
             if name == "get_raw_args":
                 raise TypeError("A type must not have an argument called 'get_raw_args'")
 
+            argument_type = type_utils.check_is_type(argument_type)
+
             if not hasattr(args, name):
                 missing_args.append(name)
             else:

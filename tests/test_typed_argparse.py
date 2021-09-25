@@ -102,6 +102,21 @@ def test_simple_type_mismatch_2() -> None:
         MyArgs(args_namespace)
 
 
+def test_annotation_that_isnt_a_type() -> None:
+    # In principle this should already be prevented by mypy itself (that's why we
+    # need to type-ignore the mistake here), but let's make sure that it still
+    # would produce a comprehensible runtime error.
+    class MyArgs(TypedArgs):
+        num: 42  # type: ignore
+
+    args_namespace = argparse.Namespace(num=42)
+    with pytest.raises(
+        TypeError,
+        match="Type annotation must be a type, but is of type <class 'int'>",
+    ):
+        MyArgs(args_namespace)
+
+
 # -----------------------------------------------------------------------------
 # Lists
 # -----------------------------------------------------------------------------

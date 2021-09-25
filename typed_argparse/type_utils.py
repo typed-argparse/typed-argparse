@@ -4,14 +4,28 @@ from typing import Any, Dict, List, NamedTuple, Optional, Union, cast
 _NoneType = type(None)
 
 
+# It looks like there is no good type annotation that works for "type annotations".
+# `type` would work for internal types (int, str, ...) and some typing.XXX types
+# like typing.List and typing.Dict, but it doesn't work for typing.Optional and
+# typing.Union. For now, let's make no assumptions at all.
+AnyType = object
+
+
 def _debug_repr(x: Any) -> Dict[str, Any]:
     return {name: getattr(x, name) for name in dir(x)}
 
 
-def _is_generic_type(x: object) -> bool:
+def _is_generic_type(x: AnyType) -> bool:
     # Heuristic to detect generic types. Consider using a type guard for an even cleaner
     # approach at the cost of adding typing_extensions as a dependency.
     return hasattr(x, "__origin__")
+
+
+def check_is_type(x: AnyType) -> type:
+    if isinstance(x, type) or _is_generic_type(x):
+        return cast(type, x)
+    else:
+        raise TypeError(f"Type annotation must be a type, but is of type {type(x)}")
 
 
 # -----------------------------------------------------------------------------
@@ -19,21 +33,21 @@ def _is_generic_type(x: object) -> bool:
 # -----------------------------------------------------------------------------
 
 
-def _is_optional(x: Any) -> bool:
+def _is_optional(x: AnyType) -> bool:
     return (
         hasattr(x, "__origin__")
         and hasattr(x, "__args__")
-        and x.__origin__ is Union
-        and len(x.__args__) == 2
-        and _NoneType in x.__args__
+        and getattr(x, "__origin__") is Union
+        and len(getattr(x, "__args__", [])) == 2
+        and _NoneType in getattr(x, "__args__")
     )
 
 
-def _get_underlying_type_of_optional(x: Any) -> Optional[type]:
+def _get_underlying_type_of_optional(x: AnyType) -> Optional[type]:
     # x.__args__ should be something like `(str, NoneType)` or `(typing.List[str], NoneType)`.
     # Note that an isinstance(t, type) check would only work in the plain `str` case.
     # Currently we're using an heuristic to cover the typing.XXX generics:
-    for t in x.__args__:
+    for t in getattr(x, "__args__", []):
         if t != _NoneType and (isinstance(t, type) or _is_generic_type(t)):
             return cast(type, t)
     return None
@@ -47,7 +61,7 @@ class OptionalCheck(NamedTuple):
         return self.underlying_type is not None
 
 
-def check_for_optional(x: Any) -> OptionalCheck:
+def check_for_optional(x: AnyType) -> OptionalCheck:
     if not _is_optional(x):
         return OptionalCheck(underlying_type=None)
     else:
@@ -59,24 +73,31 @@ def check_for_optional(x: Any) -> OptionalCheck:
 # -----------------------------------------------------------------------------
 
 
-def _is_list(x: Any) -> bool:
+def _is_list(x: AnyType) -> bool:
     if _is_optional(x):
-        x = _get_underlying_type_of_optional(x)
+        underlying_type_of_optional = _get_underlying_type_of_optional(x)
+        if underlying_type_of_optional is not None:
+            x = underlying_type_of_optional
     # In Python 3.6 __origin__ is List
     # In Python 3.7+ __origin__ is list
+    origin = getattr(x, "__origin__", None)
     return (
-        hasattr(x, "__origin__")
-        and hasattr(x, "__args__")
-        and (x.__origin__ is List or x.__origin__ is list)
+        hasattr(x, "__origin__") and hasattr(x, "__args__") and (origin is List or origin is list)
     )
 
 
-def _get_underlying_type_of_list(x: Any) -> type:
+def _get_underlying_type_of_list(x: AnyType) -> type:
     if _is_optional(x):
-        x = _get_underlying_type_of_optional(x)
-    if hasattr(x, "__args__") and len(x.__args__) >= 1:
-        assert isinstance(x.__args__[0], type), "Underlying type must be a type"
-        return x.__args__[0]
+        underlying_type_of_optional = _get_underlying_type_of_optional(x)
+        if underlying_type_of_optional is not None:
+            x = underlying_type_of_optional
+    args = getattr(x, "__args__", [])
+    if hasattr(x, "__args__") and len(args) >= 1:
+        t = args[0]
+        assert isinstance(t, type) or _is_generic_type(t), "Underlying type must be a type"
+        # This cast may actually be invalid, because Optional and Union are not of type `type`.
+        # and so a List[Optional[T]] would erroneously return an underlying type of type `type`.
+        return cast(type, t)
     else:
         raise RuntimeError(f"Could not infer underlying type of {x}. Details:\n{_debug_repr(x)}")
 
@@ -89,7 +110,7 @@ class ListCheck(NamedTuple):
         return self.underlying_type is not None
 
 
-def check_for_list(x: Any) -> ListCheck:
+def check_for_list(x: AnyType) -> ListCheck:
     if not _is_list(x):
         return ListCheck(underlying_type=None)
     else:
