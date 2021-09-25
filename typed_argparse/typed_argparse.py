@@ -14,8 +14,8 @@ class TypedArgs:
         missing_args: List[str] = []
 
         for name, argument_type in self.__annotations__.items():
-            if name == "get_raw_args":
-                raise TypeError("A type must not have an argument called 'get_raw_args'")
+            if name == "get_raw_args" or name == "_args":
+                raise TypeError(f"A type must not have an argument called '{name}'")
 
             argument_type = type_utils.check_is_type(argument_type)
 
@@ -80,3 +80,10 @@ class TypedArgs:
 
     def get_raw_args(self) -> argparse.Namespace:
         return self._args
+
+    def __repr__(self) -> str:
+        key_value_pairs = [f"{k}={repr(v)}" for k, v in self.__dict__.items() if k != "_args"]
+        return f"{self.__class__.__name__}({', '.join(key_value_pairs)})"
+
+    def __str__(self) -> str:
+        return repr(self)

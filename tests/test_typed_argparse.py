@@ -251,6 +251,27 @@ def test_optional_as_union_type_2() -> None:
     assert args.foo == "foo"
 
 
+def test_string_representation() -> None:
+    class MyArgs(TypedArgs):
+        a: str
+        b: Optional[int]
+        c: Optional[int]
+        list: List[str]
+
+    def parse_args(args: List[str]) -> MyArgs:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--a", type=str, required=True)
+        parser.add_argument("--b", type=int)
+        parser.add_argument("--c", type=int)
+        parser.add_argument("--list", type=str, nargs="*")
+        return MyArgs(parser.parse_args(args))
+
+    args = parse_args(["--a", "a", "--c", "42"])
+    expected = "MyArgs(a='a', b=None, c=42, list=[])"
+    assert str(args) == expected
+    assert repr(args) == expected
+
+
 # -----------------------------------------------------------------------------
 # Misc
 # -----------------------------------------------------------------------------
