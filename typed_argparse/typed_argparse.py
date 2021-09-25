@@ -1,6 +1,5 @@
 import argparse
 
-from collections.abc import Iterable
 from typing import List
 
 from . import type_utils
@@ -14,55 +13,20 @@ class TypedArgs:
 
         missing_args: List[str] = []
 
-        for name, argument_type_any in self.__annotations__.items():
-            if name == "get_raw_args" or name == "_args":
-                raise TypeError(f"A type must not have an argument called '{name}'")
+        for arg_name, type_annotation_any in self.__annotations__.items():
+            if arg_name == "get_raw_args" or arg_name == "_args":
+                raise TypeError(f"A type must not have an argument called '{arg_name}'")
 
-            argument_type: object = argument_type_any
+            type_annotation: type_utils.TypeAnnotation = type_annotation_any
 
-            if not hasattr(args, name):
-                missing_args.append(name)
+            if not hasattr(args, arg_name):
+                missing_args.append(arg_name)
             else:
-                x: object = getattr(args, name)
+                value: object = getattr(args, arg_name)
 
-                # Handle optional first to handle Optional[List[T]] properly
-                optional_check = type_utils.check_for_optional(argument_type)
-                if optional_check.is_optional:
-                    argument_type = optional_check.underlying_type
+                value = type_utils.validate_value_against_type(arg_name, value, type_annotation)
 
-                list_check = type_utils.check_for_list(argument_type)
-                if list_check.is_list:
-                    argument_type = list
-                    # Special handling for lists: Coerce empty lists automatically if not optional
-                    if x is None and not optional_check.is_optional:
-                        x = []
-
-                type_wrapper = type_utils.get_type_wrapper(argument_type)
-
-                if optional_check.is_optional:
-                    if not type_wrapper.validate(x) and not (x is None):
-                        raise TypeError(
-                            f"Type of argument '{name}' should be "
-                            f"Optional[{type_wrapper.name}], but is "
-                            f"{type(x).__name__}"
-                        )
-
-                else:
-                    if not type_wrapper.validate(x):
-                        raise TypeError(
-                            f"Type of argument '{name}' should be "
-                            f"{type_wrapper.name}, but is "
-                            f"{type(x).__name__}"
-                        )
-
-                if list_check.underlying_type is not None and isinstance(x, Iterable):
-                    if not all(isinstance(element, list_check.underlying_type) for element in x):
-                        raise TypeError(
-                            f"Not all elements of argument '{name}' are of type "
-                            f"{list_check.underlying_type.__name__}"
-                        )
-
-                self.__dict__[name] = x
+                self.__dict__[arg_name] = value
 
         # Handle missing args
         if len(missing_args) > 0:
