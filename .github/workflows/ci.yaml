@@ -102,7 +102,7 @@ jobs:
           cd rundir
 
           echo -e "\nRunning example:"
-          python ../examples/example.py
+          python ../examples/example.py --foo foo
 
       - name: Publish to PyPI
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'

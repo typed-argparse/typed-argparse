@@ -11,72 +11,46 @@ class TypedArgs:
     def __init__(self, args: argparse.Namespace) -> None:
         self._args = args
 
-        missing_fields: List[str] = []
+        missing_args: List[str] = []
 
-        for name, argument_type in self.__annotations__.items():
-            if name == "get_raw_args":
-                raise TypeError("A type must not have an argument called 'get_raw_args'")
+        for arg_name, type_annotation_any in self.__annotations__.items():
+            if arg_name == "get_raw_args" or arg_name == "_args":
+                raise TypeError(f"A type must not have an argument called '{arg_name}'")
 
-            if not hasattr(args, name):
-                missing_fields.append(name)
+            type_annotation: type_utils.TypeAnnotation = type_annotation_any
+
+            if not hasattr(args, arg_name):
+                missing_args.append(arg_name)
             else:
-                x = getattr(args, name)
+                value: object = getattr(args, arg_name)
 
-                underlying_type = None
+                value = type_utils.validate_value_against_type(arg_name, value, type_annotation)
 
-                list_check = type_utils.check_for_list(argument_type)
-                optional_check = type_utils.check_for_optional(argument_type)
+                self.__dict__[arg_name] = value
 
-                if list_check.is_list:
-                    underlying_type = list_check.underlying_type
-                    argument_type = list
-
-                if optional_check.is_optional:
-                    argument_type = optional_check.underlying_type
-
-                if optional_check.is_optional:
-                    if not isinstance(x, argument_type) and not (x is None):
-                        raise TypeError(
-                            f"Type of argument '{name}' should be "
-                            f"Optional[{argument_type.__name__}], but is "
-                            f"{type(x).__name__}"
-                        )
-
-                else:
-                    if not isinstance(x, argument_type):
-                        raise TypeError(
-                            f"Type of argument '{name}' should be "
-                            f"{argument_type.__name__}, but is "
-                            f"{type(x).__name__}"
-                        )
-
-                if underlying_type is not None and hasattr(x, "__iter__"):
-                    if not all(isinstance(element, underlying_type) for element in x):
-                        raise TypeError(
-                            f"Not all elements of argument '{name}' are of type "
-                            f"{underlying_type.__name__}"
-                        )
-
-                self.__dict__[name] = x
-
-        # Handle missing fields
-        if len(missing_fields) > 0:
-            if len(missing_fields) == 1:
-                raise TypeError(f"Arguments object is missing argument '{missing_fields[0]}'")
+        # Handle missing args
+        if len(missing_args) > 0:
+            if len(missing_args) == 1:
+                raise TypeError(f"Arguments object is missing argument '{missing_args[0]}'")
             else:
-                raise TypeError(f"Arguments object is missing arguments {missing_fields}")
+                raise TypeError(f"Arguments object is missing arguments {missing_args}")
 
-        # Handle extra fields
-        extra_fields = sorted(set(args.__dict__.keys()) - set(self.__annotations__.keys()))
-        if len(extra_fields) > 0:
-            if len(extra_fields) == 1:
+        # Handle extra args
+        extra_args = sorted(set(args.__dict__.keys()) - set(self.__annotations__.keys()))
+        if len(extra_args) > 0:
+            if len(extra_args) == 1:
                 raise TypeError(
-                    f"Arguments object has an unexpected extra argument '{extra_fields[0]}'"
+                    f"Arguments object has an unexpected extra argument '{extra_args[0]}'"
                 )
             else:
-                raise TypeError(
-                    f"Arguments object has an unexpected extra arguments {extra_fields}"
-                )
+                raise TypeError(f"Arguments object has unexpected extra arguments {extra_args}")
 
     def get_raw_args(self) -> argparse.Namespace:
         return self._args
+
+    def __repr__(self) -> str:
+        key_value_pairs = [f"{k}={repr(v)}" for k, v in self.__dict__.items() if k != "_args"]
+        return f"{self.__class__.__name__}({', '.join(key_value_pairs)})"
+
+    def __str__(self) -> str:
+        return repr(self)

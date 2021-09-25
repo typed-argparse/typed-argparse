@@ -73,7 +73,7 @@ def test_extra_field__multiple() -> None:
     args_namespace = argparse.Namespace(foo="foo", bar="bar", baz="baz")
     with pytest.raises(
         TypeError,
-        match=r"Arguments object has an unexpected extra arguments \['bar', 'baz'\]",
+        match=r"Arguments object has unexpected extra arguments \['bar', 'baz'\]",
     ):
         MyArgs(args_namespace)
 
@@ -102,6 +102,21 @@ def test_simple_type_mismatch_2() -> None:
         MyArgs(args_namespace)
 
 
+def test_annotation_that_isnt_a_type() -> None:
+    # In principle this should already be prevented by mypy itself (that's why we
+    # need to type-ignore the mistake here), but let's make sure that it still
+    # would produce a comprehensible runtime error.
+    class MyArgs(TypedArgs):
+        num: 42  # type: ignore
+
+    args_namespace = argparse.Namespace(num=42)
+    with pytest.raises(
+        TypeError,
+        match="Type annotation must be a type, but is of type <class 'int'>",
+    ):
+        MyArgs(args_namespace)
+
+
 # -----------------------------------------------------------------------------
 # Lists
 # -----------------------------------------------------------------------------
@@ -123,6 +138,24 @@ def test_lists_2() -> None:
     args_namespace = argparse.Namespace(num=[1, 2, 3])
     args = MyArgs(args_namespace)
     assert args.num == [1, 2, 3]
+
+
+def test_lists__should_coerce_empty_lists_automatically() -> None:
+    class MyArgs(TypedArgs):
+        num: List[int]
+
+    args_namespace = argparse.Namespace(num=None)
+    args = MyArgs(args_namespace)
+    assert args.num == []
+
+
+def test_lists__should_not_coerce_empty_lists_automatically_if_optional() -> None:
+    class MyArgs(TypedArgs):
+        num: Optional[List[int]]
+
+    args_namespace = argparse.Namespace(num=None)
+    args = MyArgs(args_namespace)
+    assert args.num is None
 
 
 def test_lists__elements_type_mismatch_1() -> None:
@@ -216,6 +249,27 @@ def test_optional_as_union_type_2() -> None:
     args_namespace = argparse.Namespace(foo="foo")
     args = MyArgs(args_namespace)
     assert args.foo == "foo"
+
+
+def test_string_representation() -> None:
+    class MyArgs(TypedArgs):
+        a: str
+        b: Optional[int]
+        c: Optional[int]
+        list: List[str]
+
+    def parse_args(args: List[str]) -> MyArgs:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--a", type=str, required=True)
+        parser.add_argument("--b", type=int)
+        parser.add_argument("--c", type=int)
+        parser.add_argument("--list", type=str, nargs="*")
+        return MyArgs(parser.parse_args(args))
+
+    args = parse_args(["--a", "a", "--c", "42"])
+    expected = "MyArgs(a='a', b=None, c=42, list=[])"
+    assert str(args) == expected
+    assert repr(args) == expected
 
 
 # -----------------------------------------------------------------------------
