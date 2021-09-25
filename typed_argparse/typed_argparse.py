@@ -17,7 +17,7 @@ class TypedArgs:
             if arg_name == "get_raw_args" or arg_name == "_args":
                 raise TypeError(f"A type must not have an argument called '{arg_name}'")
 
-            type_annotation: type_utils.TypeAnnotation = type_annotation_any
+            type_annotation: type_utils.RawTypeAnnotation = type_annotation_any
 
             if not hasattr(args, arg_name):
                 missing_args.append(arg_name)

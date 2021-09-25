@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Union, cast
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple, Union, cast
 
 
 _NoneType = type(None)
@@ -9,14 +9,87 @@ _NoneType = type(None)
 # `type` would work for internal types (int, str, ...) and some typing.XXX types
 # like typing.List and typing.Dict, but it doesn't work for typing.Optional and
 # typing.Union. For now, let's make no assumptions at all.
-TypeAnnotation = object
+RawTypeAnnotation = object
+
+
+def _get_origin(t: RawTypeAnnotation) -> Optional[object]:
+    return cast(Optional[object], getattr(t, "__origin__", None))
+
+
+def _get_args(t: RawTypeAnnotation) -> Tuple[RawTypeAnnotation, ...]:
+    args = getattr(t, "__args__", ())
+    if not isinstance(args, tuple):
+        raise TypeError(
+            f"Expected __args__ of type annotation to be a tuple, but it is {type(args)}"
+        )
+    return args
+
+
+class TypeAnnotation:
+    def __init__(self, raw_type: RawTypeAnnotation):
+        self.raw_type: RawTypeAnnotation = raw_type
+        self.origin = _get_origin(raw_type)
+        self.args = _get_args(raw_type)
+
+    def get_underlying_if_optional(self) -> Optional["TypeAnnotation"]:
+        if self.origin is Union and len(self.args) == 2 and _NoneType in self.args:
+            for t in self.args:
+                if t != _NoneType:
+                    return TypeAnnotation(t)
+        return None
+
+    def get_underlying_if_list(self) -> Optional["TypeAnnotation"]:
+        # In Python 3.6 __origin__ is List
+        # In Python 3.7+ __origin__ is list
+        if (self.origin is List or self.origin is list) and len(self.args) >= 1:
+            return TypeAnnotation(self.args[0])
+        return None
+
+    def validate(self, value: object) -> Tuple[object, Optional[str]]:
+
+        underlying_if_optional = self.get_underlying_if_optional()
+        if underlying_if_optional is not None:
+            if value is None:
+                return value, None
+            else:
+                return underlying_if_optional.validate(value)
+
+        underlying_if_list = self.get_underlying_if_list()
+        if underlying_if_list is not None:
+            if value is None:
+                # Coerce empty list.
+                return [], None
+            elif not isinstance(value, list):
+                # allowing isinstance(value, Iterable) seems too lose, because it would allow
+                # to coerce a list from string, which is not desirable.
+                return value, f"value is not of type list, but {type(value).__name__}"
+            else:
+                new_values = []
+                for x in value:
+                    new_value, error = underlying_if_list.validate(x)
+                    if error is not None:
+                        return value, f"not all elements of the list have proper type ({error})"
+                    new_values.append(new_value)
+                return new_values, None
+
+        # We have to assume self.raw_type is a true `type`
+        assert isinstance(
+            self.raw_type, type
+        ), f"Type annotation is not of type 'type', but {type(self.raw_type).__name__}"
+        if isinstance(value, self.raw_type):
+            return value, None
+        else:
+            return (
+                value,
+                f"value is not of type {self.raw_type.__name__}, but {type(value).__name__}",
+            )
 
 
 def _debug_repr(x: Any) -> Dict[str, Any]:
     return {name: getattr(x, name) for name in dir(x)}
 
 
-def _is_generic_type(x: TypeAnnotation) -> bool:
+def _is_generic_type(x: RawTypeAnnotation) -> bool:
     # Heuristic to detect generic types. Consider using a type guard for an even cleaner
     # approach at the cost of adding typing_extensions as a dependency.
     return hasattr(x, "__origin__")
@@ -28,7 +101,7 @@ class TypeWrapper:
         self.validate = validate
 
 
-def get_type_wrapper(x: TypeAnnotation) -> TypeWrapper:
+def get_type_wrapper(x: RawTypeAnnotation) -> TypeWrapper:
     # TODO: We could try to detect typing.Literal here, but it seems tricky:
     # https://stackoverflow.com/q/61150835/1804173
     if isinstance(x, type) or _is_generic_type(x):
@@ -44,7 +117,7 @@ def get_type_wrapper(x: TypeAnnotation) -> TypeWrapper:
 def validate_value_against_type(
     arg_name: str,
     value: object,
-    type_annotation: TypeAnnotation,
+    type_annotation: RawTypeAnnotation,
 ) -> object:
     # Handle optional first to handle Optional[List[T]] properly
     optional_check = check_for_optional(type_annotation)
@@ -91,7 +164,7 @@ def validate_value_against_type(
 # -----------------------------------------------------------------------------
 
 
-def _is_optional(x: TypeAnnotation) -> bool:
+def _is_optional(x: RawTypeAnnotation) -> bool:
     return (
         hasattr(x, "__origin__")
         and hasattr(x, "__args__")
@@ -101,7 +174,7 @@ def _is_optional(x: TypeAnnotation) -> bool:
     )
 
 
-def _get_underlying_type_of_optional(x: TypeAnnotation) -> Optional[type]:
+def _get_underlying_type_of_optional(x: RawTypeAnnotation) -> Optional[type]:
     # x.__args__ should be something like `(str, NoneType)` or `(typing.List[str], NoneType)`.
     # Note that an isinstance(t, type) check would only work in the plain `str` case.
     # Currently we're using an heuristic to cover the typing.XXX generics:
@@ -119,7 +192,7 @@ class OptionalCheck(NamedTuple):
         return self.underlying_type is not None
 
 
-def check_for_optional(x: TypeAnnotation) -> OptionalCheck:
+def check_for_optional(x: RawTypeAnnotation) -> OptionalCheck:
     if not _is_optional(x):
         return OptionalCheck(underlying_type=None)
     else:
@@ -131,7 +204,7 @@ def check_for_optional(x: TypeAnnotation) -> OptionalCheck:
 # -----------------------------------------------------------------------------
 
 
-def _is_list(x: TypeAnnotation) -> bool:
+def _is_list(x: RawTypeAnnotation) -> bool:
     if _is_optional(x):
         underlying_type_of_optional = _get_underlying_type_of_optional(x)
         if underlying_type_of_optional is not None:
@@ -144,7 +217,7 @@ def _is_list(x: TypeAnnotation) -> bool:
     )
 
 
-def _get_underlying_type_of_list(x: TypeAnnotation) -> type:
+def _get_underlying_type_of_list(x: RawTypeAnnotation) -> type:
     if _is_optional(x):
         underlying_type_of_optional = _get_underlying_type_of_optional(x)
         if underlying_type_of_optional is not None:
@@ -168,7 +241,7 @@ class ListCheck(NamedTuple):
         return self.underlying_type is not None
 
 
-def check_for_list(x: TypeAnnotation) -> ListCheck:
+def check_for_list(x: RawTypeAnnotation) -> ListCheck:
     if not _is_list(x):
         return ListCheck(underlying_type=None)
     else:
