@@ -11,14 +11,14 @@ class TypedArgs:
     def __init__(self, args: argparse.Namespace) -> None:
         self._args = args
 
-        missing_fields: List[str] = []
+        missing_args: List[str] = []
 
         for name, argument_type in self.__annotations__.items():
             if name == "get_raw_args":
                 raise TypeError("A type must not have an argument called 'get_raw_args'")
 
             if not hasattr(args, name):
-                missing_fields.append(name)
+                missing_args.append(name)
             else:
                 x = getattr(args, name)
 
@@ -59,24 +59,22 @@ class TypedArgs:
 
                 self.__dict__[name] = x
 
-        # Handle missing fields
-        if len(missing_fields) > 0:
-            if len(missing_fields) == 1:
-                raise TypeError(f"Arguments object is missing argument '{missing_fields[0]}'")
+        # Handle missing args
+        if len(missing_args) > 0:
+            if len(missing_args) == 1:
+                raise TypeError(f"Arguments object is missing argument '{missing_args[0]}'")
             else:
-                raise TypeError(f"Arguments object is missing arguments {missing_fields}")
+                raise TypeError(f"Arguments object is missing arguments {missing_args}")
 
-        # Handle extra fields
-        extra_fields = sorted(set(args.__dict__.keys()) - set(self.__annotations__.keys()))
-        if len(extra_fields) > 0:
-            if len(extra_fields) == 1:
+        # Handle extra args
+        extra_args = sorted(set(args.__dict__.keys()) - set(self.__annotations__.keys()))
+        if len(extra_args) > 0:
+            if len(extra_args) == 1:
                 raise TypeError(
-                    f"Arguments object has an unexpected extra argument '{extra_fields[0]}'"
+                    f"Arguments object has an unexpected extra argument '{extra_args[0]}'"
                 )
             else:
-                raise TypeError(
-                    f"Arguments object has an unexpected extra arguments {extra_fields}"
-                )
+                raise TypeError(f"Arguments object has unexpected extra arguments {extra_args}")
 
     def get_raw_args(self) -> argparse.Namespace:
         return self._args

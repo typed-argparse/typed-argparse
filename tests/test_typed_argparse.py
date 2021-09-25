@@ -73,7 +73,7 @@ def test_extra_field__multiple() -> None:
     args_namespace = argparse.Namespace(foo="foo", bar="bar", baz="baz")
     with pytest.raises(
         TypeError,
-        match=r"Arguments object has an unexpected extra arguments \['bar', 'baz'\]",
+        match=r"Arguments object has unexpected extra arguments \['bar', 'baz'\]",
     ):
         MyArgs(args_namespace)
 
