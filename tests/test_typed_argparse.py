@@ -125,6 +125,24 @@ def test_lists_2() -> None:
     assert args.num == [1, 2, 3]
 
 
+def test_lists__should_coerce_empty_lists_automatically() -> None:
+    class MyArgs(TypedArgs):
+        num: List[int]
+
+    args_namespace = argparse.Namespace(num=None)
+    args = MyArgs(args_namespace)
+    assert args.num == []
+
+
+def test_lists__should_not_coerce_empty_lists_automatically_if_optional() -> None:
+    class MyArgs(TypedArgs):
+        num: Optional[List[int]]
+
+    args_namespace = argparse.Namespace(num=None)
+    args = MyArgs(args_namespace)
+    assert args.num is None
+
+
 def test_lists__elements_type_mismatch_1() -> None:
     class MyArgs(TypedArgs):
         foo: List[str]

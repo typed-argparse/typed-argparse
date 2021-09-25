@@ -22,17 +22,17 @@ class TypedArgs:
             else:
                 x = getattr(args, name)
 
-                underlying_type = None
-
-                list_check = type_utils.check_for_list(argument_type)
+                # Handle optional first to handle Optional[List[T]] properly
                 optional_check = type_utils.check_for_optional(argument_type)
-
-                if list_check.is_list:
-                    underlying_type = list_check.underlying_type
-                    argument_type = list
-
                 if optional_check.is_optional:
                     argument_type = optional_check.underlying_type
+
+                list_check = type_utils.check_for_list(argument_type)
+                if list_check.is_list:
+                    argument_type = list
+                    # Special handling for lists: Coerce empty lists automatically if not optional
+                    if x is None and not optional_check.is_optional:
+                        x = []
 
                 if optional_check.is_optional:
                     if not isinstance(x, argument_type) and not (x is None):
@@ -50,11 +50,11 @@ class TypedArgs:
                             f"{type(x).__name__}"
                         )
 
-                if underlying_type is not None and hasattr(x, "__iter__"):
-                    if not all(isinstance(element, underlying_type) for element in x):
+                if list_check.underlying_type is not None and hasattr(x, "__iter__"):
+                    if not all(isinstance(element, list_check.underlying_type) for element in x):
                         raise TypeError(
                             f"Not all elements of argument '{name}' are of type "
-                            f"{underlying_type.__name__}"
+                            f"{list_check.underlying_type.__name__}"
                         )
 
                 self.__dict__[name] = x
