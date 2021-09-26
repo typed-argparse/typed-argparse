@@ -1,6 +1,8 @@
 import argparse
 
-from typing import Any, Dict, List, Tuple, Type, TypeVar
+import inspect
+import typing
+from typing import Any, Dict, List, Tuple, TypeVar, Generic
 
 from .type_utils import RawTypeAnnotation, TypeAnnotation, typename, validate_value_against_type
 
@@ -110,10 +112,18 @@ def get_choices_from(cls: type, field: str) -> Tuple[Any, ...]:
 
 T = TypeVar("T")
 
+# It may seem natural to use a generic signature for this function to return the
+# type corresponding to the specified union type like:
+#
+#     def validate_type_union(type_union: Type[T], args: argparse.Namespace) -> T:
+#
+# However, that doesn't work currently, because of limitations of Union and Type[T].
+# See: https://github.com/python/mypy/issues/9003
 
-def validate_type_union(type_union: Type[T], args: argparse.Namespace) -> T:
+
+def validate_type_union(args: argparse.Namespace, type_union: object) -> object:
     """
-    Helper function to validate args against a type union.
+    Helper function to validate args against a type union (but with untyped return).
     """
     type_annotation = TypeAnnotation(type_union)
 
@@ -131,3 +141,55 @@ def validate_type_union(type_union: Type[T], args: argparse.Namespace) -> T:
     else:
         errors_str = "\n - ".join(errors)
         raise TypeError(f"Validation failed against all sub types of union type:\n{errors_str}")
+
+
+# Workaround for generic type erasure:
+# https://github.com/python/typing/issues/629#issuecomment-829629259
+
+
+class Proxy:
+    def __init__(self, generic: Any) -> None:
+        object.__setattr__(self, "_generic", generic)
+
+    def __getattr__(self, name: str) -> Any:
+        if typing._is_dunder(name):  # type: ignore # noqa
+            return getattr(self._generic, name)
+        origin = self._generic.__origin__
+        obj = getattr(origin, name)
+        if inspect.ismethod(obj) and isinstance(obj.__self__, type):
+            return lambda *a, **kw: obj.__func__(self, *a, *kw)
+        else:
+            return obj
+
+    def __setattr__(self, name: str, value: Any) -> Any:
+        return setattr(self._generic, name, value)
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self._generic.__call__(*args, **kwargs)
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} of {self._generic!r}>"
+
+
+class RuntimeGeneric:
+    def __class_getitem__(cls: Any, key: str) -> Any:
+        generic = super().__class_getitem__(key)  # type: ignore
+        if getattr(generic, "__origin__", None):
+            return Proxy(generic)
+        else:
+            return generic
+
+
+class WithUnionType(RuntimeGeneric, Generic[T]):
+    """
+    Helper class to validate args against a type union (with proper return type).
+    """
+
+    @classmethod
+    def validate(cls, args: argparse.Namespace) -> T:
+        generic_args = TypeAnnotation(cls).args
+        if len(generic_args) != 1:
+            raise TypeError(
+                f"Class needs exactly one generic annotation. Annotations are {generic_args}."
+            )
+        return validate_type_union(args, generic_args[0])  # type: ignore
