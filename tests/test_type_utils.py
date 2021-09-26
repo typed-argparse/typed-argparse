@@ -95,4 +95,4 @@ def test_type_annotation__literals() -> None:
     assert t.validate(1) == (1, None)
     assert t.validate(2) == (2, None)
     assert t.validate(3) == (3, None)
-    assert t.validate(4) == (4, "value 4 does not match any allowed literal values (1, 2, 3)")
+    assert t.validate(4) == (4, "value 4 does not match any allowed literal value in (1, 2, 3)")

@@ -94,7 +94,8 @@ class TypeAnnotation:
                     return value, None
             return (
                 value,
-                f"value {value} does not match any allowed literal values {allowed_values_if_literal}",
+                f"value {value} does not match any allowed literal value in "
+                f"{allowed_values_if_literal}",
             )
 
         # TODO handle:
