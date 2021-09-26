@@ -1,7 +1,25 @@
 from typing import List, Optional
 
+import pytest
+
 from typed_argparse.type_utils import TypeAnnotation
 
+try:
+    from typing import Literal  # type: ignore
+
+    literal_import_successful = True
+except ImportError:
+    try:
+        from typing_extensions import Literal  # type: ignore
+
+        literal_import_successful = True
+    except ImportError:
+        literal_import_successful = False
+
+
+literal_available = pytest.mark.skipif(
+    not literal_import_successful, reason="Literal must be available"
+)
 
 # -----------------------------------------------------------------------------
 # TypeAnnotation
@@ -69,3 +87,12 @@ def test_type_annotation__mixed_list_optional() -> None:
     t = t.get_underlying_if_optional()
     assert t is not None
     assert t.raw_type is str
+
+
+@literal_available
+def test_type_annotation__literals() -> None:
+    t = TypeAnnotation(Literal[1, 2, 3])
+    assert t.validate(1) == (1, None)
+    assert t.validate(2) == (2, None)
+    assert t.validate(3) == (3, None)
+    assert t.validate(4) == (4, "value 4 does not match any allowed literal values (1, 2, 3)")

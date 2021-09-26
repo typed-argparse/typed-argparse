@@ -1,3 +1,5 @@
+import sys
+import typing
 from typing import List, Optional, Tuple, Union, cast
 
 
@@ -57,6 +59,7 @@ class TypeAnnotation:
 
     def validate(self, value: object) -> Tuple[object, Optional[str]]:
 
+        # Handle optionals
         underlying_if_optional = self.get_underlying_if_optional()
         if underlying_if_optional is not None:
             if value is None:
@@ -64,6 +67,7 @@ class TypeAnnotation:
             else:
                 return underlying_if_optional.validate(value)
 
+        # Handle lists
         underlying_if_list = self.get_underlying_if_list()
         if underlying_if_list is not None:
             if value is None:
@@ -82,6 +86,21 @@ class TypeAnnotation:
                     new_values.append(new_value)
                 return new_values, None
 
+        # Handle literals
+        allowed_values_if_literal = _get_allowed_values_if_literal(self)
+        if allowed_values_if_literal is not None:
+            for allowed_value in allowed_values_if_literal:
+                if value == allowed_value:
+                    return value, None
+            return (
+                value,
+                f"value {value} does not match any allowed literal values {allowed_values_if_literal}",
+            )
+
+        # TODO handle:
+        # - Union
+        # - Enum
+
         # We have to assert self.raw_type is a true `type`
         if not isinstance(self.raw_type, type):
             return (
@@ -96,6 +115,53 @@ class TypeAnnotation:
                 value,
                 f"value is of type {_typename_of(value)}, expected {_typename(self.raw_type)}",
             )
+
+
+if sys.version_info[:2] == (3, 6):
+
+    def _get_allowed_values_if_literal(t: TypeAnnotation) -> Optional[Tuple[object, ...]]:
+        # In Python 3.6 Literal must come from typing_extensions. We use the simple
+        # heuristic to look for __values__ directly without any instance checks.
+        if hasattr(t.raw_type, "__values__"):
+            values = getattr(t.raw_type, "__values__")
+            if isinstance(values, tuple):
+                return values
+        return None
+
+
+elif sys.version_info[:2] == (3, 7):
+
+    def _get_allowed_values_if_literal(t: TypeAnnotation) -> Optional[Tuple[object, ...]]:
+        # In Python 3.7 Literal must come from typing_extensions. In contrast to Python 3.6
+        # it uses typing._GenericAlias and __args__ similar to other generics. This makes
+        # it necessary to properly detect literal instance.
+
+        try:
+            import typing_extensions
+
+            import_successful = True
+        except ImportError:
+            import_successful = False
+
+        if import_successful:
+            if t.origin is typing_extensions.Literal:
+                return t.args
+
+        return None
+
+
+elif sys.version_info[:2] >= (3, 8):
+
+    def _get_allowed_values_if_literal(t: TypeAnnotation) -> Optional[Tuple[object, ...]]:
+        # In Python 3.8+, Literal has been integrated into typing itself.
+        if t.origin is typing.Literal:
+            return t.args
+        else:
+            return None
+
+
+else:
+    raise AssertionError(f"Python version {sys.version_info} is not supported")
 
 
 def validate_value_against_type(

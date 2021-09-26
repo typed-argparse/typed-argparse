@@ -56,6 +56,11 @@ jobs:
         run: |
           ./scripts/test
 
+      - name: Tests (with typing_extensions)
+        run: |
+          pip install typing_extensions
+          ./scripts/test
+
       - name: Upload to codecov.io
         if: matrix.python-version == '3.8'
         # https://github.com/codecov/codecov-action
