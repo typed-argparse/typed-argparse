@@ -59,6 +59,12 @@ class TypeAnnotation:
             return TypeAnnotation(self.args[0])
         return None
 
+    def get_underlyings_if_union(self) -> List["TypeAnnotation"]:
+        if self.origin is Union:
+            return [TypeAnnotation(t) for t in self.args]
+        else:
+            return []
+
     def get_allowed_values_if_literal(self) -> Optional[Tuple[object, ...]]:
         if sys.version_info[:2] == (3, 6):
             # In Python 3.6 Literal must come from typing_extensions. However, it does not

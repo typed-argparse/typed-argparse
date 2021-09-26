@@ -1,6 +1,6 @@
 import argparse
 
-from typing import Any, List, Tuple
+from typing import Any, Dict, List, Tuple, Type, TypeVar
 
 from .type_utils import RawTypeAnnotation, TypeAnnotation, typename, validate_value_against_type
 
@@ -19,7 +19,13 @@ class TypedArgs:
 
         missing_args: List[str] = []
 
-        for arg_name, type_annotation_any in self.__annotations__.items():
+        # Collect all annotations (including super types)
+        all_annotations: Dict[str, object] = dict()
+        for cls in reversed(type(self).mro()):
+            if hasattr(cls, "__annotations__"):
+                all_annotations.update(**cls.__annotations__)
+
+        for arg_name, type_annotation_any in all_annotations.items():
             if arg_name == "get_raw_args" or arg_name == "_args":
                 raise TypeError(f"A type must not have an argument called '{arg_name}'")
 
@@ -45,7 +51,7 @@ class TypedArgs:
                 raise TypeError(f"Arguments object is missing arguments {missing_args}")
 
         # Report extra args if any
-        extra_args = sorted(set(args.__dict__.keys()) - set(self.__annotations__.keys()))
+        extra_args = sorted(set(args.__dict__.keys()) - set(all_annotations.keys()))
         if len(extra_args) > 0:
             if len(extra_args) == 1:
                 raise TypeError(
@@ -100,3 +106,28 @@ def get_choices_from(cls: type, field: str) -> Tuple[Any, ...]:
 
     else:
         raise TypeError(f"Class {cls.__name__} doesn't have a type annotation for field '{field}'")
+
+
+T = TypeVar("T")
+
+
+def validate_type_union(type_union: Type[T], args: argparse.Namespace) -> T:
+    """
+    Helper function to validate args against a type union.
+    """
+    type_annotation = TypeAnnotation(type_union)
+
+    errors = []
+
+    for sub_type in type_annotation.get_underlyings_if_union():
+        if isinstance(sub_type.raw_type, type) and issubclass(sub_type.raw_type, TypedArgs):
+            try:
+                return sub_type.raw_type(args)  # type: ignore
+            except Exception as e:
+                errors.append(str(e))
+
+    if len(errors) == 0:
+        raise TypeError(f"Type union {type_union} did not contain any sub types of type TypedArgs.")
+    else:
+        errors_str = "\n - ".join(errors)
+        raise TypeError(f"Validation failed against all sub types of union type:\n{errors_str}")
