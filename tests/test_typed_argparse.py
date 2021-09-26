@@ -85,7 +85,7 @@ def test_simple_type_mismatch_1() -> None:
     args_namespace = argparse.Namespace(foo=42)
     with pytest.raises(
         TypeError,
-        match="Type of argument 'foo' should be str, but is int",
+        match="Failed to validate argument 'foo': value is of type 'int', expected 'str'",
     ):
         MyArgs(args_namespace)
 
@@ -97,7 +97,7 @@ def test_simple_type_mismatch_2() -> None:
     args_namespace = argparse.Namespace(num="foo")
     with pytest.raises(
         TypeError,
-        match="Type of argument 'num' should be int, but is str",
+        match="Failed to validate argument 'num': value is of type 'str', expected 'int'",
     ):
         MyArgs(args_namespace)
 
@@ -112,7 +112,8 @@ def test_annotation_that_isnt_a_type() -> None:
     args_namespace = argparse.Namespace(num=42)
     with pytest.raises(
         TypeError,
-        match="Type annotation must be a type, but is of type <class 'int'>",
+        match="Failed to validate argument 'num': "
+        "Type annotation is of type 'int', expected 'type'",
     ):
         MyArgs(args_namespace)
 
@@ -165,7 +166,8 @@ def test_lists__elements_type_mismatch_1() -> None:
     args_namespace = argparse.Namespace(foo=["a", 2, "c"])
     with pytest.raises(
         TypeError,
-        match="Not all elements of argument 'foo' are of type str",
+        match=r"Failed to validate argument 'foo': not all elements "
+        r"of the list have proper type \(value is of type 'int', expected 'str'\)",
     ):
         MyArgs(args_namespace)
 
@@ -177,7 +179,8 @@ def test_lists__elements_type_mismatch_2() -> None:
     args_namespace = argparse.Namespace(num=["a", 2, "c"])
     with pytest.raises(
         TypeError,
-        match="Not all elements of argument 'num' are of type int",
+        match=r"Failed to validate argument 'num': not all elements "
+        r"of the list have proper type \(value is of type 'str', expected 'int'\)",
     ):
         MyArgs(args_namespace)
 
@@ -219,8 +222,7 @@ def test_optional__type_mismatch() -> None:
 
     args_namespace = argparse.Namespace(foo=42)
     with pytest.raises(
-        TypeError,
-        match=r"Type of argument 'foo' should be Optional\[str\], but is int",
+        TypeError, match="Failed to validate argument 'foo': value is of type 'int', expected 'str'"
     ):
         MyArgs(args_namespace)
 
@@ -286,7 +288,7 @@ def test_get_raw_args() -> None:
     assert args.get_raw_args().foo == "foo"
 
 
-def test_get_raw_args__check_for_name_collision() -> None:
+def test_get_raw_args__check_for_name_collision_1() -> None:
     class MyArgs(TypedArgs):
         get_raw_args: str  # type: ignore   # error on purpose for testing
 
@@ -294,5 +296,17 @@ def test_get_raw_args__check_for_name_collision() -> None:
     with pytest.raises(
         TypeError,
         match="A type must not have an argument called 'get_raw_args'",
+    ):
+        MyArgs(args_namespace)
+
+
+def test_get_raw_args__check_for_name_collision_2() -> None:
+    class MyArgs(TypedArgs):
+        _args: str  # type: ignore   # error on purpose for testing
+
+    args_namespace = argparse.Namespace(get_raw_args="foo")
+    with pytest.raises(
+        TypeError,
+        match="A type must not have an argument called '_args'",
     ):
         MyArgs(args_namespace)
