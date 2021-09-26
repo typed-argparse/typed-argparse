@@ -3,7 +3,7 @@
 import argparse
 import sys
 from typing import List, Union
-from typed_argparse import TypedArgs, validate_type_union
+from typed_argparse import TypedArgs, WithUnionType
 
 from typing_extensions import Literal
 
@@ -38,7 +38,7 @@ def parse_args(args: List[str] = sys.argv[1:]) -> Args:
     parser_bar.add_argument("--src", required=True)
     parser_bar.add_argument("--dst", required=True)
 
-    return validate_type_union(Args, parser.parse_args(args))  # type: ignore
+    return WithUnionType[Args].validate(parser.parse_args(args))
 
 
 def main() -> None:
