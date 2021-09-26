@@ -1,4 +1,4 @@
-from typed_argparse import TypedArgs, get_choices_from
+from typed_argparse import TypedArgs
 
 import argparse
 import pytest
@@ -319,15 +319,17 @@ def test_get_choices_from() -> None:
         b: Literal["a", "b", "c"]
         c: int
 
-    assert get_choices_from(MyClass, "a") == (1, 2, 3)
-    assert get_choices_from(MyClass, "b") == ("a", "b", "c")
+    assert MyClass.get_choices_from("a") == (1, 2, 3)
+    assert MyClass.get_choices_from("b") == ("a", "b", "c")
+
     with pytest.raises(
         TypeError,
         match="Could not infer literal values of type annotation <class 'int'>",
     ):
-        get_choices_from(MyClass, "c")
+        MyClass.get_choices_from("c")
+
     with pytest.raises(
         TypeError,
         match="Class MyClass doesn't have a type annotation for field 'non_existing'",
     ):
-        get_choices_from(MyClass, "non_existing")
+        MyClass.get_choices_from("non_existing")

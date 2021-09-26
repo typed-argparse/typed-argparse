@@ -56,6 +56,10 @@ class TypedArgs:
     def __str__(self) -> str:
         return repr(self)
 
+    @classmethod
+    def get_choices_from(cls: type, field: str) -> Tuple[Any, ...]:
+        return get_choices_from(cls, field)
+
 
 def get_choices_from(cls: type, field: str) -> Tuple[Any, ...]:
     if field in cls.__annotations__:

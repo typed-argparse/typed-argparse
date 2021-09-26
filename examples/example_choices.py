@@ -3,7 +3,7 @@
 import argparse
 import sys
 from typing import List
-from typed_argparse import TypedArgs, get_choices_from
+from typed_argparse import TypedArgs
 
 from typing_extensions import Literal
 
@@ -18,7 +18,7 @@ def parse_args(args: List[str] = sys.argv[1:]) -> MyArgs:
         "--mode",
         type=str,
         required=True,
-        choices=get_choices_from(MyArgs, "mode"),
+        choices=MyArgs.get_choices_from("mode"),
     )
     return MyArgs(parser.parse_args(args))
 
