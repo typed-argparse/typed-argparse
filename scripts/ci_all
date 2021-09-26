@@ -4,4 +4,4 @@
 ./scripts/check_linter && \
 ./scripts/check_fmt && \
 ./scripts/test && \
-python examples/example.py --foo foo
+./scripts/ci_integration

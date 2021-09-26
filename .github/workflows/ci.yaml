@@ -98,11 +98,8 @@ jobs:
         run: |
           set -e
           pip install dist/*.whl
-          mkdir rundir
-          cd rundir
 
-          echo -e "\nRunning example:"
-          python ../examples/example.py --foo foo
+          ./scripts/ci_integration
 
       - name: Publish to PyPI
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
