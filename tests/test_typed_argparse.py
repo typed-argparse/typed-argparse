@@ -1,9 +1,10 @@
-from typed_argparse import TypedArgs
+from typed_argparse import TypedArgs, get_choices_from
 
 import argparse
 import pytest
 
 from typing import List, Optional, Union
+from typing_extensions import Literal
 
 
 # -----------------------------------------------------------------------------
@@ -310,3 +311,23 @@ def test_get_raw_args__check_for_name_collision_2() -> None:
         match="A type must not have an argument called '_args'",
     ):
         MyArgs(args_namespace)
+
+
+def test_get_choices_from() -> None:
+    class MyClass(TypedArgs):
+        a: Literal[1, 2, 3]
+        b: Literal["a", "b", "c"]
+        c: int
+
+    assert get_choices_from(MyClass, "a") == (1, 2, 3)
+    assert get_choices_from(MyClass, "b") == ("a", "b", "c")
+    with pytest.raises(
+        TypeError,
+        match="Could not infer literal values of type annotation <class 'int'>",
+    ):
+        get_choices_from(MyClass, "c")
+    with pytest.raises(
+        TypeError,
+        match="Class MyClass doesn't have a type annotation for field 'non_existing'",
+    ):
+        get_choices_from(MyClass, "non_existing")

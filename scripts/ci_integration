@@ -1,0 +1,12 @@
+#!/bin/bash -eu
+
+scripts_dir=$(dirname $0)
+examples_dir=$(realpath ${scripts_dir}/../examples)
+
+# Run from a different working directory to make sure the Python code
+# is picked up via its package and not from the local path.
+cd /tmp
+
+set -x
+python ${examples_dir}/example.py --foo foo
+python ${examples_dir}/example_choices.py --mode a

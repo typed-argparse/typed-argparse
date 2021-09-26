@@ -1,8 +1,9 @@
 import argparse
 
-from typing import List
+from typing import Any, List, Tuple
 
 from . import type_utils
+from .type_utils import RawTypeAnnotation, TypeAnnotation
 
 _NoneType = type(None)
 
@@ -17,7 +18,7 @@ class TypedArgs:
             if arg_name == "get_raw_args" or arg_name == "_args":
                 raise TypeError(f"A type must not have an argument called '{arg_name}'")
 
-            type_annotation: type_utils.RawTypeAnnotation = type_annotation_any
+            type_annotation: RawTypeAnnotation = type_annotation_any
 
             if not hasattr(args, arg_name):
                 missing_args.append(arg_name)
@@ -54,3 +55,19 @@ class TypedArgs:
 
     def __str__(self) -> str:
         return repr(self)
+
+
+def get_choices_from(cls: type, field: str) -> Tuple[Any, ...]:
+    if field in cls.__annotations__:
+        raw_type_annotation: RawTypeAnnotation = cls.__annotations__[field]
+
+        allowed_values = TypeAnnotation(raw_type_annotation).get_allowed_values_if_literal()
+        if allowed_values is not None:
+            return allowed_values
+        else:
+            raise TypeError(
+                f"Could not infer literal values of type annotation {raw_type_annotation}"
+            )
+
+    else:
+        raise TypeError(f"Class {cls.__name__} doesn't have a type annotation for field '{field}'")
