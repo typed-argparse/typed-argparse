@@ -1,6 +1,7 @@
 import sys
-import typing
+
 from typing import List, Optional, Tuple, Union, cast
+from typing_extensions import Literal
 
 
 _NoneType = type(None)
@@ -121,8 +122,10 @@ class TypeAnnotation:
 if sys.version_info[:2] == (3, 6):
 
     def _get_allowed_values_if_literal(t: TypeAnnotation) -> Optional[Tuple[object, ...]]:
-        # In Python 3.6 Literal must come from typing_extensions. We use the simple
-        # heuristic to look for __values__ directly without any instance checks.
+        # In Python 3.6 Literal must come from typing_extensions. However, it does not
+        # behave like other generics, and proper instance checking doesn't seem to work.
+        # We use the simple heuristic to look for __values__ directly without any instance
+        # checks.
         if hasattr(t.raw_type, "__values__"):
             values = getattr(t.raw_type, "__values__")
             if isinstance(values, tuple):
@@ -130,32 +133,15 @@ if sys.version_info[:2] == (3, 6):
         return None
 
 
-elif sys.version_info[:2] == (3, 7):
+elif sys.version_info[:2] >= (3, 7):
 
     def _get_allowed_values_if_literal(t: TypeAnnotation) -> Optional[Tuple[object, ...]]:
         # In Python 3.7 Literal must come from typing_extensions. In contrast to Python 3.6
         # it uses typing._GenericAlias and __args__ similar to other generics. This makes
         # it necessary to properly detect literal instance.
-
-        try:
-            import typing_extensions
-
-            import_successful = True
-        except ImportError:
-            import_successful = False
-
-        if import_successful:
-            if t.origin is typing_extensions.Literal:
-                return t.args
-
-        return None
-
-
-elif sys.version_info[:2] >= (3, 8):
-
-    def _get_allowed_values_if_literal(t: TypeAnnotation) -> Optional[Tuple[object, ...]]:
         # In Python 3.8+, Literal has been integrated into typing itself.
-        if t.origin is typing.Literal:
+        # Using the import from typing_extensions should make it work in both cases.
+        if t.origin is Literal:
             return t.args
         else:
             return None

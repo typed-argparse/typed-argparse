@@ -8,4 +8,7 @@ if __name__ == "__main__":
             "typed_argparse": ["py.typed"],
         },
         include_package_data=True,
+        install_requires=[
+            "typing-extensions",
+        ],
     )
