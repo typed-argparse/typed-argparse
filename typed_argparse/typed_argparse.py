@@ -2,8 +2,7 @@ import argparse
 
 from typing import Any, List, Tuple
 
-from . import type_utils
-from .type_utils import RawTypeAnnotation, TypeAnnotation
+from .type_utils import RawTypeAnnotation, TypeAnnotation, typename, validate_value_against_type
 
 _NoneType = type(None)
 
@@ -25,7 +24,7 @@ class TypedArgs:
             else:
                 value: object = getattr(args, arg_name)
 
-                value = type_utils.validate_value_against_type(arg_name, value, type_annotation)
+                value = validate_value_against_type(arg_name, value, type_annotation)
 
                 self.__dict__[arg_name] = value
 
@@ -64,14 +63,20 @@ class TypedArgs:
 def get_choices_from(cls: type, field: str) -> Tuple[Any, ...]:
     if field in cls.__annotations__:
         raw_type_annotation: RawTypeAnnotation = cls.__annotations__[field]
+        type_annotation = TypeAnnotation(raw_type_annotation)
 
-        allowed_values = TypeAnnotation(raw_type_annotation).get_allowed_values_if_literal()
+        allowed_values = type_annotation.get_allowed_values_if_literal()
         if allowed_values is not None:
             return allowed_values
-        else:
-            raise TypeError(
-                f"Could not infer literal values of type annotation {raw_type_annotation}"
-            )
+
+        allowed_values = type_annotation.get_allowed_values_if_enum()
+        if allowed_values is not None:
+            return tuple(e.value for e in allowed_values)
+
+        raise TypeError(
+            f"Could not infer literal values of field '{field}' "
+            f"of type {typename(raw_type_annotation)}"
+        )
 
     else:
         raise TypeError(f"Class {cls.__name__} doesn't have a type annotation for field '{field}'")

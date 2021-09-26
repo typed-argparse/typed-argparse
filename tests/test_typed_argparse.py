@@ -1,5 +1,6 @@
 from typed_argparse import TypedArgs
 
+import enum
 import argparse
 import pytest
 
@@ -276,6 +277,88 @@ def test_string_representation() -> None:
 
 
 # -----------------------------------------------------------------------------
+# Literal / Enum
+# -----------------------------------------------------------------------------
+
+
+def test_get_choices_from() -> None:
+    class EnumInt(enum.Enum):
+        a = 1
+        b = 2
+        c = 3
+
+    class EnumStr(enum.Enum):
+        a = "a"
+        b = "b"
+        c = "c"
+
+    class MyClass(TypedArgs):
+        lit_int: Literal[1, 2, 3]
+        lit_str: Literal["a", "b", "c"]
+        enum_int: EnumInt
+        enum_str: EnumStr
+        not_a_lit: int
+
+    assert MyClass.get_choices_from("lit_int") == (1, 2, 3)
+    assert MyClass.get_choices_from("lit_str") == ("a", "b", "c")
+
+    assert MyClass.get_choices_from("enum_int") == (1, 2, 3)
+    assert MyClass.get_choices_from("enum_str") == ("a", "b", "c")
+
+    with pytest.raises(
+        TypeError,
+        match="Could not infer literal values of field 'not_a_lit' of type 'int'",
+    ):
+        MyClass.get_choices_from("not_a_lit")
+
+    with pytest.raises(
+        TypeError,
+        match="Class MyClass doesn't have a type annotation for field 'non_existing'",
+    ):
+        MyClass.get_choices_from("non_existing")
+
+
+def test_literal() -> None:
+    class MyArgs(TypedArgs):
+        foo: Literal[1, 2, 3]
+
+    args_namespace = argparse.Namespace(foo=1)
+    args = MyArgs(args_namespace)
+    assert args.foo == 1
+
+    args_namespace = argparse.Namespace(foo=4)
+    with pytest.raises(
+        TypeError,
+        match=r"Failed to validate argument 'foo': "
+        r"value 4 does not match any allowed literal value in \(1, 2, 3\)",
+    ):
+        MyArgs(args_namespace)
+
+
+def test_enum() -> None:
+    class EnumInt(enum.Enum):
+        a = 1
+        b = 2
+        c = 3
+
+    class MyArgs(TypedArgs):
+        foo: EnumInt
+
+    args_namespace = argparse.Namespace(foo=1)
+    args = MyArgs(args_namespace)
+    assert args.foo is EnumInt.a
+
+    args_namespace = argparse.Namespace(foo=4)
+    with pytest.raises(
+        TypeError,
+        match=r"Failed to validate argument 'foo': "
+        r"value 4 does not match any allowed enum value in "
+        r"\(<EnumInt.a: 1>, <EnumInt.b: 2>, <EnumInt.c: 3>\)",
+    ):
+        MyArgs(args_namespace)
+
+
+# -----------------------------------------------------------------------------
 # Misc
 # -----------------------------------------------------------------------------
 
@@ -311,25 +394,3 @@ def test_get_raw_args__check_for_name_collision_2() -> None:
         match="A type must not have an argument called '_args'",
     ):
         MyArgs(args_namespace)
-
-
-def test_get_choices_from() -> None:
-    class MyClass(TypedArgs):
-        a: Literal[1, 2, 3]
-        b: Literal["a", "b", "c"]
-        c: int
-
-    assert MyClass.get_choices_from("a") == (1, 2, 3)
-    assert MyClass.get_choices_from("b") == ("a", "b", "c")
-
-    with pytest.raises(
-        TypeError,
-        match="Could not infer literal values of type annotation <class 'int'>",
-    ):
-        MyClass.get_choices_from("c")
-
-    with pytest.raises(
-        TypeError,
-        match="Class MyClass doesn't have a type annotation for field 'non_existing'",
-    ):
-        MyClass.get_choices_from("non_existing")

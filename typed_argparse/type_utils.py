@@ -1,3 +1,4 @@
+import enum
 import sys
 
 from typing import List, Optional, Tuple, Union, cast
@@ -14,15 +15,15 @@ _NoneType = type(None)
 RawTypeAnnotation = object
 
 
-def _typename(t: RawTypeAnnotation) -> str:
+def typename(t: RawTypeAnnotation) -> str:
     if hasattr(t, "__name__"):
         return f"'{getattr(t, '__name__')}'"
     else:
         return f"'{str(t)}'"
 
 
-def _typename_of(value: object) -> str:
-    return _typename(type(value))
+def typename_of(value: object) -> str:
+    return typename(type(value))
 
 
 def _get_origin(t: RawTypeAnnotation) -> Optional[object]:
@@ -84,6 +85,12 @@ class TypeAnnotation:
         else:
             raise AssertionError(f"Python version {sys.version_info} is not supported")
 
+    def get_allowed_values_if_enum(self) -> Optional[Tuple[enum.Enum, ...]]:
+        if isinstance(self.raw_type, type) and issubclass(self.raw_type, enum.Enum):
+            return tuple(self.raw_type)
+        else:
+            return None
+
     def validate(self, value: object) -> Tuple[object, Optional[str]]:
 
         # Handle optionals
@@ -103,7 +110,7 @@ class TypeAnnotation:
             elif not isinstance(value, list):
                 # allowing isinstance(value, Iterable) seems too lose, because it would allow
                 # to coerce a list from string, which is not desirable.
-                return value, f"value is of type {_typename_of(value)}, expected 'list'"
+                return value, f"value is of type {typename_of(value)}, expected 'list'"
             else:
                 new_values = []
                 for x in value:
@@ -125,15 +132,26 @@ class TypeAnnotation:
                 f"{allowed_values_if_literal}",
             )
 
+        # Handle enums
+        allowed_values_if_enum = self.get_allowed_values_if_enum()
+        if allowed_values_if_enum is not None:
+            for allowed_value in allowed_values_if_enum:
+                if value == allowed_value.value:
+                    return allowed_value, None
+            return (
+                value,
+                f"value {value} does not match any allowed enum value in "
+                f"{allowed_values_if_enum}",
+            )
+
         # TODO handle:
         # - Union
-        # - Enum
 
         # We have to assert self.raw_type is a true `type`
         if not isinstance(self.raw_type, type):
             return (
                 value,
-                f"Type annotation is of type {_typename_of(self.raw_type)}, expected 'type'",
+                f"Type annotation is of type {typename_of(self.raw_type)}, expected 'type'",
             )
 
         if isinstance(value, self.raw_type):
@@ -141,7 +159,7 @@ class TypeAnnotation:
         else:
             return (
                 value,
-                f"value is of type {_typename_of(value)}, expected {_typename(self.raw_type)}",
+                f"value is of type {typename_of(value)}, expected {typename(self.raw_type)}",
             )
 
 
