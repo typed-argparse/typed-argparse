@@ -2,10 +2,11 @@
 
 import argparse
 import sys
-from typing import List, Union
-from typed_argparse import TypedArgs, WithUnionType
 
+from typing import List, Union
 from typing_extensions import Literal
+
+from typed_argparse import TypedArgs, WithUnionType
 
 
 class CommonArgs(TypedArgs):
@@ -29,7 +30,11 @@ Args = Union[ArgsFoo, ArgsBar]
 def parse_args(args: List[str] = sys.argv[1:]) -> Args:
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", action="store_true", help="Verbose")
-    subparsers = parser.add_subparsers(help="Available sub commands", dest="mode")
+    subparsers = parser.add_subparsers(  # type: ignore
+        help="Available sub commands",
+        dest="mode",
+        required=True,
+    )
 
     parser_foo = subparsers.add_parser("foo")
     parser_foo.add_argument("file", type=str)
