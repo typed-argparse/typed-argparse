@@ -138,7 +138,7 @@ def validate_type_union(args: argparse.Namespace, type_union: object) -> object:
     if len(errors) == 0:
         raise TypeError(f"Type union {type_union} did not contain any sub types of type TypedArgs.")
     else:
-        errors_str = "\n - ".join(errors)
+        errors_str = "\n".join([f" - {error}" for error in errors])
         raise TypeError(f"Validation failed against all sub types of union type:\n{errors_str}")
 
 
@@ -150,8 +150,9 @@ class WithUnionType(RuntimeGeneric, Generic[T]):
     @classmethod
     def validate(cls, args: argparse.Namespace) -> T:
         generic_args = TypeAnnotation(cls).args
-        if len(generic_args) != 1:
-            raise TypeError(
-                f"Class needs exactly one generic annotation. Annotations are {generic_args}."
-            )
+        # Should be impossible to violate, because the Python interpreter already checks
+        # that the number of specified generics is correct.
+        assert (
+            len(generic_args) == 1
+        ), f"Class needs exactly one generic annotation. Annotations are {generic_args}."
         return validate_type_union(args, generic_args[0])  # type: ignore
