@@ -1,7 +1,7 @@
 import enum
 import sys
 
-from typing import List, Optional, Tuple, Union, cast
+from typing import List, Optional, Tuple, TypeVar, Union, cast
 from typing_extensions import Literal
 
 
@@ -181,3 +181,11 @@ def validate_value_against_type(
         raise TypeError(f"Failed to validate argument '{arg_name}': {error}")
 
     return value
+
+
+T = TypeVar("T")
+
+
+def assert_not_none(x: Optional[T]) -> T:
+    assert x is not None
+    return x
