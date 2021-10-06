@@ -1,5 +1,5 @@
 import argparse
-from typing import Any, Dict, List, Tuple, TypeVar, Generic
+from typing import Dict, List, TypeVar, Generic
 
 from .type_utils import (
     RawTypeAnnotation,
@@ -9,6 +9,7 @@ from .type_utils import (
     validate_value_against_type,
 )
 from .runtime_generic import RuntimeGeneric
+from .choices import Choices
 
 
 _NoneType = type(None)
@@ -81,7 +82,7 @@ class TypedArgs:
         return repr(self)
 
     @classmethod
-    def get_choices_from(cls: type, field: str) -> Tuple[Any, ...]:
+    def get_choices_from(cls: type, field: str) -> Choices:
         """
         Helper function to extract allowed values from class field (which is a literal/enum like).
 
@@ -90,7 +91,7 @@ class TypedArgs:
         return get_choices_from_class(cls, field)
 
 
-def get_choices_from_class(cls: type, field: str) -> Tuple[Any, ...]:
+def get_choices_from_class(cls: type, field: str) -> Choices:
     """
     Helper function to extract allowed values from class field (which is a literal/enum like).
 
@@ -109,7 +110,7 @@ def get_choices_from_class(cls: type, field: str) -> Tuple[Any, ...]:
         raise TypeError(f"Class {cls.__name__} doesn't have a type annotation for field '{field}'")
 
 
-def get_choices_from(raw_type_annotation: RawTypeAnnotation) -> Tuple[Any, ...]:
+def get_choices_from(raw_type_annotation: RawTypeAnnotation) -> Choices:
     """
     Helper function to extract allowed values from a literal/enum like type.
 
@@ -122,11 +123,11 @@ def get_choices_from(raw_type_annotation: RawTypeAnnotation) -> Tuple[Any, ...]:
 
     allowed_values = type_annotation.get_allowed_values_if_literal()
     if allowed_values is not None:
-        return allowed_values
+        return Choices(*allowed_values)
 
     allowed_values = type_annotation.get_allowed_values_if_enum()
     if allowed_values is not None:
-        return tuple(e.value for e in allowed_values)
+        return Choices(*(e.value for e in allowed_values))
 
     raise TypeError(f"Could not infer literal values of type {typename(raw_type_annotation)}")
 

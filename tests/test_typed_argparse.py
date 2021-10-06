@@ -287,12 +287,12 @@ def test_get_choices_from() -> None:
         b = 2
         c = 3
 
-    assert get_choices_from(Literal[1, 2, 3]) == (1, 2, 3)
-    assert get_choices_from(EnumInt) == (1, 2, 3)
+    assert get_choices_from(Literal[1, 2, 3]) == [1, 2, 3]
+    assert get_choices_from(EnumInt) == [1, 2, 3]
 
     # Support list wrapping
-    assert get_choices_from(List[Literal[1, 2, 3]]) == (1, 2, 3)
-    assert get_choices_from(List[EnumInt]) == (1, 2, 3)
+    assert get_choices_from(List[Literal[1, 2, 3]]) == [1, 2, 3]
+    assert get_choices_from(List[EnumInt]) == [1, 2, 3]
 
 
 def test_get_choices_from_class() -> None:
@@ -313,11 +313,11 @@ def test_get_choices_from_class() -> None:
         enum_str: EnumStr
         not_a_lit: int
 
-    assert MyClass.get_choices_from("lit_int") == (1, 2, 3)
-    assert MyClass.get_choices_from("lit_str") == ("a", "b", "c")
+    assert MyClass.get_choices_from("lit_int") == [1, 2, 3]
+    assert MyClass.get_choices_from("lit_str") == ["a", "b", "c"]
 
-    assert MyClass.get_choices_from("enum_int") == (1, 2, 3)
-    assert MyClass.get_choices_from("enum_str") == ("a", "b", "c")
+    assert MyClass.get_choices_from("enum_int") == [1, 2, 3]
+    assert MyClass.get_choices_from("enum_str") == ["a", "b", "c"]
 
     with pytest.raises(
         TypeError,
