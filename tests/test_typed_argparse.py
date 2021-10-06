@@ -1,4 +1,4 @@
-from typed_argparse import TypedArgs, WithUnionType
+from typed_argparse import TypedArgs, WithUnionType, get_choices_from
 
 import enum
 import argparse
@@ -282,6 +282,20 @@ def test_string_representation() -> None:
 
 
 def test_get_choices_from() -> None:
+    class EnumInt(enum.Enum):
+        a = 1
+        b = 2
+        c = 3
+
+    assert get_choices_from(Literal[1, 2, 3]) == (1, 2, 3)
+    assert get_choices_from(EnumInt) == (1, 2, 3)
+
+    # Support list wrapping
+    assert get_choices_from(List[Literal[1, 2, 3]]) == (1, 2, 3)
+    assert get_choices_from(List[EnumInt]) == (1, 2, 3)
+
+
+def test_get_choices_from_class() -> None:
     class EnumInt(enum.Enum):
         a = 1
         b = 2
