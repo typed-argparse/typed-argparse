@@ -200,9 +200,8 @@ def main() -> None:
 
 ### Work-around for common argparse limitation
 
-A known limitation (
-[bug report](https://bugs.python.org/issue9625),
-[SO question 1](https://stackoverflow.com/questions/41750896/python-argparse-type-inconsistencies-when-combining-choices-nargs-and-def/41751730#41751730))
+A known limitation ([bug report](https://bugs.python.org/issue9625),
+[SO question 1](https://stackoverflow.com/questions/41750896/python-argparse-type-inconsistencies-when-combining-choices-nargs-and-def/41751730#41751730),
 [SO question 2](https://stackoverflow.com/questions/57739309/argparse-how-to-allow-empty-list-with-nargs-and-choices))
 of argparse is that it is not possible to combine a positional `choices` parameters with `nargs="*"` and an list-like default.
 This may sounds exotic, but isn't such a rare use case in practice.
