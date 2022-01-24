@@ -16,7 +16,7 @@ _NoneType = type(None)
 
 
 class TypedArgs:
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, args: argparse.Namespace, disallow_extra_args: bool = False) -> None:
         """
         Constructs an instance of the TypedArgs class from a given argparse Namespace.
 
@@ -59,14 +59,15 @@ class TypedArgs:
                 raise TypeError(f"Arguments object is missing arguments {missing_args}")
 
         # Report extra args if any
-        extra_args = sorted(set(args.__dict__.keys()) - set(all_annotations.keys()))
-        if len(extra_args) > 0:
-            if len(extra_args) == 1:
-                raise TypeError(
-                    f"Arguments object has an unexpected extra argument '{extra_args[0]}'"
-                )
-            else:
-                raise TypeError(f"Arguments object has unexpected extra arguments {extra_args}")
+        if disallow_extra_args:
+            extra_args = sorted(set(args.__dict__.keys()) - set(all_annotations.keys()))
+            if len(extra_args) > 0:
+                if len(extra_args) == 1:
+                    raise TypeError(
+                        f"Arguments object has an unexpected extra argument '{extra_args[0]}'"
+                    )
+                else:
+                    raise TypeError(f"Arguments object has unexpected extra arguments {extra_args}")
 
     def get_raw_args(self) -> argparse.Namespace:
         """

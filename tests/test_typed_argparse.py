@@ -65,7 +65,7 @@ def test_extra_field__single() -> None:
         TypeError,
         match="Arguments object has an unexpected extra argument 'bar'",
     ):
-        MyArgs(args_namespace)
+        MyArgs(args_namespace, disallow_extra_args=True)
 
 
 def test_extra_field__multiple() -> None:
@@ -77,7 +77,7 @@ def test_extra_field__multiple() -> None:
         TypeError,
         match=r"Arguments object has unexpected extra arguments \['bar', 'baz'\]",
     ):
-        MyArgs(args_namespace)
+        MyArgs(args_namespace, disallow_extra_args=True)
 
 
 def test_simple_type_mismatch_1() -> None:
@@ -417,6 +417,34 @@ def test_with_union_type() -> None:
     print(repr(str(e.value)))
     print(repr(expected))
     assert str(e.value) == expected
+
+
+# -----------------------------------------------------------------------------
+# Mutually exclusive group
+# -----------------------------------------------------------------------------
+
+
+def test_mutually_exclusive_group() -> None:
+    class Foo(TypedArgs):
+        foo: str
+
+    class Bar(TypedArgs):
+        bar: str
+
+    Args = Union[Foo, Bar]
+
+    parser = argparse.ArgumentParser()
+    g = parser.add_mutually_exclusive_group()
+    g.add_argument("--foo")
+    g.add_argument("--bar")
+
+    args = WithUnionType[Args].validate(parser.parse_args(["--foo", "foo"]))
+    assert isinstance(args, Foo)
+    assert args.foo == "foo"
+
+    args = WithUnionType[Args].validate(parser.parse_args(["--bar", "bar"]))
+    assert isinstance(args, Bar)
+    assert args.bar == "bar"
 
 
 # -----------------------------------------------------------------------------
