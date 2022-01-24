@@ -1,4 +1,4 @@
-from typing import Any, List, cast
+from typing import Any, List
 
 
 class Choices(List[Any]):
@@ -10,7 +10,7 @@ class Choices(List[Any]):
 
     def __new__(cls, *args: object) -> "Choices":
         x = list.__new__(cls, *args)
-        return cast("Choices", x)
+        return x
 
     def __init__(self, *args: object) -> None:
         super().__init__(args)
