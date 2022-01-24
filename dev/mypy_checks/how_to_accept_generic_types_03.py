@@ -23,7 +23,6 @@ if sys.version_info[:2] < (3, 7):
     def is_generic_type(cls: object) -> TypeGuard[type]:
         return isinstance(cls, typing.GenericMeta)
 
-
 else:
 
     def is_generic_type(cls: object) -> TypeGuard[type]:
