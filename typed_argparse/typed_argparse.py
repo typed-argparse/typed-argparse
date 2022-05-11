@@ -1,6 +1,8 @@
 import argparse
-from typing import Dict, List, TypeVar, Generic
+from typing import Dict, Generic, List, TypeVar, get_type_hints
 
+from .choices import Choices
+from .runtime_generic import RuntimeGeneric
 from .type_utils import (
     RawTypeAnnotation,
     TypeAnnotation,
@@ -8,9 +10,6 @@ from .type_utils import (
     typename,
     validate_value_against_type,
 )
-from .runtime_generic import RuntimeGeneric
-from .choices import Choices
-
 
 _NoneType = type(None)
 
@@ -31,7 +30,7 @@ class TypedArgs:
         all_annotations: Dict[str, object] = dict()
         for cls in reversed(type(self).mro()):
             if hasattr(cls, "__annotations__"):
-                all_annotations.update(**cls.__annotations__)
+                all_annotations.update(**get_type_hints(cls))
 
         for arg_name, type_annotation_any in all_annotations.items():
             if arg_name == "get_raw_args" or arg_name == "_args":
