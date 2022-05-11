@@ -1,3 +1,4 @@
+from .choices import Choices
 from .typed_argparse import (
     TypedArgs,
     WithUnionType,
@@ -5,9 +6,8 @@ from .typed_argparse import (
     get_choices_from_class,
     validate_type_union,
 )
-from .choices import Choices
 
-VERSION = "0.1.7"
+VERSION = "0.1.8"
 
 __all__ = [
     "Choices",
