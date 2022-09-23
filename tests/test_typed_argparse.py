@@ -1,6 +1,6 @@
 import argparse
 import enum
-from typing import List, Optional, Union
+from typing import List, NewType, Optional, Union
 
 import pytest
 from typed_argparse import TypedArgs, WithUnionType, get_choices_from
@@ -12,25 +12,25 @@ from typing_extensions import Literal
 
 
 def test_basic_1() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: str
 
     args_namespace = argparse.Namespace(foo="foo")
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.foo == "foo"
 
 
 def test_basic_2() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         num: int
 
     args_namespace = argparse.Namespace(num=42)
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.num == 42
 
 
 def test_missing_field__single() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: str
 
     args_namespace = argparse.Namespace()
@@ -38,11 +38,11 @@ def test_missing_field__single() -> None:
         TypeError,
         match="Arguments object is missing argument 'foo'",
     ):
-        MyArgs(args_namespace)
+        Args(args_namespace)
 
 
 def test_missing_field__multiple() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: str
         bar: str
 
@@ -51,11 +51,11 @@ def test_missing_field__multiple() -> None:
         TypeError,
         match=r"Arguments object is missing arguments \['foo', 'bar'\]",
     ):
-        MyArgs(args_namespace)
+        Args(args_namespace)
 
 
 def test_extra_field__single() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: str
 
     args_namespace = argparse.Namespace(foo="foo", bar="bar")
@@ -63,11 +63,11 @@ def test_extra_field__single() -> None:
         TypeError,
         match="Arguments object has an unexpected extra argument 'bar'",
     ):
-        MyArgs(args_namespace, disallow_extra_args=True)
+        Args(args_namespace, disallow_extra_args=True)
 
 
 def test_extra_field__multiple() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: str
 
     args_namespace = argparse.Namespace(foo="foo", bar="bar", baz="baz")
@@ -75,11 +75,11 @@ def test_extra_field__multiple() -> None:
         TypeError,
         match=r"Arguments object has unexpected extra arguments \['bar', 'baz'\]",
     ):
-        MyArgs(args_namespace, disallow_extra_args=True)
+        Args(args_namespace, disallow_extra_args=True)
 
 
 def test_simple_type_mismatch_1() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: str
 
     args_namespace = argparse.Namespace(foo=42)
@@ -87,11 +87,11 @@ def test_simple_type_mismatch_1() -> None:
         TypeError,
         match="Failed to validate argument 'foo': value is of type 'int', expected 'str'",
     ):
-        MyArgs(args_namespace)
+        Args(args_namespace)
 
 
 def test_simple_type_mismatch_2() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         num: int
 
     args_namespace = argparse.Namespace(num="foo")
@@ -99,14 +99,14 @@ def test_simple_type_mismatch_2() -> None:
         TypeError,
         match="Failed to validate argument 'num': value is of type 'str', expected 'int'",
     ):
-        MyArgs(args_namespace)
+        Args(args_namespace)
 
 
 def test_annotation_that_isnt_a_type() -> None:
     # In principle this should already be prevented by mypy itself (that's why we
     # need to type-ignore the mistake here), but let's make sure that it still
     # would produce a comprehensible runtime error.
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         num: 42  # type: ignore
 
     args_namespace = argparse.Namespace(num=42)
@@ -115,7 +115,7 @@ def test_annotation_that_isnt_a_type() -> None:
         match="Failed to validate argument 'num': "
         "Type annotation is of type 'int', expected 'type'",
     ):
-        MyArgs(args_namespace)
+        Args(args_namespace)
 
 
 # -----------------------------------------------------------------------------
@@ -124,43 +124,43 @@ def test_annotation_that_isnt_a_type() -> None:
 
 
 def test_lists_1() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: List[str]
 
     args_namespace = argparse.Namespace(foo=["a", "b", "c"])
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.foo == ["a", "b", "c"]
 
 
 def test_lists_2() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         num: List[int]
 
     args_namespace = argparse.Namespace(num=[1, 2, 3])
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.num == [1, 2, 3]
 
 
 def test_lists__should_coerce_empty_lists_automatically() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         num: List[int]
 
     args_namespace = argparse.Namespace(num=None)
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.num == []
 
 
 def test_lists__should_not_coerce_empty_lists_automatically_if_optional() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         num: Optional[List[int]]
 
     args_namespace = argparse.Namespace(num=None)
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.num is None
 
 
 def test_lists__elements_type_mismatch_1() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: List[str]
 
     args_namespace = argparse.Namespace(foo=["a", 2, "c"])
@@ -169,11 +169,11 @@ def test_lists__elements_type_mismatch_1() -> None:
         match=r"Failed to validate argument 'foo': not all elements "
         r"of the list have proper type \(value is of type 'int', expected 'str'\)",
     ):
-        MyArgs(args_namespace)
+        Args(args_namespace)
 
 
 def test_lists__elements_type_mismatch_2() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         num: List[int]
 
     args_namespace = argparse.Namespace(num=["a", 2, "c"])
@@ -182,7 +182,7 @@ def test_lists__elements_type_mismatch_2() -> None:
         match=r"Failed to validate argument 'num': not all elements "
         r"of the list have proper type \(value is of type 'str', expected 'int'\)",
     ):
-        MyArgs(args_namespace)
+        Args(args_namespace)
 
 
 # -----------------------------------------------------------------------------
@@ -191,85 +191,85 @@ def test_lists__elements_type_mismatch_2() -> None:
 
 
 def test_optional_1() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: Optional[str]
 
     args_namespace = argparse.Namespace(foo=None)
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.foo is None
 
     args_namespace = argparse.Namespace(foo="foo")
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.foo == "foo"
 
 
 def test_optional_2() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         num: Optional[int]
 
     args_namespace = argparse.Namespace(num=None)
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.num is None
 
     args_namespace = argparse.Namespace(num=42)
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.num == 42
 
 
 def test_optional__type_mismatch() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: Optional[str]
 
     args_namespace = argparse.Namespace(foo=42)
     with pytest.raises(
         TypeError, match="Failed to validate argument 'foo': value is of type 'int', expected 'str'"
     ):
-        MyArgs(args_namespace)
+        Args(args_namespace)
 
 
 def test_optional_as_union_type_1() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: Union[str, None]
 
     args_namespace = argparse.Namespace(foo=None)
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.foo is None
 
     args_namespace = argparse.Namespace(foo="foo")
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.foo == "foo"
 
 
 def test_optional_as_union_type_2() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: Union[None, str]
 
     args_namespace = argparse.Namespace(foo=None)
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.foo is None
 
     args_namespace = argparse.Namespace(foo="foo")
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.foo == "foo"
 
 
 def test_string_representation() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         a: str
         b: Optional[int]
         c: Optional[int]
         list: List[str]
 
-    def parse_args(args: List[str]) -> MyArgs:
+    def parse_args(args: List[str]) -> Args:
         parser = argparse.ArgumentParser()
         parser.add_argument("--a", type=str, required=True)
         parser.add_argument("--b", type=int)
         parser.add_argument("--c", type=int)
         parser.add_argument("--list", type=str, nargs="*")
-        return MyArgs(parser.parse_args(args))
+        return Args(parser.parse_args(args))
 
     args = parse_args(["--a", "a", "--c", "42"])
-    expected = "MyArgs(a='a', b=None, c=42, list=[])"
+    expected = "Args(a='a', b=None, c=42, list=[])"
     assert str(args) == expected
     assert repr(args) == expected
 
@@ -336,11 +336,11 @@ def test_get_choices_from_class() -> None:
 
 
 def test_literal() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: Literal[1, 2, 3]
 
     args_namespace = argparse.Namespace(foo=1)
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.foo == 1
 
     args_namespace = argparse.Namespace(foo=4)
@@ -349,7 +349,7 @@ def test_literal() -> None:
         match=r"Failed to validate argument 'foo': "
         r"value 4 does not match any allowed literal value in \(1, 2, 3\)",
     ):
-        MyArgs(args_namespace)
+        Args(args_namespace)
 
 
 # -----------------------------------------------------------------------------
@@ -373,11 +373,11 @@ def test_enum__parse_from_str(use_literal_enum: bool) -> None:
             b = "b"
             c = "c"
 
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: StrEnum
 
     args_namespace = argparse.Namespace(foo="a")
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.foo is StrEnum.a
     if use_literal_enum:
         assert isinstance(args.foo, str)
@@ -385,7 +385,7 @@ def test_enum__parse_from_str(use_literal_enum: bool) -> None:
 
     args_namespace = argparse.Namespace(foo="d")
     with pytest.raises(TypeError) as e:
-        MyArgs(args_namespace)
+        Args(args_namespace)
     assert (
         "Failed to validate argument 'foo': value d does not match any allowed enum value "
         "in (<StrEnum.a: 'a'>, <StrEnum.b: 'b'>, <StrEnum.c: 'c'>)"
@@ -409,11 +409,11 @@ def test_enum__parse_from_int(use_literal_enum: bool) -> None:
             b = 2
             c = 3
 
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: IntEnum
 
     args_namespace = argparse.Namespace(foo=1)
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.foo is IntEnum.a
     if use_literal_enum:
         assert isinstance(args.foo, int)
@@ -421,7 +421,7 @@ def test_enum__parse_from_int(use_literal_enum: bool) -> None:
 
     args_namespace = argparse.Namespace(foo=4)
     with pytest.raises(TypeError) as e:
-        MyArgs(args_namespace)
+        Args(args_namespace)
     assert (
         "Failed to validate argument 'foo': value 4 does not match any allowed enum value "
         "in (<IntEnum.a: 1>, <IntEnum.b: 2>, <IntEnum.c: 3>)"
@@ -444,7 +444,7 @@ def test_enum__use_with_choice(use_literal_enum: bool) -> None:
             b = "b"
             c = "c"
 
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: StrEnum
 
     parser = argparse.ArgumentParser()
@@ -454,7 +454,7 @@ def test_enum__use_with_choice(use_literal_enum: bool) -> None:
         choices=list(StrEnum),
     )
 
-    args = MyArgs(parser.parse_args(["--foo", "a"]))
+    args = Args(parser.parse_args(["--foo", "a"]))
     assert args.foo is StrEnum.a
 
 
@@ -474,7 +474,7 @@ def test_enum__use_with_choice__with_default(use_literal_enum: bool) -> None:
             b = "b"
             c = "c"
 
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: StrEnum
 
     parser = argparse.ArgumentParser()
@@ -485,7 +485,7 @@ def test_enum__use_with_choice__with_default(use_literal_enum: bool) -> None:
         default=StrEnum.a,
     )
 
-    args = MyArgs(parser.parse_args([]))
+    args = Args(parser.parse_args([]))
     assert args.foo is StrEnum.a
 
 
@@ -505,18 +505,34 @@ def test_enum__use_with_choice__with_get_choices_from(use_literal_enum: bool) ->
             b = "b"
             c = "c"
 
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: StrEnum
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--foo",
         type=StrEnum,
-        choices=MyArgs.get_choices_from("foo"),
+        choices=Args.get_choices_from("foo"),
     )
 
-    args = MyArgs(parser.parse_args(["--foo", "a"]))
+    args = Args(parser.parse_args(["--foo", "a"]))
     assert args.foo is StrEnum.a
+
+
+def test_new_type() -> None:
+    MyString = NewType("MyString", str)
+
+    class Args(TypedArgs):
+        foo: MyString
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--foo",
+        type=MyString,
+    )
+
+    args = Args(parser.parse_args(["--foo", "value"]))
+    assert args.foo == MyString("value")
 
 
 # -----------------------------------------------------------------------------
@@ -600,16 +616,16 @@ def test_mutually_exclusive_group() -> None:
 
 
 def test_get_raw_args() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: str
 
     args_namespace = argparse.Namespace(foo="foo")
-    args = MyArgs(args_namespace)
+    args = Args(args_namespace)
     assert args.get_raw_args().foo == "foo"
 
 
 def test_get_raw_args__check_for_name_collision_1() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         get_raw_args: str  # type: ignore   # error on purpose for testing
 
     args_namespace = argparse.Namespace(get_raw_args="foo")
@@ -617,11 +633,11 @@ def test_get_raw_args__check_for_name_collision_1() -> None:
         TypeError,
         match="A type must not have an argument called 'get_raw_args'",
     ):
-        MyArgs(args_namespace)
+        Args(args_namespace)
 
 
 def test_get_raw_args__check_for_name_collision_2() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         _args: str  # type: ignore   # error on purpose for testing
 
     args_namespace = argparse.Namespace(get_raw_args="foo")
@@ -629,4 +645,4 @@ def test_get_raw_args__check_for_name_collision_2() -> None:
         TypeError,
         match="A type must not have an argument called '_args'",
     ):
-        MyArgs(args_namespace)
+        Args(args_namespace)
