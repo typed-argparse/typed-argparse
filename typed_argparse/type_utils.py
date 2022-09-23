@@ -112,6 +112,21 @@ class TypeAnnotation:
             else:
                 return underlying_if_optional.validate(value)
 
+        # Handle unions
+        underlyings_if_union = self.get_underlyings_if_union()
+        if len(underlyings_if_union) > 0:
+            errors: List[str] = []
+            for underlying in underlyings_if_union:
+                new_value, error = underlying.validate(value)
+                if error is None:
+                    return new_value, None
+                else:
+                    errors.append(error)
+            return (
+                value,
+                f"value {value} did not match any type of union:\n - " + "\n - ".join(errors),
+            )
+
         # Handle lists
         underlying_if_list = self.get_underlying_if_list()
         if underlying_if_list is not None:
@@ -161,9 +176,6 @@ class TypeAnnotation:
         underlying_if_new_type = self.get_underlying_if_new_type()
         if underlying_if_new_type is not None:
             return underlying_if_new_type.validate(value)
-
-        # TODO handle:
-        # - Union
 
         # We have to assert self.raw_type is a true `type`
         if not isinstance(self.raw_type, type):
