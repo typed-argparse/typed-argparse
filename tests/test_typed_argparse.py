@@ -519,6 +519,11 @@ def test_enum__use_with_choice__with_get_choices_from(use_literal_enum: bool) ->
     assert args.foo is StrEnum.a
 
 
+# -----------------------------------------------------------------------------
+# NewType
+# -----------------------------------------------------------------------------
+
+
 def test_new_type() -> None:
     MyString = NewType("MyString", str)
 
@@ -533,6 +538,36 @@ def test_new_type() -> None:
 
     args = Args(parser.parse_args(["--foo", "value"]))
     assert args.foo == MyString("value")
+
+
+# -----------------------------------------------------------------------------
+# Union
+# -----------------------------------------------------------------------------
+
+
+def test_union() -> None:
+    class Args(TypedArgs):
+        foo: Union[str, int]
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--foo", type=lambda x: str(x))
+    args = Args(parser.parse_args(["--foo", "42"]))
+    assert args.foo == "42"
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--foo", type=lambda x: int(x))
+    args = Args(parser.parse_args(["--foo", "42"]))
+    assert args.foo == 42
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--foo", type=lambda x: float(x))
+    with pytest.raises(TypeError) as e:
+        Args(parser.parse_args(["--foo", "42"]))
+    assert (
+        "Failed to validate argument 'foo': value 42.0 did not match any type of union:\n"
+        " - value is of type 'float', expected 'str'\n"
+        " - value is of type 'float', expected 'int'"
+    ) == str(e.value)
 
 
 # -----------------------------------------------------------------------------
