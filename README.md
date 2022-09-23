@@ -121,6 +121,29 @@ This makes sure that `choices` is always in sync with the values allowed by `MyA
 The same works when using `mode: SomeEnum` where `SomeEnum` is an enum inheriting `enum.Enum`.
 
 
+```python
+class MyEnum(Enum):
+    a = "a"
+    b = "b"
+    c = "c"
+
+
+class MyArgs(TypedArgs):
+    mode: MyEnum
+
+
+def parse_args(args: List[str] = sys.argv[1:]) -> MyArgs:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--mode",
+        type=MyEnum,
+        required=True,
+        choices=MyArgs.get_choices_from("mode"),
+    )
+    return MyArgs(parser.parse_args(args))
+```
+
+
 ### Support for Union (useful for subcommand parsing)
 
 When implementing multi command CLIs, the various subparsers can often have completely different arguments.

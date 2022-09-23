@@ -1,12 +1,10 @@
-from typed_argparse import TypedArgs, WithUnionType, get_choices_from
-
-import enum
 import argparse
-import pytest
-
+import enum
 from typing import List, Optional, Union
-from typing_extensions import Literal
 
+import pytest
+from typed_argparse import TypedArgs, WithUnionType, get_choices_from
+from typing_extensions import Literal
 
 # -----------------------------------------------------------------------------
 # Basics
@@ -277,7 +275,7 @@ def test_string_representation() -> None:
 
 
 # -----------------------------------------------------------------------------
-# Literal / Enum
+# get_choices_from
 # -----------------------------------------------------------------------------
 
 
@@ -288,11 +286,11 @@ def test_get_choices_from() -> None:
         c = 3
 
     assert get_choices_from(Literal[1, 2, 3]) == [1, 2, 3]
-    assert get_choices_from(EnumInt) == [1, 2, 3]
+    assert get_choices_from(EnumInt) == [EnumInt.a, EnumInt.b, EnumInt.c]
 
     # Support list wrapping
     assert get_choices_from(List[Literal[1, 2, 3]]) == [1, 2, 3]
-    assert get_choices_from(List[EnumInt]) == [1, 2, 3]
+    assert get_choices_from(List[EnumInt]) == [EnumInt.a, EnumInt.b, EnumInt.c]
 
 
 def test_get_choices_from_class() -> None:
@@ -316,8 +314,8 @@ def test_get_choices_from_class() -> None:
     assert MyClass.get_choices_from("lit_int") == [1, 2, 3]
     assert MyClass.get_choices_from("lit_str") == ["a", "b", "c"]
 
-    assert MyClass.get_choices_from("enum_int") == [1, 2, 3]
-    assert MyClass.get_choices_from("enum_str") == ["a", "b", "c"]
+    assert MyClass.get_choices_from("enum_int") == [EnumInt.a, EnumInt.b, EnumInt.c]
+    assert MyClass.get_choices_from("enum_str") == [EnumStr.a, EnumStr.b, EnumStr.c]
 
     with pytest.raises(
         TypeError,
@@ -330,6 +328,11 @@ def test_get_choices_from_class() -> None:
         match="Class MyClass doesn't have a type annotation for field 'non_existing'",
     ):
         MyClass.get_choices_from("non_existing")
+
+
+# -----------------------------------------------------------------------------
+# Literal
+# -----------------------------------------------------------------------------
 
 
 def test_literal() -> None:
@@ -349,27 +352,171 @@ def test_literal() -> None:
         MyArgs(args_namespace)
 
 
-def test_enum() -> None:
-    class EnumInt(enum.Enum):
-        a = 1
-        b = 2
-        c = 3
+# -----------------------------------------------------------------------------
+# Enum
+# -----------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("use_literal_enum", [False, True])
+def test_enum__parse_from_str(use_literal_enum: bool) -> None:
+    if use_literal_enum:
+
+        class StrEnum(str, enum.Enum):
+            a = "a"
+            b = "b"
+            c = "c"
+
+    else:
+
+        class StrEnum(enum.Enum):  # type: ignore
+            a = "a"
+            b = "b"
+            c = "c"
 
     class MyArgs(TypedArgs):
-        foo: EnumInt
+        foo: StrEnum
+
+    args_namespace = argparse.Namespace(foo="a")
+    args = MyArgs(args_namespace)
+    assert args.foo is StrEnum.a
+    if use_literal_enum:
+        assert isinstance(args.foo, str)
+        assert args.foo == "a"
+
+    args_namespace = argparse.Namespace(foo="d")
+    with pytest.raises(TypeError) as e:
+        MyArgs(args_namespace)
+    assert (
+        "Failed to validate argument 'foo': value d does not match any allowed enum value "
+        "in (<StrEnum.a: 'a'>, <StrEnum.b: 'b'>, <StrEnum.c: 'c'>)"
+    ) == str(e.value)
+
+
+@pytest.mark.parametrize("use_literal_enum", [False, True])
+def test_enum__parse_from_int(use_literal_enum: bool) -> None:
+
+    if use_literal_enum:
+
+        class IntEnum(int, enum.Enum):
+            a = 1
+            b = 2
+            c = 3
+
+    else:
+
+        class IntEnum(enum.Enum):  # type: ignore
+            a = 1
+            b = 2
+            c = 3
+
+    class MyArgs(TypedArgs):
+        foo: IntEnum
 
     args_namespace = argparse.Namespace(foo=1)
     args = MyArgs(args_namespace)
-    assert args.foo is EnumInt.a
+    assert args.foo is IntEnum.a
+    if use_literal_enum:
+        assert isinstance(args.foo, int)
+        assert args.foo == 1  # type: ignore
 
     args_namespace = argparse.Namespace(foo=4)
-    with pytest.raises(
-        TypeError,
-        match=r"Failed to validate argument 'foo': "
-        r"value 4 does not match any allowed enum value in "
-        r"\(<EnumInt.a: 1>, <EnumInt.b: 2>, <EnumInt.c: 3>\)",
-    ):
+    with pytest.raises(TypeError) as e:
         MyArgs(args_namespace)
+    assert (
+        "Failed to validate argument 'foo': value 4 does not match any allowed enum value "
+        "in (<IntEnum.a: 1>, <IntEnum.b: 2>, <IntEnum.c: 3>)"
+    ) == str(e.value)
+
+
+@pytest.mark.parametrize("use_literal_enum", [False, True])
+def test_enum__use_with_choice(use_literal_enum: bool) -> None:
+    if use_literal_enum:
+
+        class StrEnum(str, enum.Enum):
+            a = "a"
+            b = "b"
+            c = "c"
+
+    else:
+
+        class StrEnum(enum.Enum):  # type: ignore
+            a = "a"
+            b = "b"
+            c = "c"
+
+    class MyArgs(TypedArgs):
+        foo: StrEnum
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--foo",
+        type=StrEnum,
+        choices=list(StrEnum),
+    )
+
+    args = MyArgs(parser.parse_args(["--foo", "a"]))
+    assert args.foo is StrEnum.a
+
+
+@pytest.mark.parametrize("use_literal_enum", [False, True])
+def test_enum__use_with_choice__with_default(use_literal_enum: bool) -> None:
+    if use_literal_enum:
+
+        class StrEnum(str, enum.Enum):
+            a = "a"
+            b = "b"
+            c = "c"
+
+    else:
+
+        class StrEnum(enum.Enum):  # type: ignore
+            a = "a"
+            b = "b"
+            c = "c"
+
+    class MyArgs(TypedArgs):
+        foo: StrEnum
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--foo",
+        type=StrEnum,
+        choices=list(StrEnum),
+        default=StrEnum.a,
+    )
+
+    args = MyArgs(parser.parse_args([]))
+    assert args.foo is StrEnum.a
+
+
+@pytest.mark.parametrize("use_literal_enum", [False, True])
+def test_enum__use_with_choice__with_get_choices_from(use_literal_enum: bool) -> None:
+    if use_literal_enum:
+
+        class StrEnum(str, enum.Enum):
+            a = "a"
+            b = "b"
+            c = "c"
+
+    else:
+
+        class StrEnum(enum.Enum):  # type: ignore
+            a = "a"
+            b = "b"
+            c = "c"
+
+    class MyArgs(TypedArgs):
+        foo: StrEnum
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--foo",
+        type=StrEnum,
+        choices=MyArgs.get_choices_from("foo"),
+    )
+
+    args = MyArgs(parser.parse_args(["--foo", "a"]))
+    assert args.foo is StrEnum.a
 
 
 # -----------------------------------------------------------------------------

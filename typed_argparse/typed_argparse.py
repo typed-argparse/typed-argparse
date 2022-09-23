@@ -127,7 +127,7 @@ def get_choices_from(raw_type_annotation: RawTypeAnnotation) -> Choices:
 
     allowed_values = type_annotation.get_allowed_values_if_enum()
     if allowed_values is not None:
-        return Choices(*(e.value for e in allowed_values))
+        return Choices(*allowed_values)
 
     raise TypeError(f"Could not infer literal values of type {typename(raw_type_annotation)}")
 
