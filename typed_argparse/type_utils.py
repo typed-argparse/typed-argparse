@@ -58,6 +58,12 @@ class TypeAnnotation:
             return TypeAnnotation(self.args[0])
         return None
 
+    def get_underlying_if_new_type(self) -> Optional["TypeAnnotation"]:
+        # Using the same heuristic as pydantic: https://github.com/pydantic/pydantic/pull/223/files
+        if hasattr(self.raw_type, "__name__") and hasattr(self.raw_type, "__supertype__"):
+            return TypeAnnotation(getattr(self.raw_type, "__supertype__"))
+        return None
+
     def get_underlyings_if_union(self) -> List["TypeAnnotation"]:
         if self.origin is Union:
             return [TypeAnnotation(t) for t in self.args]
@@ -150,6 +156,11 @@ class TypeAnnotation:
                 f"value {value} does not match any allowed enum value in "
                 f"{allowed_values_if_enum}",
             )
+
+        # Handle new type
+        underlying_if_new_type = self.get_underlying_if_new_type()
+        if underlying_if_new_type is not None:
+            return underlying_if_new_type.validate(value)
 
         # TODO handle:
         # - Union
