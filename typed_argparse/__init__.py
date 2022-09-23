@@ -7,7 +7,7 @@ from .typed_argparse import (
     validate_type_union,
 )
 
-VERSION = "0.1.8"
+VERSION = "0.1.9"
 
 __all__ = [
     "Choices",

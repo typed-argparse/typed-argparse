@@ -1,9 +1,8 @@
 import enum
 import sys
-
 from typing import List, Optional, Tuple, TypeVar, Union, cast
-from typing_extensions import Literal
 
+from typing_extensions import Literal
 
 _NoneType = type(None)
 
@@ -143,6 +142,8 @@ class TypeAnnotation:
         if allowed_values_if_enum is not None:
             for allowed_value in allowed_values_if_enum:
                 if value == allowed_value.value:
+                    return allowed_value, None
+                elif value is allowed_value:
                     return allowed_value, None
             return (
                 value,
