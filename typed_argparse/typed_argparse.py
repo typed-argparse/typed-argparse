@@ -1,5 +1,5 @@
 import argparse
-from typing import Dict, Generic, List, Type, TypeVar, cast, get_type_hints
+from typing import Generic, List, Type, TypeVar, cast
 
 from typing_extensions import dataclass_transform
 
@@ -11,7 +11,6 @@ from .type_utils import (
     assert_not_none,
     collect_type_annotations,
     typename,
-    validate_value_against_type,
 )
 
 C = TypeVar("C", bound="TypedArgs")
@@ -46,11 +45,7 @@ class TypedArgs:
             if hasattr(args, arg_name):
                 # Validate the value and add as attribute
                 value: object = getattr(args, arg_name)
-                value = validate_value_against_type(
-                    arg_name,
-                    value,
-                    type_annotation,
-                )
+                value = type_annotation.validate_with_error(value, arg_name)
                 kwargs[arg_name] = value
             else:
                 missing_args.append(arg_name)

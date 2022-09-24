@@ -227,7 +227,7 @@ def test_optional__type_mismatch() -> None:
         Args.from_argparse(args_namespace)
 
 
-def test_optional_as_union_type_1() -> None:
+def test_optional__as_union_type_1() -> None:
     class Args(TypedArgs):
         foo: Union[str, None]
 
@@ -240,7 +240,7 @@ def test_optional_as_union_type_1() -> None:
     assert args.foo == "foo"
 
 
-def test_optional_as_union_type_2() -> None:
+def test_optional__as_union_type_2() -> None:
     class Args(TypedArgs):
         foo: Union[None, str]
 
