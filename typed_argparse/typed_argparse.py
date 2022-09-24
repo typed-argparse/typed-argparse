@@ -87,6 +87,15 @@ class TypedArgs:
     def __str__(self) -> str:
         return repr(self)
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, TypedArgs):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def __ne__(self, other: object) -> bool:
+        return not (self == other)
+
     @classmethod
     def get_choices_from(cls: type, field: str) -> Choices:
         """
