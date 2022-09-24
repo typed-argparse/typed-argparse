@@ -11,8 +11,6 @@ from .type_utils import (
     validate_value_against_type,
 )
 
-_NoneType = type(None)
-
 
 class TypedArgs:
     def __init__(self, args: argparse.Namespace, disallow_extra_args: bool = False) -> None:
@@ -33,7 +31,7 @@ class TypedArgs:
                 all_annotations.update(**get_type_hints(cls))
 
         for arg_name, type_annotation_any in all_annotations.items():
-            if arg_name == "get_raw_args" or arg_name == "_args":
+            if arg_name in TypedArgs.__dict__ or arg_name in self.__dict__:
                 raise TypeError(f"A type must not have an argument called '{arg_name}'")
 
             type_annotation: RawTypeAnnotation = type_annotation_any

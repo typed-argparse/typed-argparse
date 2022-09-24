@@ -681,3 +681,33 @@ def test_get_raw_args__check_for_name_collision_2() -> None:
         match="A type must not have an argument called '_args'",
     ):
         Args(args_namespace)
+
+
+def test_get_raw_args__check_for_name_collision_3() -> None:
+    class Args(TypedArgs):
+        get_choices_from: str  # type: ignore   # error on purpose for testing
+
+    args_namespace = argparse.Namespace(get_choices_from="foo")
+    with pytest.raises(
+        TypeError,
+        match="A type must not have an argument called 'get_choices_from'",
+    ):
+        Args(args_namespace)
+
+
+def test_check_reserved_names() -> None:
+    fields_class = set(TypedArgs.__dict__)
+    fields_instance = set(TypedArgs(argparse.Namespace()).__dict__)
+
+    assert (fields_class | fields_instance) == {
+        "__dict__",
+        "__doc__",
+        "__init__",
+        "__module__",
+        "__repr__",
+        "__str__",
+        "__weakref__",
+        "_args",
+        "get_choices_from",
+        "get_raw_args",
+    }
