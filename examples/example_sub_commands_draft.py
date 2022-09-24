@@ -5,7 +5,6 @@ import sys
 from typing import List, Union
 
 from typed_argparse import App, SubParser, SubParsers, TypedArgs, WithUnionType, param
-from typing_extensions import Literal
 
 
 class CommonArgs(TypedArgs):
