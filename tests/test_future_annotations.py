@@ -13,9 +13,9 @@ from typed_argparse import TypedArgs
 
 
 def test_basic() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: str
 
     args_namespace = argparse.Namespace(foo="foo")
-    args = MyArgs(args_namespace)
+    args = Args.from_argparse(args_namespace)
     assert args.foo == "foo"
