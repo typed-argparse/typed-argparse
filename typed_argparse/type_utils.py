@@ -14,10 +14,12 @@ _NoneType = type(None)
 RawTypeAnnotation = object
 
 
-def collect_type_annotations(cls: type) -> Dict[str, "TypeAnnotation"]:
-    # Collect all annotations (including super types)
+def collect_type_annotations(
+    cls: type, *, include_super_types: bool
+) -> Dict[str, "TypeAnnotation"]:
     all_annotations: Dict[str, "TypeAnnotation"] = dict()
-    for cls in reversed(cls.mro()):
+
+    for i, cls in enumerate(reversed(cls.mro())):
         if hasattr(cls, "__annotations__"):
             all_annotations.update(
                 **{
@@ -25,6 +27,9 @@ def collect_type_annotations(cls: type) -> Dict[str, "TypeAnnotation"]:
                     for name, annotation in get_type_hints(cls).items()
                 }
             )
+
+        if not include_super_types and i == 0:
+            break
 
     return all_annotations
 

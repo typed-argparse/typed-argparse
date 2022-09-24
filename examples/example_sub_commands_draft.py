@@ -13,14 +13,14 @@ class CommonArgs(TypedArgs):
 
 
 class ArgsFoo(CommonArgs):
-    mode: Literal["foo"]
-    file: str
+    # mode: Literal["foo"]
+    file: str = param(help="The file")
 
 
 class ArgsBar(CommonArgs):
-    mode: Literal["bar"]
-    src: str
-    dst: str
+    # mode: Literal["bar"]
+    src: str = param(help="The source")
+    dst: str = param(help="The destination")
 
 
 Args = Union[ArgsFoo, ArgsBar]
@@ -39,7 +39,7 @@ def run_bar(args: ArgsBar) -> None:
 
 
 def main() -> None:
-    App(run_toplevel, CommonArgs).run()
+    # App(run_toplevel, CommonArgs).run()
 
     App(
         SubParsers(
