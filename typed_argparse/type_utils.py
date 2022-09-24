@@ -59,6 +59,10 @@ class TypeAnnotation:
         self.origin = _get_origin(raw_type)
         self.args = _get_args(raw_type)
 
+    @property
+    def is_bool(self) -> bool:
+        return self.raw_type is bool
+
     def get_underlying_if_optional(self) -> Optional["TypeAnnotation"]:
         if self.origin is Union and len(self.args) == 2 and _NoneType in self.args:
             for t in self.args:
