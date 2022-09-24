@@ -53,7 +53,7 @@ def main() -> None:
 def parse_args(args: List[str] = sys.argv[1:]) -> Args:
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", action="store_true", help="Verbose")
-    subparsers = parser.add_subparsers(
+    subparsers = parser.add_subparsers(  # type: ignore
         help="Available sub commands",
         dest="mode",
         required=True,

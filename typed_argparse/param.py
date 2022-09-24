@@ -1,9 +1,7 @@
-from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, NamedTuple, Optional
 
 
-@dataclass(frozen=True)
-class Param:
+class Param(NamedTuple):
     required: bool
     help: Optional[str]
 

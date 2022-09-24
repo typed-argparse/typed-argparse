@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import annotations
 
 import argparse
 import sys
@@ -17,7 +16,7 @@ class SubParser:
     def __init__(
         self,
         name: str,
-        func: FuncOrSubparsers[T],
+        func: "FuncOrSubparsers[T]",
         typ: Type[T],
         aliases: Optional[List[str]] = None,
     ):
@@ -82,7 +81,3 @@ def _add_argument(
         kwargs["action"] = "store_true"
 
     parser.add_argument(*name_or_flags, **kwargs)
-    # parser.add_argument(*name_or_flags, help=param.help)
-    # fmt: off
-    # import IPython; IPython.embed()
-    # fmt: on
