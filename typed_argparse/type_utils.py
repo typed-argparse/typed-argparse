@@ -1,6 +1,6 @@
 import enum
 import sys
-from typing import List, Optional, Tuple, TypeVar, Union, cast
+from typing import Dict, List, NewType, Optional, Tuple, TypeVar, Union, cast, get_type_hints
 
 from typing_extensions import Literal
 
@@ -12,6 +12,16 @@ _NoneType = type(None)
 # like typing.List and typing.Dict, but it doesn't work for typing.Optional and
 # typing.Union. For now, let's make no assumptions at all.
 RawTypeAnnotation = object
+
+
+def collect_type_annotations(cls: type) -> Dict[str, RawTypeAnnotation]:
+    # Collect all annotations (including super types)
+    all_annotations: Dict[str, RawTypeAnnotation] = dict()
+    for cls in reversed(cls.mro()):
+        if hasattr(cls, "__annotations__"):
+            all_annotations.update(**get_type_hints(cls))
+
+    return all_annotations
 
 
 def typename(t: RawTypeAnnotation) -> str:

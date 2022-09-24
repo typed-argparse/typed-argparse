@@ -9,6 +9,7 @@ from .type_utils import (
     RawTypeAnnotation,
     TypeAnnotation,
     assert_not_none,
+    collect_type_annotations,
     typename,
     validate_value_against_type,
 )
@@ -34,19 +35,13 @@ class TypedArgs:
     ) -> C:
         missing_args: List[str] = []
 
-        # Collect all annotations (including super types)
-        all_annotations: Dict[str, object] = dict()
-        for cls in reversed(cls.mro()):
-            if hasattr(cls, "__annotations__"):
-                all_annotations.update(**get_type_hints(cls))
+        annotations = collect_type_annotations(cls)
 
         kwargs = {}
 
-        for arg_name, type_annotation_any in all_annotations.items():
+        for arg_name, type_annotation in annotations.items():
             if arg_name in TypedArgs.__dict__:
                 raise TypeError(f"A type must not have an argument called '{arg_name}'")
-
-            type_annotation: RawTypeAnnotation = type_annotation_any
 
             if hasattr(args, arg_name):
                 # Validate the value and add as attribute
@@ -69,7 +64,7 @@ class TypedArgs:
 
         # Report extra args if any
         if disallow_extra_args:
-            extra_args = sorted(set(args.__dict__.keys()) - set(all_annotations.keys()))
+            extra_args = sorted(set(args.__dict__.keys()) - set(annotations.keys()))
             if len(extra_args) > 0:
                 if len(extra_args) == 1:
                     raise TypeError(
@@ -78,7 +73,7 @@ class TypedArgs:
                 else:
                     raise TypeError(f"Arguments object has unexpected extra arguments {extra_args}")
 
-        return cast(C, cls(**kwargs))
+        return cls(**kwargs)
 
     def __repr__(self) -> str:
         key_value_pairs = [f"{k}={repr(v)}" for k, v in self.__dict__.items() if k != "_args"]
