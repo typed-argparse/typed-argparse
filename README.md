@@ -23,8 +23,8 @@
 Want to add type annotations to a code base that makes use of `argparse` without refactoring all you CLIs?
 `typed_argparse` allows to do that with minimal changes:
 
-1. Add a type `MyArgs(TypedArgs)` that inherits from `TypedArgs` and fill it with type annotations.
-2. Wrap the result of e.g. your `parse_args` function with `MyArgs`.
+1. Add a type `Args(TypedArgs)` that inherits from `TypedArgs` and fill it with type annotations.
+2. Wrap the result of e.g. your `parse_args` function with `Args`.
 3. That's it, enjoy IDE auto-completion and strong type safety 😀.
 
 
@@ -58,19 +58,19 @@ from typed_argparse import TypedArgs
 
 
 # Step 1: Add an argument type.
-class MyArgs(TypedArgs):
+class Args(TypedArgs):
     foo: str
     num: Optional[int]
     files: List[str]
 
 
-def parse_args(args: List[str] = sys.argv[1:]) -> MyArgs:
+def parse_args(args: List[str] = sys.argv[1:]) -> Args:
     parser = argparse.ArgumentParser()
     parser.add_argument("--foo", type=str, required=True)
     parser.add_argument("--num", type=int)
     parser.add_argument("--files", type=str, nargs="*")
     # Step 2: Wrap the plain argparser result with your type.
-    return MyArgs(parser.parse_args(args))
+    return Args.from_argparse(parser.parse_args(args))
 
 
 def main() -> None:
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
 `typed_argparse` validates that no attributes from the type definition are missing, and that
 no unexpected extra types are present in the `argparse.Namespace` object. It also validates
-the types at runtime. Therefore, if the `MyArgs(args)` doesn't throw a `TypeError` you can
+the types at runtime. Therefore, if the `Args.from_argparse(args)` doesn't throw a `TypeError` you can
 be sure that your type annotation is correct.
 
 
@@ -102,22 +102,22 @@ In order to have a single source of truth (i.e., avoid having to specify the val
 For instance:
 
 ```python
-class MyArgs(TypedArgs):
+class Args(TypedArgs):
     mode: Literal["a", "b", "c"]
 
 
-def parse_args(args: List[str] = sys.argv[1:]) -> MyArgs:
+def parse_args(args: List[str] = sys.argv[1:]) -> Args:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mode",
         type=str,
         required=True,
-        choices=MyArgs.get_choices_from("mode"),
+        choices=Args.get_choices_from("mode"),
     )
-    return MyArgs(parser.parse_args(args))
+    return Args.from_argparse(parser.parse_args(args))
 ```
 
-This makes sure that `choices` is always in sync with the values allowed by `MyArgs.mode`.
+This makes sure that `choices` is always in sync with the values allowed by `Args.mode`.
 The same works when using `mode: SomeEnum` where `SomeEnum` is an enum inheriting `enum.Enum`.
 
 
@@ -128,19 +128,19 @@ class MyEnum(Enum):
     c = "c"
 
 
-class MyArgs(TypedArgs):
+class Args(TypedArgs):
     mode: MyEnum
 
 
-def parse_args(args: List[str] = sys.argv[1:]) -> MyArgs:
+def parse_args(args: List[str] = sys.argv[1:]) -> Args:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mode",
         type=MyEnum,
         required=True,
-        choices=MyArgs.get_choices_from("mode"),
+        choices=Args.get_choices_from("mode"),
     )
-    return MyArgs(parser.parse_args(args))
+    return Args.from_argparse(parser.parse_args(args))
 ```
 
 

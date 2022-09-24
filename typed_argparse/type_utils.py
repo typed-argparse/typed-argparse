@@ -1,6 +1,6 @@
 import enum
 import sys
-from typing import List, Optional, Tuple, TypeVar, Union, cast
+from typing import Dict, List, Optional, Tuple, TypeVar, Union, cast, get_type_hints
 
 from typing_extensions import Literal
 
@@ -14,6 +14,21 @@ _NoneType = type(None)
 RawTypeAnnotation = object
 
 
+def collect_type_annotations(cls: type) -> Dict[str, "TypeAnnotation"]:
+    # Collect all annotations (including super types)
+    all_annotations: Dict[str, "TypeAnnotation"] = dict()
+    for cls in reversed(cls.mro()):
+        if hasattr(cls, "__annotations__"):
+            all_annotations.update(
+                **{
+                    name: TypeAnnotation(annotation)
+                    for name, annotation in get_type_hints(cls).items()
+                }
+            )
+
+    return all_annotations
+
+
 def typename(t: RawTypeAnnotation) -> str:
     if hasattr(t, "__name__"):
         return f"'{getattr(t, '__name__')}'"
@@ -25,7 +40,7 @@ def typename_of(value: object) -> str:
     return typename(type(value))
 
 
-def _get_origin(t: RawTypeAnnotation) -> Optional[object]:
+def _get_origin(t: RawTypeAnnotation) -> Optional[RawTypeAnnotation]:
     return cast(Optional[object], getattr(t, "__origin__", None))
 
 
@@ -192,19 +207,18 @@ class TypeAnnotation:
                 f"value is of type {typename_of(value)}, expected {typename(self.raw_type)}",
             )
 
+    def validate_with_error(
+        self,
+        value: object,
+        arg_name: str,
+    ) -> object:
 
-def validate_value_against_type(
-    arg_name: str,
-    value: object,
-    raw_type_annotation: RawTypeAnnotation,
-) -> object:
+        value, error = self.validate(value)
 
-    value, error = TypeAnnotation(raw_type_annotation).validate(value)
+        if error is not None:
+            raise TypeError(f"Failed to validate argument '{arg_name}': {error}")
 
-    if error is not None:
-        raise TypeError(f"Failed to validate argument '{arg_name}': {error}")
-
-    return value
+        return value
 
 
 T = TypeVar("T")

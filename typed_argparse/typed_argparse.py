@@ -1,5 +1,7 @@
 import argparse
-from typing import Dict, Generic, List, TypeVar, get_type_hints
+from typing import Generic, List, Type, TypeVar, cast
+
+from typing_extensions import dataclass_transform
 
 from .choices import Choices
 from .runtime_generic import RuntimeGeneric
@@ -7,44 +9,44 @@ from .type_utils import (
     RawTypeAnnotation,
     TypeAnnotation,
     assert_not_none,
+    collect_type_annotations,
     typename,
-    validate_value_against_type,
 )
 
+C = TypeVar("C", bound="TypedArgs")
 
+
+@dataclass_transform(kw_only_default=True)
 class TypedArgs:
-    def __init__(self, args: argparse.Namespace, disallow_extra_args: bool = False) -> None:
+    def __init__(self, **kwargs: object):
         """
         Constructs an instance of the TypedArgs class from a given argparse Namespace.
 
         Performs various validations / sanity check to make sure the runtime values
         match the type annotations.
         """
-        self._args = args
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
+    @classmethod
+    def from_argparse(
+        cls: Type[C], args: argparse.Namespace, disallow_extra_args: bool = False
+    ) -> C:
         missing_args: List[str] = []
 
-        # Collect all annotations (including super types)
-        all_annotations: Dict[str, object] = dict()
-        for cls in reversed(type(self).mro()):
-            if hasattr(cls, "__annotations__"):
-                all_annotations.update(**get_type_hints(cls))
+        annotations = collect_type_annotations(cls)
 
-        for arg_name, type_annotation_any in all_annotations.items():
-            if arg_name in TypedArgs.__dict__ or arg_name in self.__dict__:
+        kwargs = {}
+
+        for arg_name, type_annotation in annotations.items():
+            if arg_name in TypedArgs.__dict__:
                 raise TypeError(f"A type must not have an argument called '{arg_name}'")
-
-            type_annotation: RawTypeAnnotation = type_annotation_any
 
             if hasattr(args, arg_name):
                 # Validate the value and add as attribute
                 value: object = getattr(args, arg_name)
-                value = validate_value_against_type(
-                    arg_name,
-                    value,
-                    type_annotation,
-                )
-                self.__dict__[arg_name] = value
+                value = type_annotation.validate_with_error(value, arg_name)
+                kwargs[arg_name] = value
             else:
                 missing_args.append(arg_name)
 
@@ -57,7 +59,7 @@ class TypedArgs:
 
         # Report extra args if any
         if disallow_extra_args:
-            extra_args = sorted(set(args.__dict__.keys()) - set(all_annotations.keys()))
+            extra_args = sorted(set(args.__dict__.keys()) - set(annotations.keys()))
             if len(extra_args) > 0:
                 if len(extra_args) == 1:
                     raise TypeError(
@@ -66,11 +68,7 @@ class TypedArgs:
                 else:
                     raise TypeError(f"Arguments object has unexpected extra arguments {extra_args}")
 
-    def get_raw_args(self) -> argparse.Namespace:
-        """
-        Access to the raw argparse namespace if needed.
-        """
-        return self._args
+        return cls(**kwargs)
 
     def __repr__(self) -> str:
         key_value_pairs = [f"{k}={repr(v)}" for k, v in self.__dict__.items() if k != "_args"]
@@ -78,6 +76,15 @@ class TypedArgs:
 
     def __str__(self) -> str:
         return repr(self)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, TypedArgs):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def __ne__(self, other: object) -> bool:
+        return not (self == other)
 
     @classmethod
     def get_choices_from(cls: type, field: str) -> Choices:
@@ -152,7 +159,8 @@ def validate_type_union(args: argparse.Namespace, type_union: object) -> object:
     for sub_type in type_annotation.get_underlyings_if_union():
         if isinstance(sub_type.raw_type, type) and issubclass(sub_type.raw_type, TypedArgs):
             try:
-                return sub_type.raw_type(args)  # type: ignore
+                typed_args_class = cast(TypedArgs, sub_type.raw_type)
+                return typed_args_class.from_argparse(args)
             except Exception as e:
                 errors.append(str(e))
 

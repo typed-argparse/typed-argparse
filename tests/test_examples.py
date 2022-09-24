@@ -6,17 +6,17 @@ from typed_argparse import TypedArgs
 
 
 def test_example_basic() -> None:
-    class MyArgs(TypedArgs):
+    class Args(TypedArgs):
         foo: str
         num: Optional[int]
         files: List[str]
 
-    def parse_args(args: List[str] = sys.argv[1:]) -> MyArgs:
+    def parse_args(args: List[str] = sys.argv[1:]) -> Args:
         parser = argparse.ArgumentParser()
         parser.add_argument("--foo", type=str, required=True)
         parser.add_argument("--num", type=int)
         parser.add_argument("--files", type=str, nargs="*")
-        return MyArgs(parser.parse_args(args))
+        return Args.from_argparse(parser.parse_args(args))
 
     args = parse_args(["--foo", "foo"])
     assert args.foo == "foo"
