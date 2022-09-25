@@ -42,6 +42,7 @@ ArgsOrSubparsers = Union[Type[TypedArgs], SubParsers]
 
 T = TypeVar("T", bound=TypedArgs)
 
+
 # Initially I considered making the bindings generic, but I don't think there is a significant
 # benefit. It requires to write Binding[CommonArgs](CommonArgs, run_toplevel) on user site because
 # the implicitly inferred generic arg seems to be Binding[TypedArg], which then leads to a type

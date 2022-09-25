@@ -3,6 +3,9 @@
 
 💡 type-safe args for argparse without much refactoring.
 
+<!--
+💡 `typed_argparse` allows to write type-safe and elegant CLIs with a clear separation of concerns.
+-->
 
 [![PyPI version](https://badge.fury.io/py/typed-argparse.svg)](https://badge.fury.io/py/typed_argparse)
 [![Build Status](https://github.com/bluenote10/typed_argparse/workflows/ci/badge.svg)](https://github.com/bluenote10/typed_argparse/actions?query=workflow%3Aci)

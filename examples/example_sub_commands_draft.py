@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-from typing import List, Union
+from typing import Union
 
-from typed_argparse import App, Binding, Parser, SubParser, SubParsers, TypedArgs, param
+from typed_argparse import Binding, Parser, SubParser, SubParsers, TypedArgs, param
 
 
 class CommonArgs(TypedArgs):
