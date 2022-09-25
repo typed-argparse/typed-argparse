@@ -16,7 +16,7 @@ from typing import (
 
 from typing_extensions import assert_never
 
-from .param import Param
+from .param import Param, param
 from .type_utils import TypeAnnotation, collect_type_annotations
 from .typed_argparse import TypedArgs
 
@@ -62,15 +62,13 @@ class Parser:
         parser = argparse.ArgumentParser()
 
         dest_variables = _traverse_build_parser(self._args_or_subparsers, parser)
-
-        type_mapping = _get_type_mapping(self._args_or_subparsers)
+        type_mapping = _traverse_get_type_mapping(self._args_or_subparsers)
 
         argparse_namespace = parser.parse_args(raw_args)
 
         type_mapping_path = tuple(
             getattr(argparse_namespace, dest_variable) for dest_variable in dest_variables
         )
-
         arg_type = type_mapping[type_mapping_path]
 
         return arg_type.from_argparse(argparse_namespace)
@@ -146,7 +144,9 @@ def _traverse_build_parser(
 TypePath = Tuple[str, ...]
 
 
-def _get_type_mapping(args_or_subparsers: ArgsOrSubparsers) -> Dict[TypePath, Type[TypedArgs]]:
+def _traverse_get_type_mapping(
+    args_or_subparsers: ArgsOrSubparsers,
+) -> Dict[TypePath, Type[TypedArgs]]:
 
     mapping: Dict[TypePath, Type[TypedArgs]] = {}
 
@@ -181,30 +181,49 @@ def _add_arguments(
 
     for attr_name, annotation in annotations.items():
         if not hasattr(arg_type, attr_name):
-            raise RuntimeError(
-                f"Type {arg_type} has no class attribute for '{attr_name}'. "
-                "All parameters should have a '... = params(...)' declaration."
-            )
-        param = getattr(arg_type, attr_name)
-        if not isinstance(param, Param):
+            p = param()
+        else:
+            p = getattr(arg_type, attr_name)
+
+        if not isinstance(p, Param):
             raise RuntimeError(
                 f"Class attribute '{attr_name}' of type {arg_type} isn't of type Param. "
                 "All parameters should have a '... = params(...)' declaration."
             )
-        _add_argument(attr_name, annotation, param, parser)
+
+        args, kwargs = _build_add_argument_args(attr_name, annotation, p)
+
+        print(f"Adding argument: {args} {kwargs}")
+        parser.add_argument(*args, **kwargs)
 
 
-def _add_argument(
-    attr_name: str, annotation: TypeAnnotation, param: Param, parser: ArgparseParser
-) -> None:
-    name_or_flags = [f"--{attr_name}"]
+def _build_add_argument_args(
+    attr_name: str,
+    annotation: TypeAnnotation,
+    p: Param,
+) -> Tuple[List[str], Dict[str, Any]]:
+
+    attr_name = attr_name.replace("_", "-")
+
+    args = [f"--{attr_name}"]
     kwargs: Dict[str, Any] = {
-        "help": param.help,
+        "help": p.help,
     }
+
     if not annotation.is_optional and not annotation.is_bool:
         kwargs["required"] = True
     if annotation.is_bool:
-        kwargs["action"] = "store_true"
+        if p.default is not None:
+            if p.default is True:
+                kwargs["action"] = "store_false"
+            elif p.default is False:
+                kwargs["action"] = "store_true"
+            else:
+                raise RuntimeError(f"Invalid default for bool '{p.default}'")
+        else:
+            kwargs["action"] = "store_true"
 
-    print(f"Adding argument: {name_or_flags} {kwargs}")
-    parser.add_argument(*name_or_flags, **kwargs)
+    if len(args) == 0:
+        args += [f"--{attr_name}"]
+
+    return args, kwargs
