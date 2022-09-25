@@ -1,4 +1,5 @@
 import argparse
+import copy
 import sys
 from argparse import ArgumentParser as ArgparseParser
 from typing import (
@@ -244,7 +245,11 @@ def _build_add_argument_args(
             kwargs["type"] = type_converter
 
         if p.default is not None:
-            kwargs["default"] = p.default
+            kwargs["default"] = copy.deepcopy(p.default)
+
+        allowed_values_if_literal = annotation.get_allowed_values_if_literal()
+        if allowed_values_if_literal is not None:
+            kwargs["choices"] = allowed_values_if_literal
 
     if len(args) == 0:
         if p.positional:

@@ -1,6 +1,16 @@
 import enum
 import sys
-from typing import Dict, List, Optional, Tuple, TypeVar, Union, cast, get_type_hints
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+    get_type_hints,
+)
 
 from typing_extensions import Literal
 
@@ -76,7 +86,7 @@ class TypeAnnotation:
         # TODO: Iterate branches of Union to check for None?
         return self.get_underlying_if_optional() is not None
 
-    def get_underlying_type_converter(self) -> Optional[type]:
+    def get_underlying_type_converter(self) -> Optional[Union[type, Callable[[object], object]]]:
         if isinstance(self.raw_type, type):
             return self.raw_type
         else:
@@ -86,6 +96,31 @@ class TypeAnnotation:
             underlying = self.get_underlying_if_list()
             if underlying is not None:
                 return underlying.get_underlying_type_converter()
+
+            allowed_values_if_literal = self.get_allowed_values_if_literal()
+            if allowed_values_if_literal is not None:
+                allowed_values = allowed_values_if_literal
+
+                def converter(x: object) -> object:
+
+                    for allowed_value in allowed_values:
+                        if x == allowed_value:
+                            return allowed_value
+                        else:
+                            try:
+                                x_converted = type(allowed_value)(x)  # type: ignore
+                                if x_converted == allowed_value:
+                                    return allowed_value
+                            except (ValueError, TypeError):
+                                pass
+
+                    # Here we could raise a TypeError or ValueError, but it looks like relying
+                    # on `choices` instead of raising a value/type error actually produces the
+                    # better error message.
+                    return x
+
+                return converter
+
             return None
 
     def get_underlying_if_optional(self) -> Optional["TypeAnnotation"]:

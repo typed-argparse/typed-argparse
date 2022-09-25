@@ -1,5 +1,7 @@
+import argparse
+from contextlib import contextmanager
 from pathlib import Path
-from typing import List, Optional, Type, TypeVar
+from typing import Generator, List, Literal, Optional, Type, TypeVar
 
 import pytest
 
@@ -12,6 +14,34 @@ def parse(arg_type: Type[T], raw_args: List[str]) -> T:
     args = Parser(arg_type).parse_args(raw_args)
     assert isinstance(args, arg_type)
     return args
+
+
+class ArgparseErrorWrapper:
+    def __init__(self) -> None:
+        self._error: Optional[argparse.ArgumentError] = None
+
+    @property
+    def error(self) -> argparse.ArgumentError:
+        assert self._error is not None
+        return self._error
+
+    @error.setter
+    def error(self, value: argparse.ArgumentError) -> None:
+        self._error = value
+
+
+@contextmanager
+def argparse_error() -> Generator[ArgparseErrorWrapper, None, None]:
+    # Inspired by:
+    # https://stackoverflow.com/a/67107620/1804173
+
+    wrapper = ArgparseErrorWrapper()
+
+    with pytest.raises(SystemExit) as e:
+        yield wrapper
+
+    assert isinstance(e.value.__context__, argparse.ArgumentError)
+    wrapper.error = e.value.__context__
 
 
 # Boolean
@@ -98,6 +128,27 @@ def test_positional() -> None:
 
     args = parse(Args, ["my_file"])
     assert args.file == "my_file"
+
+
+# Literals
+
+
+def test_literal() -> None:
+    class Args(TypedArgs):
+        literal_string: Literal["a", "b"]
+        literal_int: Literal[1, 2]
+
+    args = parse(Args, ["--literal-string", "a", "--literal-int", "1"])
+    assert args.literal_string == "a"
+    assert args.literal_int == 1
+
+    with argparse_error() as e:
+        parse(Args, ["--literal-string", "c", "--literal-int", "1"])
+    assert "argument --literal-string: invalid choice: 'c' (choose from 'a', 'b')" == str(e.error)
+
+    with argparse_error() as e:
+        parse(Args, ["--literal-string", "a", "--literal-int", "3"])
+    assert "argument --literal-int: invalid choice: '3' (choose from 1, 2)" == str(e.error)
 
 
 # Subparser
