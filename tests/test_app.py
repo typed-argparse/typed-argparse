@@ -62,7 +62,7 @@ def test_bool_switch__invalid_default() -> None:
 # Subparser
 
 
-def test_bool_switch() -> None:
+def test_subparser__basic() -> None:
     class FooArgs(TypedArgs):
         x: str
 
