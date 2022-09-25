@@ -51,7 +51,7 @@ def test_bool_switch__default_true() -> None:
 
 def test_bool_switch__invalid_default() -> None:
     class Args(TypedArgs):
-        no_verbose: bool = param(default="foo")  # type: ignore
+        verbose: bool = param(default="foo")  # type: ignore
 
     with pytest.raises(RuntimeError) as e:
         parse(Args, [])

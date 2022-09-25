@@ -79,11 +79,13 @@ class TypeAnnotation:
     def get_underlying_type_converter(self) -> Optional[type]:
         if isinstance(self.raw_type, type):
             return self.raw_type
-        elif (underlying := self.get_underlying_if_optional()) is not None:
-            return underlying.get_underlying_type_converter()
-        elif (underlying := self.get_underlying_if_list()) is not None:
-            return underlying.get_underlying_type_converter()
         else:
+            underlying = self.get_underlying_if_optional()
+            if underlying is not None:
+                return underlying.get_underlying_type_converter()
+            underlying = self.get_underlying_if_list()
+            if underlying is not None:
+                return underlying.get_underlying_type_converter()
             return None
 
     def get_underlying_if_optional(self) -> Optional["TypeAnnotation"]:

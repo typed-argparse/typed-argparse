@@ -233,7 +233,8 @@ def _build_add_argument_args(
 
     else:
         # We must not 'type' for boolean switches, which have an action instead.
-        if (type_converter := annotation.get_underlying_type_converter()) is not None:
+        type_converter = annotation.get_underlying_type_converter()
+        if type_converter is not None:
             kwargs["type"] = type_converter
 
         if p.default is not None:
