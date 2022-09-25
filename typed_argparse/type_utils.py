@@ -76,6 +76,16 @@ class TypeAnnotation:
         # TODO: Iterate branches of Union to check for None?
         return self.get_underlying_if_optional() is not None
 
+    def get_underlying_type_converter(self) -> Optional[type]:
+        if isinstance(self.raw_type, type):
+            return self.raw_type
+        elif (underlying := self.get_underlying_if_optional()) is not None:
+            return underlying.get_underlying_type_converter()
+        elif (underlying := self.get_underlying_if_list()) is not None:
+            return underlying.get_underlying_type_converter()
+        else:
+            return None
+
     def get_underlying_if_optional(self) -> Optional["TypeAnnotation"]:
         if self.origin is Union and len(self.args) == 2 and _NoneType in self.args:
             for t in self.args:
@@ -140,7 +150,7 @@ class TypeAnnotation:
         underlying_if_optional = self.get_underlying_if_optional()
         if underlying_if_optional is not None:
             if value is None:
-                return value, None
+                return None, None
             else:
                 return underlying_if_optional.validate(value)
 

@@ -1,4 +1,4 @@
-from typing import List, Type, TypeVar
+from typing import List, Optional, Type, TypeVar
 
 import pytest
 
@@ -57,6 +57,27 @@ def test_bool_switch__invalid_default() -> None:
         parse(Args, [])
 
     assert str(e.value) == "Invalid default for bool 'foo'"
+
+
+# Other scalar types
+
+
+def test_other_scalar_types() -> None:
+    class Args(TypedArgs):
+        some_int: int
+        some_float: float
+        other_int: Optional[int]
+        other_float: Optional[float]
+        other_int_with_default: int = param(default=43)
+        other_float_with_default: float = param(default=2.0)
+
+    args = parse(Args, ["--some-int", "42", "--some-float", "1.0"])
+    assert args.some_int == 42
+    assert args.some_float == 1.0
+    assert args.other_int is None
+    assert args.other_float is None
+    assert args.other_int_with_default == 43
+    assert args.other_float_with_default == 2.0
 
 
 # Subparser

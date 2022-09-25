@@ -177,7 +177,7 @@ def _add_arguments(
     parser: ArgparseParser,
 ) -> None:
     annotations = collect_type_annotations(arg_type, include_super_types=False)
-    print(f"Annotations of {arg_type}: {annotations}")
+    # print(f"Annotations of {arg_type}: {annotations}")
 
     for attr_name, annotation in annotations.items():
         if not hasattr(arg_type, attr_name):
@@ -193,7 +193,7 @@ def _add_arguments(
 
         args, kwargs = _build_add_argument_args(attr_name, annotation, p)
 
-        print(f"Adding argument: {args} {kwargs}")
+        # print(f"Adding argument: {args} {kwargs}")
         parser.add_argument(*args, **kwargs)
 
 
@@ -205,13 +205,21 @@ def _build_add_argument_args(
 
     attr_name = attr_name.replace("_", "-")
 
-    args = [f"--{attr_name}"]
+    args: List[str] = []
     kwargs: Dict[str, Any] = {
         "help": p.help,
     }
 
-    if not annotation.is_optional and not annotation.is_bool:
-        kwargs["required"] = True
+    if annotation.is_bool:
+        is_required = False
+    else:
+        if annotation.is_optional or p.default is not None:
+            is_required = False
+        else:
+            is_required = True
+
+    kwargs["required"] = is_required
+
     if annotation.is_bool:
         if p.default is not None:
             if p.default is True:
@@ -222,6 +230,14 @@ def _build_add_argument_args(
                 raise RuntimeError(f"Invalid default for bool '{p.default}'")
         else:
             kwargs["action"] = "store_true"
+
+    else:
+        # We must not 'type' for boolean switches, which have an action instead.
+        if (type_converter := annotation.get_underlying_type_converter()) is not None:
+            kwargs["type"] = type_converter
+
+        if p.default is not None:
+            kwargs["default"] = p.default
 
     if len(args) == 0:
         args += [f"--{attr_name}"]
