@@ -80,6 +80,17 @@ def test_other_scalar_types() -> None:
     assert args.other_float_with_default == 2.0
 
 
+# Positional
+
+
+def test_positional() -> None:
+    class Args(TypedArgs):
+        file: str = param(positional=True)
+
+    args = parse(Args, ["my_file"])
+    assert args.file == "my_file"
+
+
 # Subparser
 
 

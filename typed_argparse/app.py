@@ -210,15 +210,21 @@ def _build_add_argument_args(
         "help": p.help,
     }
 
+    # TODO: Incorporate explicit naming
+    is_positional = p.positional
+
     if annotation.is_bool:
         is_required = False
     else:
-        if annotation.is_optional or p.default is not None:
+        if annotation.is_optional or p.default is not None or is_positional:
             is_required = False
         else:
             is_required = True
 
-    kwargs["required"] = is_required
+    # Note that argparse forbids setting 'required' at all for positional args,
+    # so we must omit it if false.
+    if is_required:
+        kwargs["required"] = True
 
     if annotation.is_bool:
         if p.default is not None:
@@ -232,7 +238,7 @@ def _build_add_argument_args(
             kwargs["action"] = "store_true"
 
     else:
-        # We must not 'type' for boolean switches, which have an action instead.
+        # We must not declare 'type' for boolean switches, which have an action instead.
         type_converter = annotation.get_underlying_type_converter()
         if type_converter is not None:
             kwargs["type"] = type_converter
@@ -241,6 +247,9 @@ def _build_add_argument_args(
             kwargs["default"] = p.default
 
     if len(args) == 0:
-        args += [f"--{attr_name}"]
+        if p.positional:
+            args += [f"{attr_name}"]
+        else:
+            args += [f"--{attr_name}"]
 
     return args, kwargs
