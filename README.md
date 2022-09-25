@@ -250,10 +250,3 @@ def parse_args():
 
 `TypedArgs.get_choices_from()` internally uses this wrapper, i.e., it automatically solves the limitation.
 
-
-### Access to underlying `argparse.Namespace`
-
-If you have usages that require access to the raw `argparse.Namespace` object, you can do
-so by using `args.get_raw_args()`. Note that internal `argparse.Namespace` object isn't
-synced with the `args` data itself, i.e., mutating either of them doesn't mutate the other.
-

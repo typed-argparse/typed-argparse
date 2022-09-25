@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Optional, Type, TypeVar
 
 import pytest
@@ -78,6 +79,14 @@ def test_other_scalar_types() -> None:
     assert args.other_float is None
     assert args.other_int_with_default == 43
     assert args.other_float_with_default == 2.0
+
+
+def test_path() -> None:
+    class Args(TypedArgs):
+        path: Path
+
+    args = parse(Args, ["--path", "/my/path"])
+    assert args.path == Path("/my/path")
 
 
 # Positional
