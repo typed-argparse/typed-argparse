@@ -234,10 +234,30 @@ App(
 # In the minimal case:
 App(Args).with_executables({Args: run_main}).run()
 
-# Perhaps rather
+# Alternative namings
 Parser(Args).build_app({Args: run_main}).run()
 Parser(Args).into_app({Args: run_main}).run()
 Parser(Args).make_app({Args: run_main}).run()
+Parser(Args).make_executable({Args: run_main}).run()
+
+# Perhaps a type-safe mapping would require:
+Parser(
+    ...
+).build_app(
+    (FooArgs, run_foo),
+    (BarCreateArgs, run_bar_create),
+    (BarDeleteArgs, run_bar_delete),
+).run()
+
+
+# Or even?
+Parser(
+    ...
+).build_app(
+    FooArgs.bind_to_func(run_foo),
+    BarCreateArgs.bind_to_func(run_bar_create),
+    BarDeleteArgs.bind_to_func(run_bar_delete),
+).run()
 ```
 
 
@@ -287,6 +307,7 @@ internally does the assert and branching.
 
 # Argparse checks
 
+
 ## Does it matter whether arguments are registered before/after subparsers?
 
 ```py
@@ -323,6 +344,7 @@ for add_before in [True, False]:
 Conclusion: argparse treats them the same. They always come before subparser args in terms of order,
 so it makes a bit more sense in the code to define them before as well...
 
+
 ## Does it make sense to have sequential subparsers?
 
 ```py
@@ -356,4 +378,114 @@ parser.print_help()
 As expected, argparse throws an exception when adding another subparser.
 
 Conclusion: It makes sense to restrict the API to a single subparser branching (per level).
+
+
+## Is it possible to fully hide the `dest` name of subparser?
+
+```py
+import argparse
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("other_position", help="other positional")
+
+subparsers_a = parser.add_subparsers(
+    #title="mytitle",
+    #description="my description",
+    help="Available sub commands",
+    #dest="__internal__cryptic__dest__",
+    #metavar="mode",
+    required=False,
+)
+
+parser_foo = subparsers_a.add_parser("foo")
+parser_bar = subparsers_a.add_parser("bar")
+
+parser.print_help()
+# parser.parse_args(["wrong"])
+parser.parse_args(["other_positional", "foo"])
+```
+
+Without metavar:
+```
+usage: ipython [-h] {foo,bar} ...
+
+positional arguments:
+  {foo,bar}   Available sub commands
+
+optional arguments:
+  -h, --help  show this help message and exit
+usage: ipython [-h] {foo,bar} ...
+ipython: error: argument __internal__cryptic__dest__: invalid choice: 'wrong' (choose from 'foo', 'bar')
+```
+
+```
+usage: ipython [-h] mode ...
+
+positional arguments:
+  mode        Available sub commands
+
+optional arguments:
+  -h, --help  show this help message and exit
+usage: ipython [-h] mode ...
+ipython: error: argument mode: invalid choice: 'wrong' (choose from 'foo', 'bar')
+```
+
+or when omitting the arg:
+
+```
+## -- End pasted text --
+usage: ipython [-h] mode ...
+
+positional arguments:
+  mode        Available sub commands
+
+optional arguments:
+  -h, --help  show this help message and exit
+usage: ipython [-h] mode ...
+ipython: error: the following arguments are required: mode
+```
+
+Setting the title only leads to:
+
+```
+usage: ipython [-h] {foo,bar} ...
+
+optional arguments:
+  -h, --help  show this help message and exit
+
+mytitle:
+  {foo,bar}   Available sub commands
+usage: ipython [-h] {foo,bar} ...
+ipython: error: the following arguments are required: __internal__cryptic__dest__
+```
+
+Setting title and description:
+
+```
+usage: ipython [-h] other_position {foo,bar} ...
+
+positional arguments:
+  other_position  other positional
+
+optional arguments:
+  -h, --help      show this help message and exit
+
+mytitle:
+  my description
+
+  {foo,bar}       Available sub commands
+usage: ipython [-h] other_position {foo,bar} ...
+ipython: error: the following arguments are required: other_position, __internal__cryptic__dest__
+```
+
+Conclusion: Setting title and description feels a bit unnecessary, because it moves the
+`<METAVAR> <HELP>` line into its own section, which makes the line a bit weird (I assume
+there can never be another `<METAVAR> <HELP>` line in that section as is the case for other
+sections like `positional arguments`). And if the metavar would not enumerate the values
+the line would become something rather uninformative like `<MODE>   Available modes`.
+
+Conclusion: Setting `metavar` seems to hide the internal name. But comes at the cost of
+not seeing at all which values are allowed. This basically means that one should never set
+metavar unless one enumerates the allowed values in the help text...
 

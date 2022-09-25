@@ -3,26 +3,35 @@
 
 import argparse
 import sys
-from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from .param import Param
 from .type_utils import TypeAnnotation, collect_type_annotations
 from .typed_argparse import TypedArgs
-
-T = TypeVar("T")
 
 
 class SubParser:
     def __init__(
         self,
         name: str,
-        func: "FuncOrSubparsers[T]",
-        typ: Type[T],
+        func: "ArgsOrSubparsers",
         aliases: Optional[List[str]] = None,
     ):
         self._name = name
         self._func = func
-        self._typ = typ
         self._aliases = aliases
 
 
@@ -31,44 +40,70 @@ class SubParsers:
         self._subparsers = subparsers
 
 
-FuncOrSubparsers = Union[Callable[[T], None], SubParsers]
+ArgsOrSubparsers = Union[Type[TypedArgs], SubParsers]
 
 
-class App:
-    def __init__(self, func_or_subparsers: FuncOrSubparsers[T], typ: Optional[Type[T]] = None):
-        self._func_or_subparsers = func_or_subparsers
-        self._type = typ
+# FuncMapping = Mapping[Type[TypedArgs], Callable[[TypedArgs], None]]
+# FuncMappingElement = Tuple[Type[T], Callable[[T], None]]
+# FuncMapping = Tuple[FuncMappingElement[T], ...]
 
-    def run(self, raw_args: List[str] = sys.argv[1:]) -> None:
+
+"""
+class Binding(NamedTuple, Generic[T]):
+    arg_type: Type[T]
+    func: Callable[[T], None]
+"""
+
+
+"""
+class Binding(Generic[T]):
+    def __init__(self, arg_type: Type[T], func: Callable[[T], None]):
+        self.arg_type = arg_type
+        self.func = func
+"""
+
+T = TypeVar("T", bound=TypedArgs)
+
+
+class Binding:
+    def __init__(self, arg_type: Type[T], func: Callable[[T], None]):
+        self.arg_type: Type[TypedArgs] = arg_type
+        self.func: Callable[[Any], None] = func
+
+
+class Parser:
+    def __init__(self, args_or_subparsers: ArgsOrSubparsers):
+        self._args_or_subparsers = args_or_subparsers
+
+    def parse_args(self, raw_args: List[str] = sys.argv[1:]) -> TypedArgs:
         parser = argparse.ArgumentParser()
 
-        if not isinstance(self._func_or_subparsers, SubParsers):
-            func = self._func_or_subparsers
+        if not isinstance(self._args_or_subparsers, SubParsers):
+            arg_type = self._args_or_subparsers
+            assert issubclass(arg_type, TypedArgs)
 
-            assert callable(func)
-            assert self._type is not None
-            assert issubclass(self._type, TypedArgs)
-
-            _add_arguments(self._type, parser)
+            _add_arguments(arg_type, parser)
 
             parsed_args = parser.parse_args(raw_args)
-            typed_args = self._type.from_argparse(parsed_args)
+            typed_args = arg_type.from_argparse(parsed_args)
 
-            func(typed_args)  # type: ignore
+            return typed_args
 
         else:
-            subparser_decls = self._func_or_subparsers._subparsers
+            subparser_decls = self._args_or_subparsers._subparsers
 
             if sys.version_info < (3, 7):
                 subparsers = parser.add_subparsers(
                     help="Available sub commands",
-                    dest="mode",
+                    # dest="mode1234",
+                    title="mode",
                 )
             else:
                 subparsers = parser.add_subparsers(
                     help="Available sub commands",
-                    dest="mode",
-                    required=True,
+                    # dest="mode1234",
+                    title="mode",
+                    # required=True,
                 )
 
             for subparser_decl in subparser_decls:
@@ -81,6 +116,12 @@ class App:
             # import IPython; IPython.embed()
             # fmt: on
             print(parsed_args)
+
+            raise RuntimeError("unimplemented")
+
+    def build_app(self, *func_mapping: Binding) -> "App":
+        # TODO: Validate, perhaps in App constructor to move invariant to class?
+        return App(parser=self, func_mapping=func_mapping)
 
 
 AnyParser = argparse.ArgumentParser
@@ -120,3 +161,21 @@ def _add_argument(
 
     print(f"Adding argument: {name_or_flags} {kwargs}")
     parser.add_argument(*name_or_flags, **kwargs)
+
+
+class App:
+    def __init__(self, parser: Parser, func_mapping: Sequence[Binding]):
+        self._parser = parser
+        self._func_mapping = func_mapping
+
+    def run(self, raw_args: List[str] = sys.argv[1:]) -> None:
+        typed_args = self._parser.parse_args()
+
+        for binding in self._func_mapping:
+            if isinstance(typed_args, binding.arg_type):
+                binding.func(typed_args)
+
+        # Should be impossible due to correctness check
+        raise AssertionError(
+            f"Argument type {type(typed_args)} did not match anything in {self._func_mapping}."
+        )

@@ -1,4 +1,4 @@
-from .app import App, SubParser, SubParsers
+from .app import App, Binding, Parser, SubParser, SubParsers
 from .choices import Choices
 from .param import Param, param
 from .typed_argparse import (
@@ -19,8 +19,10 @@ __all__ = [
     "get_choices_from_class",
     "validate_type_union",
     "App",
+    "Parser",
     "SubParser",
     "SubParsers",
     "Param",
     "param",
+    "Binding",
 ]
