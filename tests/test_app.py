@@ -94,12 +94,13 @@ def test_app_run() -> None:
 
     was_executed = False
 
-    def runner(args: Args):
+    def runner(args: Args) -> None:
         nonlocal was_executed
         was_executed = True
+        assert args.verbose
 
     app = Parser(Args).build_app(Binding(Args, runner))
-    app.run()
+    app.run(["--verbose"])
 
     assert was_executed
 
@@ -114,4 +115,4 @@ def test_illegal_param_type() -> None:
     with pytest.raises(RuntimeError) as e:
         Parser(Args).parse_args([])
 
-    assert f"Class attribute 'foo' of type str isn't of type Param." in str(e.value)
+    assert "Class attribute 'foo' of type str isn't of type Param." in str(e.value)
