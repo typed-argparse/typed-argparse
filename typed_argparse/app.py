@@ -187,7 +187,7 @@ def _add_arguments(
 
         if not isinstance(p, Param):
             raise RuntimeError(
-                f"Class attribute '{attr_name}' of type {arg_type} isn't of type Param. "
+                f"Class attribute '{attr_name}' of type {type(p).__name__} isn't of type Param. "
                 "All parameters should have a '... = params(...)' declaration."
             )
 

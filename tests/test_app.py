@@ -2,7 +2,7 @@ from typing import List, Type, TypeVar
 
 import pytest
 
-from typed_argparse import Parser, SubParser, SubParsers, TypedArgs, param
+from typed_argparse import Binding, Parser, SubParser, SubParsers, TypedArgs, param
 
 T = TypeVar("T", bound=TypedArgs)
 
@@ -83,3 +83,35 @@ def test_subparser__basic() -> None:
     args = parser.parse_args(["bar", "--y", "y_value"])
     assert isinstance(args, BarArgs)
     assert args.y == "y_value"
+
+
+# App run
+
+
+def test_app_run() -> None:
+    class Args(TypedArgs):
+        verbose: bool
+
+    was_executed = False
+
+    def runner(args: Args):
+        nonlocal was_executed
+        was_executed = True
+
+    app = Parser(Args).build_app(Binding(Args, runner))
+    app.run()
+
+    assert was_executed
+
+
+# Misc
+
+
+def test_illegal_param_type() -> None:
+    class Args(TypedArgs):
+        foo: str = "default"
+
+    with pytest.raises(RuntimeError) as e:
+        Parser(Args).parse_args([])
+
+    assert f"Class attribute 'foo' of type str isn't of type Param." in str(e.value)
