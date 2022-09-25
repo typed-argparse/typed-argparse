@@ -1,9 +1,10 @@
 import argparse
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, List, Literal, Optional, Type, TypeVar
+from typing import Generator, List, Optional, Type, TypeVar
 
 import pytest
+from typing_extensions import Literal
 
 from typed_argparse import Binding, Parser, SubParser, SubParsers, TypedArgs, param
 
