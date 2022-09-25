@@ -2,7 +2,7 @@ from typing import List, Type, TypeVar
 
 import pytest
 
-from typed_argparse import Parser, TypedArgs, param
+from typed_argparse import Parser, SubParser, SubParsers, TypedArgs, param
 
 T = TypeVar("T", bound=TypedArgs)
 
@@ -11,6 +11,9 @@ def parse(arg_type: Type[T], raw_args: List[str]) -> T:
     args = Parser(arg_type).parse_args(raw_args)
     assert isinstance(args, arg_type)
     return args
+
+
+# Boolean
 
 
 def test_bool_switch() -> None:
@@ -54,3 +57,29 @@ def test_bool_switch__invalid_default() -> None:
         parse(Args, [])
 
     assert str(e.value) == "Invalid default for bool 'foo'"
+
+
+# Subparser
+
+
+def test_bool_switch() -> None:
+    class FooArgs(TypedArgs):
+        x: str
+
+    class BarArgs(TypedArgs):
+        y: str
+
+    parser = Parser(
+        SubParsers(
+            SubParser("foo", FooArgs),
+            SubParser("bar", BarArgs),
+        )
+    )
+
+    args = parser.parse_args(["foo", "--x", "x_value"])
+    assert isinstance(args, FooArgs)
+    assert args.x == "x_value"
+
+    args = parser.parse_args(["bar", "--y", "y_value"])
+    assert isinstance(args, BarArgs)
+    assert args.y == "y_value"
