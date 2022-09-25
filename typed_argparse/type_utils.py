@@ -19,7 +19,13 @@ def collect_type_annotations(
 ) -> Dict[str, "TypeAnnotation"]:
     all_annotations: Dict[str, "TypeAnnotation"] = dict()
 
-    for i, cls in enumerate(reversed(cls.mro())):
+    # Order by less specific (object) to more specific (actual type) to overwrite
+    # effective annotations
+    types = list(reversed(cls.mro()))
+    if not include_super_types:
+        types = types[-1:]
+
+    for cls in types:
         if hasattr(cls, "__annotations__"):
             all_annotations.update(
                 **{
@@ -27,9 +33,6 @@ def collect_type_annotations(
                     for name, annotation in get_type_hints(cls).items()
                 }
             )
-
-        if not include_super_types and i == 0:
-            break
 
     return all_annotations
 
@@ -67,6 +70,11 @@ class TypeAnnotation:
     @property
     def is_bool(self) -> bool:
         return self.raw_type is bool
+
+    @property
+    def is_optional(self) -> bool:
+        # TODO: Iterate branches of Union to check for None?
+        return self.get_underlying_if_optional() is not None
 
     def get_underlying_if_optional(self) -> Optional["TypeAnnotation"]:
         if self.origin is Union and len(self.args) == 2 and _NoneType in self.args:

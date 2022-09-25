@@ -36,9 +36,14 @@ def run_bar(args: ArgsBar) -> None:
 
 
 def main() -> None:
-    Parser(CommonArgs).build_app(Binding(CommonArgs, run_toplevel)).run()
+    # Parser(CommonArgs).build_app(Binding(CommonArgs, run_toplevel)).run()
 
-    Parser(CommonArgs).build_app(
+    Parser(
+        SubParsers(
+            SubParser("foo", ArgsFoo, aliases=["co"]),
+            SubParser("bar", ArgsBar),
+        )
+    ).build_app(
         Binding(CommonArgs, run_toplevel),
         Binding(ArgsFoo, run_foo),
         Binding(ArgsBar, run_bar),
