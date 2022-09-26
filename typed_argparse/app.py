@@ -251,6 +251,10 @@ def _build_add_argument_args(
         if allowed_values_if_literal is not None:
             kwargs["choices"] = allowed_values_if_literal
 
+        allowed_values_if_enum = annotation.get_allowed_values_if_enum()
+        if allowed_values_if_enum is not None:
+            kwargs["choices"] = allowed_values_if_enum
+
     if len(args) == 0:
         if p.positional:
             args += [f"{attr_name}"]

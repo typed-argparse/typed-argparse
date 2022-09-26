@@ -6,6 +6,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -87,7 +88,7 @@ class TypeAnnotation:
         return self.get_underlying_if_optional() is not None
 
     def get_underlying_type_converter(self) -> Optional[Union[type, Callable[[object], object]]]:
-        if isinstance(self.raw_type, type):
+        if isinstance(self.raw_type, type) and not issubclass(self.raw_type, enum.Enum):
             return self.raw_type
         else:
             underlying = self.get_underlying_if_optional()
@@ -115,8 +116,33 @@ class TypeAnnotation:
                                 pass
 
                     # Here we could raise a TypeError or ValueError, but it looks like relying
-                    # on `choices` instead of raising a value/type error actually produces the
-                    # better error message.
+                    # on `choices` instead actually produces a better error message.
+                    return x
+
+                return converter
+
+            allowed_values_if_emum = self.get_allowed_values_if_enum()
+            if (
+                allowed_values_if_emum is not None
+                and isinstance(self.raw_type, type)
+                and issubclass(self.raw_type, enum.Enum)
+            ):
+                enum_type: Type[enum.Enum] = self.raw_type
+                allowed_values = allowed_values_if_emum
+
+                def converter(x: object) -> object:
+
+                    for allowed_value in allowed_values:
+                        if x == allowed_value or x == allowed_value.value:  # type: ignore
+                            return allowed_value
+                        else:
+                            try:
+                                return enum_type[x]  # type: ignore
+                            except KeyError:
+                                pass
+
+                    # Here we could raise a TypeError or ValueError, but it looks like relying
+                    # on `choices` instead actually produces a better error message.
                     return x
 
                 return converter

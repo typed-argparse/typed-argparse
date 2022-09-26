@@ -1,5 +1,6 @@
 import argparse
 from contextlib import contextmanager
+from enum import Enum
 from pathlib import Path
 from typing import Generator, List, Optional, Type, TypeVar
 
@@ -150,6 +151,41 @@ def test_literal() -> None:
     with argparse_error() as e:
         parse(Args, ["--literal-string", "a", "--literal-int", "3"])
     assert "argument --literal-int: invalid choice: '3' (choose from 1, 2)" == str(e.error)
+
+
+# Enums
+
+
+def test_enum() -> None:
+    class StrEnum(Enum):
+        a = "a"
+        b = "b"
+
+    class IntEnum(Enum):
+        a = 1
+        b = 2
+
+    class Args(TypedArgs):
+        enum_string: StrEnum
+        enum_int: IntEnum
+
+    args = parse(Args, ["--enum-string", "a", "--enum-int", "a"])
+    assert args.enum_string == StrEnum.a
+    assert args.enum_int == IntEnum.a
+
+    with argparse_error() as e:
+        parse(Args, ["--enum-string", "c", "--enum-int", "a"])
+    assert (
+        "argument --enum-string: invalid choice: 'c' (choose from <StrEnum.a: 'a'>, <StrEnum.b: 'b'>)"  # noqa
+        == str(e.error)
+    )
+
+    with argparse_error() as e:
+        parse(Args, ["--enum-string", "a", "--enum-int", "c"])
+    assert (
+        "argument --enum-int: invalid choice: 'c' (choose from <IntEnum.a: 1>, <IntEnum.b: 2>)"
+        == str(e.error)
+    )
 
 
 # Subparser
