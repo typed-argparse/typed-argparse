@@ -21,6 +21,15 @@ from .param import Param, param
 from .type_utils import TypeAnnotation, collect_type_annotations
 from .typed_argparse import TypedArgs
 
+_ARG_COMPLETE_AVAILABLE = False
+
+try:
+    import argcomplete
+
+    _ARG_COMPLETE_AVAILABLE = True
+except ImportError:
+    pass
+
 
 class SubParser:
     def __init__(
@@ -64,6 +73,9 @@ class Parser:
 
         dest_variables = _traverse_build_parser(self._args_or_subparsers, parser)
         type_mapping = _traverse_get_type_mapping(self._args_or_subparsers)
+
+        if _ARG_COMPLETE_AVAILABLE:
+            argcomplete.autocomplete(parser)
 
         argparse_namespace = parser.parse_args(raw_args)
 
