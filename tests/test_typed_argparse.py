@@ -3,8 +3,9 @@ import enum
 from typing import List, NewType, Optional, Union
 
 import pytest
-from typed_argparse import TypedArgs, WithUnionType, get_choices_from
 from typing_extensions import Literal
+
+from typed_argparse import TypedArgs, WithUnionType, get_choices_from
 
 # -----------------------------------------------------------------------------
 # Basics
@@ -705,3 +706,12 @@ def test_check_reserved_names() -> None:
         "from_argparse",
         "get_choices_from",
     }
+
+
+def test_temporary_backwards_compatibility() -> None:
+    class Args(TypedArgs):
+        foo: str
+
+    argparse_namespace = argparse.Namespace(foo="foo")
+    args = Args(argparse_namespace)
+    assert args.foo == "foo"

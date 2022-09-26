@@ -1,5 +1,5 @@
 import argparse
-from typing import Generic, List, Type, TypeVar, cast
+from typing import Dict, Generic, List, Type, TypeVar, cast
 
 from .choices import Choices
 from .dataclass_transform_backport import dataclass_transform
@@ -18,13 +18,18 @@ C = TypeVar("C", bound="TypedArgs")
 
 @dataclass_transform(kw_only_default=True, field_specifiers=(Param,))
 class TypedArgs:
-    def __init__(self, **kwargs: object):
+    def __init__(self, *args: object, **kwargs: object):
         """
         Constructs an instance of the TypedArgs class from a given argparse Namespace.
 
         Performs various validations / sanity check to make sure the runtime values
         match the type annotations.
         """
+
+        # Temporary backwards compatibility. To be removed in 0.3.
+        if len(args) == 1 and isinstance(args[0], argparse.Namespace):
+            kwargs = _argparse_namespace_to_dict(type(self), args[0], disallow_extra_args=False)
+
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -32,42 +37,7 @@ class TypedArgs:
     def from_argparse(
         cls: Type[C], args: argparse.Namespace, disallow_extra_args: bool = False
     ) -> C:
-        missing_args: List[str] = []
-
-        annotations = collect_type_annotations(cls, include_super_types=True)
-
-        kwargs = {}
-
-        for arg_name, type_annotation in annotations.items():
-            if arg_name in TypedArgs.__dict__:
-                raise TypeError(f"A type must not have an argument called '{arg_name}'")
-
-            if hasattr(args, arg_name):
-                # Validate the value and add as attribute
-                value: object = getattr(args, arg_name)
-                value = type_annotation.validate_with_error(value, arg_name)
-                kwargs[arg_name] = value
-            else:
-                missing_args.append(arg_name)
-
-        # Report missing args if any
-        if len(missing_args) > 0:
-            if len(missing_args) == 1:
-                raise TypeError(f"Arguments object is missing argument '{missing_args[0]}'")
-            else:
-                raise TypeError(f"Arguments object is missing arguments {missing_args}")
-
-        # Report extra args if any
-        if disallow_extra_args:
-            extra_args = sorted(set(args.__dict__.keys()) - set(annotations.keys()))
-            if len(extra_args) > 0:
-                if len(extra_args) == 1:
-                    raise TypeError(
-                        f"Arguments object has an unexpected extra argument '{extra_args[0]}'"
-                    )
-                else:
-                    raise TypeError(f"Arguments object has unexpected extra arguments {extra_args}")
-
+        kwargs = _argparse_namespace_to_dict(cls, args, disallow_extra_args=disallow_extra_args)
         return cls(**kwargs)
 
     def __repr__(self) -> str:
@@ -94,6 +64,48 @@ class TypedArgs:
         Use case: Forward as `choices=...` argument to argparse.
         """
         return get_choices_from_class(cls, field)
+
+
+def _argparse_namespace_to_dict(
+    cls: Type[C], args: argparse.Namespace, disallow_extra_args: bool
+) -> Dict[str, object]:
+    missing_args: List[str] = []
+
+    annotations = collect_type_annotations(cls, include_super_types=True)
+
+    kwargs = {}
+
+    for arg_name, type_annotation in annotations.items():
+        if arg_name in TypedArgs.__dict__:
+            raise TypeError(f"A type must not have an argument called '{arg_name}'")
+
+        if hasattr(args, arg_name):
+            # Validate the value and add as attribute
+            value: object = getattr(args, arg_name)
+            value = type_annotation.validate_with_error(value, arg_name)
+            kwargs[arg_name] = value
+        else:
+            missing_args.append(arg_name)
+
+    # Report missing args if any
+    if len(missing_args) > 0:
+        if len(missing_args) == 1:
+            raise TypeError(f"Arguments object is missing argument '{missing_args[0]}'")
+        else:
+            raise TypeError(f"Arguments object is missing arguments {missing_args}")
+
+    # Report extra args if any
+    if disallow_extra_args:
+        extra_args = sorted(set(args.__dict__.keys()) - set(annotations.keys()))
+        if len(extra_args) > 0:
+            if len(extra_args) == 1:
+                raise TypeError(
+                    f"Arguments object has an unexpected extra argument '{extra_args[0]}'"
+                )
+            else:
+                raise TypeError(f"Arguments object has unexpected extra arguments {extra_args}")
+
+    return kwargs
 
 
 def get_choices_from_class(cls: type, field: str) -> Choices:
