@@ -3,6 +3,9 @@
 
 💡 type-safe args for argparse without much refactoring.
 
+<!--
+💡 `typed_argparse` allows to write type-safe and elegant CLIs with a clear separation of concerns.
+-->
 
 [![PyPI version](https://badge.fury.io/py/typed-argparse.svg)](https://badge.fury.io/py/typed_argparse)
 [![Build Status](https://github.com/bluenote10/typed_argparse/workflows/ci/badge.svg)](https://github.com/bluenote10/typed_argparse/actions?query=workflow%3Aci)
@@ -246,11 +249,4 @@ def parse_args():
 ```
 
 `TypedArgs.get_choices_from()` internally uses this wrapper, i.e., it automatically solves the limitation.
-
-
-### Access to underlying `argparse.Namespace`
-
-If you have usages that require access to the raw `argparse.Namespace` object, you can do
-so by using `args.get_raw_args()`. Note that internal `argparse.Namespace` object isn't
-synced with the `args` data itself, i.e., mutating either of them doesn't mutate the other.
 

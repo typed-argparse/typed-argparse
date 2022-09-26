@@ -1,6 +1,17 @@
 import enum
 import sys
-from typing import Dict, List, Optional, Tuple, TypeVar, Union, cast, get_type_hints
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+    get_type_hints,
+)
 
 from typing_extensions import Literal
 
@@ -14,10 +25,18 @@ _NoneType = type(None)
 RawTypeAnnotation = object
 
 
-def collect_type_annotations(cls: type) -> Dict[str, "TypeAnnotation"]:
-    # Collect all annotations (including super types)
+def collect_type_annotations(
+    cls: type, *, include_super_types: bool
+) -> Dict[str, "TypeAnnotation"]:
     all_annotations: Dict[str, "TypeAnnotation"] = dict()
-    for cls in reversed(cls.mro()):
+
+    # Order by less specific (object) to more specific (actual type) to overwrite
+    # effective annotations
+    types = list(reversed(cls.mro()))
+    if not include_super_types:
+        types = types[-1:]
+
+    for cls in types:
         if hasattr(cls, "__annotations__"):
             all_annotations.update(
                 **{
@@ -58,6 +77,77 @@ class TypeAnnotation:
         self.raw_type: RawTypeAnnotation = raw_type
         self.origin = _get_origin(raw_type)
         self.args = _get_args(raw_type)
+
+    @property
+    def is_bool(self) -> bool:
+        return self.raw_type is bool
+
+    @property
+    def is_optional(self) -> bool:
+        # TODO: Iterate branches of Union to check for None?
+        return self.get_underlying_if_optional() is not None
+
+    def get_underlying_type_converter(self) -> Optional[Union[type, Callable[[object], object]]]:
+        if isinstance(self.raw_type, type) and not issubclass(self.raw_type, enum.Enum):
+            return self.raw_type
+        else:
+            underlying = self.get_underlying_if_optional()
+            if underlying is not None:
+                return underlying.get_underlying_type_converter()
+            underlying = self.get_underlying_if_list()
+            if underlying is not None:
+                return underlying.get_underlying_type_converter()
+
+            allowed_values_if_literal = self.get_allowed_values_if_literal()
+            if allowed_values_if_literal is not None:
+                allowed_values = allowed_values_if_literal
+
+                def converter(x: object) -> object:
+
+                    for allowed_value in allowed_values:
+                        if x == allowed_value:
+                            return allowed_value
+                        else:
+                            try:
+                                x_converted = type(allowed_value)(x)  # type: ignore
+                                if x_converted == allowed_value:
+                                    return allowed_value
+                            except (ValueError, TypeError):
+                                pass
+
+                    # Here we could raise a TypeError or ValueError, but it looks like relying
+                    # on `choices` instead actually produces a better error message.
+                    return x
+
+                return converter
+
+            allowed_values_if_emum = self.get_allowed_values_if_enum()
+            if (
+                allowed_values_if_emum is not None
+                and isinstance(self.raw_type, type)
+                and issubclass(self.raw_type, enum.Enum)
+            ):
+                enum_type: Type[enum.Enum] = self.raw_type
+                allowed_values = allowed_values_if_emum
+
+                def converter(x: object) -> object:
+
+                    for allowed_value in allowed_values:
+                        if x == allowed_value or x == allowed_value.value:  # type: ignore
+                            return allowed_value
+                        else:
+                            try:
+                                return enum_type[x]  # type: ignore
+                            except KeyError:
+                                pass
+
+                    # Here we could raise a TypeError or ValueError, but it looks like relying
+                    # on `choices` instead actually produces a better error message.
+                    return x
+
+                return converter
+
+            return None
 
     def get_underlying_if_optional(self) -> Optional["TypeAnnotation"]:
         if self.origin is Union and len(self.args) == 2 and _NoneType in self.args:
@@ -123,7 +213,7 @@ class TypeAnnotation:
         underlying_if_optional = self.get_underlying_if_optional()
         if underlying_if_optional is not None:
             if value is None:
-                return value, None
+                return None, None
             else:
                 return underlying_if_optional.validate(value)
 

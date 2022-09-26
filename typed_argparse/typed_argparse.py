@@ -1,9 +1,9 @@
 import argparse
 from typing import Generic, List, Type, TypeVar, cast
 
-from typing_extensions import dataclass_transform
-
 from .choices import Choices
+from .dataclass_transform_backport import dataclass_transform
+from .param import Param
 from .runtime_generic import RuntimeGeneric
 from .type_utils import (
     RawTypeAnnotation,
@@ -16,7 +16,7 @@ from .type_utils import (
 C = TypeVar("C", bound="TypedArgs")
 
 
-@dataclass_transform(kw_only_default=True)
+@dataclass_transform(kw_only_default=True, field_specifiers=(Param,))
 class TypedArgs:
     def __init__(self, **kwargs: object):
         """
@@ -34,7 +34,7 @@ class TypedArgs:
     ) -> C:
         missing_args: List[str] = []
 
-        annotations = collect_type_annotations(cls)
+        annotations = collect_type_annotations(cls, include_super_types=True)
 
         kwargs = {}
 
