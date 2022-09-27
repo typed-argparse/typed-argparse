@@ -272,14 +272,11 @@ def _add_arguments(
 
 
 def _build_add_argument_args(
-    attr_name: str,
+    python_arg_name: str,
     annotation: TypeAnnotation,
     p: Param,
 ) -> Tuple[List[str], Dict[str, Any]]:
 
-    attr_name = attr_name.replace("_", "-")
-
-    args: List[str] = []
     kwargs: Dict[str, Any] = {
         "help": p.help,
     }
@@ -328,13 +325,35 @@ def _build_add_argument_args(
         if allowed_values_if_enum is not None:
             kwargs["choices"] = allowed_values_if_enum
 
-    if len(args) == 0:
-        if p.positional:
-            args += [f"{attr_name}"]
-        else:
-            args += [f"--{attr_name}"]
+    # Name handling
+    cli_arg_name = python_arg_name.replace("_", "-")
+    name_or_flags: List[str]
 
-    return args, kwargs
+    if is_positional:
+        # Note that argparse does not allow to specify the 'dest' for positional arguments.
+        # We have to rely on the fact the the hyphenated version of the name gets converted
+        # back to exactly our `python_attr_name` as the internal dest, but that should
+        # normally be the case.
+        name_or_flags = [cli_arg_name]
+
+    else:
+        if len(p.flags) > 0:
+            assert all(flag.startswith("-") for flag in p.flags), (
+                f"Invalid flags: {p.flags}. All flags should start with '-'. "
+                "A positional argument can be created by setting `positional=True`."
+            )
+            name_or_flags = list(p.flags)
+
+            # Automatically add the long name if the user only specifies the short flag,
+            # but only if the original name is more than 1 char.
+            if all(len(flag) == 2 for flag in p.flags) and len(python_arg_name) > 1:
+                name_or_flags += [f"--{cli_arg_name}"]
+        else:
+            name_or_flags = [f"--{cli_arg_name}"]
+
+        kwargs["dest"] = python_arg_name
+
+    return name_or_flags, kwargs
 
 
 def _to_string(args_or_subparsers: ArgsOrSubparsers) -> str:

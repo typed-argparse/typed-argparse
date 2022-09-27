@@ -132,6 +132,44 @@ def test_positional() -> None:
     assert args.file == "my_file"
 
 
+# Flags
+
+
+def test_flags() -> None:
+    class Args(TypedArgs):
+        file: str = param("-f")
+
+    args = parse(Args, ["-f", "my_file"])
+    assert args.file == "my_file"
+
+    args = parse(Args, ["--file", "my_file"])
+    assert args.file == "my_file"
+
+
+def test_flags__renaming() -> None:
+    class Args(TypedArgs):
+        foo: str = param("--bar")
+
+    args = parse(Args, ["--bar", "bar"])
+    assert args.foo == "bar"
+
+    # TODO: Make this work with argparse_error
+    with pytest.raises(SystemExit):
+        parse(Args, ["--foo", "bar"])
+
+
+def test_flags__single_char() -> None:
+    class Args(TypedArgs):
+        x: int = param("-y")
+
+    args = parse(Args, ["-y", "42"])
+    assert args.x == 42
+
+    # TODO: Make this work with argparse_error
+    with pytest.raises(SystemExit):
+        parse(Args, ["-x", "42"])
+
+
 # Literals
 
 

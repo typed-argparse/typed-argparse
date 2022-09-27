@@ -1,7 +1,8 @@
-from typing import Any, NamedTuple, Optional, TypeVar, overload
+from typing import Any, NamedTuple, Optional, Sequence, TypeVar, overload
 
 
 class Param(NamedTuple):
+    flags: Sequence[str]
     required: bool
     positional: bool
     default: Optional[object]
@@ -13,7 +14,7 @@ T = TypeVar("T")
 
 @overload
 def param(
-    *,
+    *flags: str,
     required: bool = False,
     positional: bool = False,
     default: T,
@@ -24,7 +25,7 @@ def param(
 
 @overload
 def param(
-    *,
+    *flags: str,
     required: bool = False,
     positional: bool = False,
     default: Optional[object] = None,
@@ -34,13 +35,14 @@ def param(
 
 
 def param(
-    *,
+    *flags: str,
     required: bool = False,
     positional: bool = False,
     default: Optional[object] = None,
     help: Optional[str] = None,
 ) -> Any:
     return Param(
+        flags=flags,
         required=required,
         positional=positional,
         default=default,
