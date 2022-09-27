@@ -9,6 +9,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -71,7 +72,7 @@ class Parser:
     def parse_args(self, raw_args: List[str] = sys.argv[1:]) -> TypedArgs:
         parser = argparse.ArgumentParser()
 
-        dest_variables = _traverse_build_parser(self._args_or_subparsers, parser)
+        all_leaf_paths = _traverse_build_parser(self._args_or_subparsers, parser)
         type_mapping = _traverse_get_type_mapping(self._args_or_subparsers)
 
         if _ARG_COMPLETE_AVAILABLE:
@@ -79,10 +80,7 @@ class Parser:
 
         argparse_namespace = parser.parse_args(raw_args)
 
-        type_mapping_path = tuple(
-            getattr(argparse_namespace, dest_variable) for dest_variable in dest_variables
-        )
-        arg_type = type_mapping[type_mapping_path]
+        arg_type = _determine_arg_type(all_leaf_paths, argparse_namespace, type_mapping)
 
         return arg_type.from_argparse(argparse_namespace)
 
@@ -110,19 +108,26 @@ class App:
         )
 
 
+TypePath = Tuple[str, ...]
+
+
 def _traverse_build_parser(
     args_or_subparsers: ArgsOrSubparsers,
     parser: ArgparseParser,
-    dest_variables: Optional[List[str]] = None,
-) -> List[str]:
-    if dest_variables is None:
-        dest_variables = []
+    cur_path: TypePath = (),
+    all_leaf_paths: Optional[Set[TypePath]] = None,
+) -> Set[TypePath]:
+    if all_leaf_paths is None:
+        all_leaf_paths = set()
 
     if isinstance(args_or_subparsers, SubParsers):
         subparser_decls = args_or_subparsers._subparsers
 
-        dest = ((len(dest_variables) + 1) * "sub") + "command"
-        dest_variables.append(dest)
+        # It looks like wrapping the `dest` variable for argparse into `<...>` leads to
+        # well readable error message while also reducing the risk of an argument name
+        # collision, because the argument gets appended to the argparse namespace in
+        # its raw form. For instance: Namespace(file='f', verbose=False, **{'<sub-command>': 'foo'})
+        dest = "<" + ((len(cur_path) + 1) * "sub-") + "command>"
 
         if sys.version_info < (3, 7):
             subparsers = parser.add_subparsers(
@@ -139,8 +144,12 @@ def _traverse_build_parser(
         for subparser_decl in subparser_decls:
             sub_parser = subparsers.add_parser(subparser_decl._name)
 
-            _traverse_build_parser(subparser_decl._args_or_subparsers, sub_parser, dest_variables)
-            # _add_arguments(subparser_decl._typ, sub_parser)  # type: ignore
+            _traverse_build_parser(
+                subparser_decl._args_or_subparsers,
+                parser=sub_parser,
+                cur_path=cur_path + (dest,),
+                all_leaf_paths=all_leaf_paths,
+            )
 
     elif issubclass(args_or_subparsers, TypedArgs):
         arg_type = args_or_subparsers
@@ -148,18 +157,18 @@ def _traverse_build_parser(
 
         _add_arguments(arg_type, parser)
 
+        all_leaf_paths.add(cur_path)
+
     else:
         assert_never(args_or_subparsers)
 
-    return dest_variables
+    return all_leaf_paths
 
 
-TypePath = Tuple[str, ...]
+TypeMapping = Dict[TypePath, Type[TypedArgs]]
 
 
-def _traverse_get_type_mapping(
-    args_or_subparsers: ArgsOrSubparsers,
-) -> Dict[TypePath, Type[TypedArgs]]:
+def _traverse_get_type_mapping(args_or_subparsers: ArgsOrSubparsers) -> TypeMapping:
 
     mapping: Dict[TypePath, Type[TypedArgs]] = {}
 
@@ -183,6 +192,39 @@ def _traverse_get_type_mapping(
     traverse(args_or_subparsers, current_path=tuple())
 
     return mapping
+
+
+def _determine_arg_type(
+    key_paths: Set[TypePath], argparse_namespace: argparse.Namespace, type_mapping: TypeMapping
+) -> Type[TypedArgs]:
+    # We sort leaf paths from longer (more specific) to shorter (less specific).
+    # This should only become relevant when subparsers are non-mandatory, i.e.,
+    # then can be executable with a shorter leaf path as well. In this case we
+    # first have to check if a longer leaf path matches, otherwise it may be
+    # possible that we accidentally execute the shorter leaf path logic.
+    sorted_key_paths = sorted(
+        key_paths,
+        key=lambda leaf_path: len(leaf_path),
+        reverse=True,
+    )
+
+    arg_type: Optional[Type[TypedArgs]] = None
+    for key_path in sorted_key_paths:
+        # Here we translate from the ('sub-command', 'sub-sub-command', ...) key-based path to the
+        # actual value-based path of ('foo', 'x', ...) by lookup up the keys in the namespace.
+        try:
+            value_path: TypePath = tuple(getattr(argparse_namespace, dest) for dest in key_path)
+            if value_path in type_mapping:
+                arg_type = type_mapping[value_path]
+                break
+        except AttributeError:
+            pass
+
+    assert arg_type is not None, (
+        f"Failed to extract argument type from namespace object {argparse_namespace} "
+        f"(leaf paths: {sorted_key_paths}, type mapping: {type_mapping})"
+    )
+    return arg_type
 
 
 def _add_arguments(

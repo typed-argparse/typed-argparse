@@ -214,6 +214,48 @@ def test_subparser__basic() -> None:
     assert args.y == "y_value"
 
 
+def test_subparser__multiple() -> None:
+    class FooXA(TypedArgs):
+        ...
+
+    class FooXB(TypedArgs):
+        ...
+
+    class FooY(TypedArgs):
+        ...
+
+    class Bar(TypedArgs):
+        ...
+
+    parser = Parser(
+        SubParsers(
+            SubParser(
+                "foo",
+                SubParsers(
+                    SubParser(
+                        "x",
+                        SubParsers(
+                            SubParser("a", FooXA),
+                            SubParser("b", FooXB),
+                        ),
+                    ),
+                    SubParser("y", FooY),
+                ),
+            ),
+            SubParser("bar", Bar),
+        )
+    )
+
+    args = parser.parse_args(["foo", "x", "a"])
+    assert isinstance(args, FooXA)
+    args = parser.parse_args(["foo", "x", "b"])
+    assert isinstance(args, FooXB)
+    args = parser.parse_args(["foo", "y"])
+    assert isinstance(args, FooY)
+    args = parser.parse_args(["bar"])
+    assert isinstance(args, Bar)
+
+
 # App run
 
 
