@@ -261,6 +261,91 @@ Parser(
 ```
 
 
+# Instruction order to allow for lazy loading
+
+```py
+# First approach
+Parser(...).build_app(...).run()
+```
+
+Issue: binding happens before `argparse.parse_arg` (inside `run`).
+
+Therefore lazy loading is pointless. Arg parsing must happen before binding.
+On the other hand we want to execute the binding directly on the parser to
+make sure that the bindings fit to the parser structure.
+
+Drafts:
+
+```py
+# This way doesn't enforce what happens first
+parser = Parser(...)
+parsed_args_wrapper = parser.parse_args()
+parsers.bind(...).run(parsed_args_wrapper)
+
+# Better?
+parser = Parser(...)
+parsed_args = parser.parse_args()
+parsed_args.bind(...).run()
+
+parser = Parser(...)
+args = parser.parse_args()
+args.make_app(...).run()
+
+# minimal
+Parser(...).parse_args().make_app(...).run()
+
+Parser(...).parse_args().make_app(parser.build_mapping(...)).run()
+Parser(...).parse_args().run(parser.bind(...))
+
+# Issue: Cannot be written in a single line, because `parser` is needed twice...
+
+parser = Parser(...)
+args = parser.parse()
+bindings = parser.bind()
+args.run(bindings)
+
+Parser(...).parse_args().run(lambda parser: parser.bind(...))
+
+# With a free function it looks relatively nice:
+Parser(...).parse_args().run(make_bindings)
+
+# With a single command
+Parser(Args).parse_args().run(lambda parser: parser.bind(tap.Binding(Args, runner)))
+
+# A bit clumsy having the `parser` twice in the lambda... And if `parser` exists as
+# a local variable people may actually drop the passed-in parser `lambda _: parser.bind(...)`.
+
+# What about:
+Parser(Args).parse_args().run(lambda: [tap.Binding(Args, runner)])
+# => no way to verify bindings?
+
+# What about:
+tap.run(parser.parse_args(), parser.bind(...))
+# - Evaluation order guarantees args are parsed first.
+# - No wrapper type needed for args, just return plain TypedArgs.
+
+# But it would be still up to the user to order everything correctly:
+args = parser.parse_args()
+import runner
+bindings = parser.bind(tap.Binding(Ars, runner))
+tap.run(args, bindings)
+
+# And: No way to write in one line. Minimal case:
+parser = Parser(Args)
+tap.run(parser.parse_args(), parser.bind(tap.Binding(Args, runner)))
+
+# Then perhaps a lambda again?
+tap.run(Parser(Args), lambda parser: parser.bind(...))
+
+# This is basically just switching a run method for a free-floating run...
+Parser(Args).run(lambda parser: parser.bind(...))
+
+# Ah but with the difference, that the parse_args() call is no longer explicit
+# but implicit, which reduces the need for a wrapper type... This at least minimized
+# the minimal example to:
+Parser(Args).run(lambda p: p.bind(tap.Binding(Args, runner)))
+```
+
 
 
 # How to support mutually exclusive params?
