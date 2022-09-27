@@ -279,6 +279,29 @@ def test_app_run() -> None:
 # Misc
 
 
+def test_readability_of_parser_structures() -> None:
+    class FooArgs(TypedArgs):
+        x: str
+
+    class BarArgs(TypedArgs):
+        y: str
+
+    parser = Parser(
+        SubParsers(
+            SubParser("foo", FooArgs),
+            SubParser("bar", BarArgs),
+        )
+    )
+    expected = "Parser(SubParsers(SubParser('foo', FooArgs), SubParser('bar', BarArgs)))"
+    assert str(parser) == expected
+    assert repr(parser) == expected
+
+    parser = Parser(FooArgs)
+    expected = "Parser(FooArgs)"
+    assert str(Parser(FooArgs)) == "Parser(FooArgs)"
+    assert repr(Parser(FooArgs)) == "Parser(FooArgs)"
+
+
 def test_illegal_param_type() -> None:
     class Args(TypedArgs):
         foo: str = "default"

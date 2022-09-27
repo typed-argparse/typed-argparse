@@ -43,13 +43,26 @@ class SubParser:
         self._args_or_subparsers = args_or_subparsers
         self._aliases = aliases
 
+    def __str__(self) -> str:
+        return f"SubParser('{self._name}', {_to_string(self._args_or_subparsers)})"
+
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class SubParsers:
     def __init__(self, *subparsers: SubParser):
         self._subparsers = subparsers
 
+    def __str__(self) -> str:
+        return f"SubParsers({', '.join(map(str, self._subparsers))})"
+
+    def __repr__(self) -> str:
+        return str(self)
+
 
 ArgsOrSubparsers = Union[Type[TypedArgs], SubParsers]
+
 
 T = TypeVar("T", bound=TypedArgs)
 
@@ -87,6 +100,12 @@ class Parser:
     def build_app(self, *func_mapping: Binding) -> "App":
         # TODO: Validate, perhaps in App constructor to move invariant to class?
         return App(parser=self, func_mapping=func_mapping)
+
+    def __str__(self) -> str:
+        return f"Parser({_to_string(self._args_or_subparsers)})"
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
 class App:
@@ -316,3 +335,10 @@ def _build_add_argument_args(
             args += [f"--{attr_name}"]
 
     return args, kwargs
+
+
+def _to_string(args_or_subparsers: ArgsOrSubparsers) -> str:
+    if isinstance(args_or_subparsers, type):
+        return args_or_subparsers.__name__
+    else:
+        return str(args_or_subparsers)
