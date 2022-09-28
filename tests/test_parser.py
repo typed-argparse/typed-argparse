@@ -132,6 +132,57 @@ def test_positional() -> None:
     assert args.file == "my_file"
 
 
+# Flags
+
+
+def test_flags() -> None:
+    class Args(TypedArgs):
+        file: str = param("-f")
+
+    args = parse(Args, ["-f", "my_file"])
+    assert args.file == "my_file"
+
+    args = parse(Args, ["--file", "my_file"])
+    assert args.file == "my_file"
+
+
+def test_flags__renaming() -> None:
+    class Args(TypedArgs):
+        foo: str = param("--bar")
+
+    args = parse(Args, ["--bar", "bar"])
+    assert args.foo == "bar"
+
+    # TODO: Make this work with argparse_error
+    with pytest.raises(SystemExit):
+        parse(Args, ["--foo", "bar"])
+
+
+def test_flags__single_char() -> None:
+    class Args(TypedArgs):
+        x: int = param("-y")
+
+    args = parse(Args, ["-y", "42"])
+    assert args.x == 42
+
+    # TODO: Make this work with argparse_error
+    with pytest.raises(SystemExit):
+        parse(Args, ["-x", "42"])
+
+
+def test_flags__assert_no_positional_names() -> None:
+    class Args(TypedArgs):
+        foo: str = param("foo")
+
+    with pytest.raises(ValueError) as e:
+        parse(Args, ["foo_value"])
+
+    assert (
+        "Invalid flags: ('foo',). All flags should start with '-'. "
+        "A positional argument can be created by setting `positional=True`."
+    ) == str(e.value)
+
+
 # Literals
 
 
@@ -214,10 +265,84 @@ def test_subparser__basic() -> None:
     assert args.y == "y_value"
 
 
-# App run
+def test_subparser__multiple() -> None:
+    class FooXA(TypedArgs):
+        ...
+
+    class FooXB(TypedArgs):
+        ...
+
+    class FooY(TypedArgs):
+        ...
+
+    class Bar(TypedArgs):
+        ...
+
+    parser = Parser(
+        SubParsers(
+            SubParser(
+                "foo",
+                SubParsers(
+                    SubParser(
+                        "x",
+                        SubParsers(
+                            SubParser("a", FooXA),
+                            SubParser("b", FooXB),
+                        ),
+                    ),
+                    SubParser("y", FooY),
+                ),
+            ),
+            SubParser("bar", Bar),
+        )
+    )
+
+    args = parser.parse_args(["foo", "x", "a"])
+    assert isinstance(args, FooXA)
+    args = parser.parse_args(["foo", "x", "b"])
+    assert isinstance(args, FooXB)
+    args = parser.parse_args(["foo", "y"])
+    assert isinstance(args, FooY)
+    args = parser.parse_args(["bar"])
+    assert isinstance(args, Bar)
 
 
-def test_app_run() -> None:
+# Bindings check
+
+
+def test_bindings_check() -> None:
+    class FooArgs(TypedArgs):
+        x: str
+
+    class BarArgs(TypedArgs):
+        y: str
+
+    parser = Parser(
+        SubParsers(
+            SubParser("foo", FooArgs),
+            SubParser("bar", BarArgs),
+        )
+    )
+
+    def foo(foo_args: FooArgs) -> None:
+        ...
+
+    def bar(bar_args: BarArgs) -> None:
+        ...
+
+    bindings = parser.bind(Binding(FooArgs, foo), Binding(BarArgs, bar))
+    assert len(bindings) == 2
+
+    with pytest.raises(ValueError) as e:
+        parser.bind(Binding(FooArgs, foo))
+
+    assert "Incomplete bindings: There is no binding for type 'BarArgs'." == str(e.value)
+
+
+# Run
+
+
+def test_parser_run() -> None:
     class Args(TypedArgs):
         verbose: bool
 
@@ -228,13 +353,38 @@ def test_app_run() -> None:
         was_executed = True
         assert args.verbose
 
-    app = Parser(Args).build_app(Binding(Args, runner))
-    app.run(["--verbose"])
+    Parser(Args).run(
+        lambda parser: parser.bind(Binding(Args, runner)),
+        raw_args=["--verbose"],
+    )
 
     assert was_executed
 
 
 # Misc
+
+
+def test_readability_of_parser_structures() -> None:
+    class FooArgs(TypedArgs):
+        x: str
+
+    class BarArgs(TypedArgs):
+        y: str
+
+    parser = Parser(
+        SubParsers(
+            SubParser("foo", FooArgs),
+            SubParser("bar", BarArgs),
+        )
+    )
+    expected = "Parser(SubParsers(SubParser('foo', FooArgs), SubParser('bar', BarArgs)))"
+    assert str(parser) == expected
+    assert repr(parser) == expected
+
+    parser = Parser(FooArgs)
+    expected = "Parser(FooArgs)"
+    assert str(Parser(FooArgs)) == "Parser(FooArgs)"
+    assert repr(Parser(FooArgs)) == "Parser(FooArgs)"
 
 
 def test_illegal_param_type() -> None:
