@@ -51,8 +51,13 @@ class SubParser:
 
 
 class SubParsers:
-    def __init__(self, *subparsers: SubParser):
+    def __init__(
+        self,
+        *subparsers: SubParser,
+        common_args: Optional[Type[TypedArgs]] = None,
+    ):
         self._subparsers = subparsers
+        self._common_args = common_args
 
     def __str__(self) -> str:
         return f"SubParsers({', '.join(map(str, self._subparsers))})"
@@ -127,6 +132,9 @@ class Parser:
 
         argparse_namespace = parser.parse_args(raw_args)
 
+        # print("Raw args:", raw_args)
+        # print("Argparse namespace:", argparse_namespace)
+
         arg_type = _determine_arg_type(all_leaf_paths, argparse_namespace, type_mapping)
 
         return arg_type.from_argparse(argparse_namespace)
@@ -194,6 +202,11 @@ def _traverse_build_parser(
         all_leaf_paths = set()
 
     if isinstance(args_or_subparsers, SubParsers):
+        if args_or_subparsers._common_args is not None:
+            _traverse_build_parser(
+                args_or_subparsers._common_args, parser, cur_path, all_leaf_paths
+            )
+
         subparser_decls = args_or_subparsers._subparsers
 
         # It looks like wrapping the `dest` variable for argparse into `<...>` leads to
@@ -305,7 +318,7 @@ def _add_arguments(
     parser: ArgparseParser,
 ) -> None:
     annotations = collect_type_annotations(arg_type, include_super_types=False)
-    # print(f"Annotations of {arg_type}: {annotations}")
+    # print(f"Annotations of {arg_type.__name__}: {annotations}")
 
     for attr_name, annotation in annotations.items():
         if not hasattr(arg_type, attr_name):

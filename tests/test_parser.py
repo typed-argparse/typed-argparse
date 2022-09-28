@@ -277,7 +277,7 @@ def test_enum() -> None:
     )
 
 
-# Subparser
+# Subparsers
 
 
 def test_subparser__basic() -> None:
@@ -343,6 +343,48 @@ def test_subparser__multiple() -> None:
     assert isinstance(args, FooY)
     args = parser.parse_args(["bar"])
     assert isinstance(args, Bar)
+
+
+# Subparsers with common args
+
+
+def test_subparser_common_args__basic() -> None:
+    class CommonArgs(TypedArgs):
+        verbose: bool
+
+    class FooArgs(CommonArgs):
+        x: str
+
+    class BarArgs(CommonArgs):
+        y: str
+
+    parser = Parser(
+        SubParsers(
+            SubParser("foo", FooArgs),
+            SubParser("bar", BarArgs),
+            common_args=CommonArgs,
+        )
+    )
+
+    args = parser.parse_args(["foo", "--x", "x_value"])
+    assert isinstance(args, FooArgs)
+    assert args.x == "x_value"
+    assert not args.verbose
+
+    args = parser.parse_args(["bar", "--y", "y_value"])
+    assert isinstance(args, BarArgs)
+    assert args.y == "y_value"
+    assert not args.verbose
+
+    args = parser.parse_args(["--verbose", "foo", "--x", "x_value"])
+    assert isinstance(args, FooArgs)
+    assert args.x == "x_value"
+    assert args.verbose
+
+    args = parser.parse_args(["--verbose", "bar", "--y", "y_value"])
+    assert isinstance(args, BarArgs)
+    assert args.y == "y_value"
+    assert args.verbose
 
 
 # Bindings check
