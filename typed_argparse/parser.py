@@ -61,9 +61,6 @@ class SubParsers:
         return str(self)
 
 
-ArgsOrSubparsers = Union[Type[TypedArgs], SubParsers]
-
-
 T = TypeVar("T", bound=TypedArgs)
 
 
@@ -79,7 +76,7 @@ class Binding:
 
 
 class Parser:
-    def __init__(self, args_or_subparsers: ArgsOrSubparsers):
+    def __init__(self, args_or_subparsers: "ArgsOrSubparsers"):
         self._args_or_subparsers = args_or_subparsers
 
     def parse_args(self, raw_args: List[str] = sys.argv[1:]) -> TypedArgs:
@@ -97,9 +94,37 @@ class Parser:
 
         return arg_type.from_argparse(argparse_namespace)
 
-    def build_app(self, *func_mapping: Binding) -> "App":
-        # TODO: Validate, perhaps in App constructor to move invariant to class?
-        return App(parser=self, func_mapping=func_mapping)
+    def bind(self, *bindings: Binding) -> "Bindings":
+        type_mapping = _traverse_get_type_mapping(self._args_or_subparsers)
+
+        offered_bindings = set(binding.arg_type for binding in bindings)
+
+        for arg_type in type_mapping.values():
+            if arg_type not in offered_bindings:
+                raise ValueError(
+                    f"Incomplete bindings: There is no binding for type '{arg_type.__name__}'."
+                )
+
+        return bindings
+
+    def run(
+        self,
+        bindings_generator: "BindingsGenerator",
+        raw_args: List[str] = sys.argv[1:],
+    ) -> None:
+        typed_args = self.parse_args(raw_args)
+
+        bindings = bindings_generator(self)
+
+        for binding in bindings:
+            if isinstance(typed_args, binding.arg_type):
+                binding.func(typed_args)
+                return
+
+        # Should be impossible due to correctness check
+        raise AssertionError(
+            f"Argument type {type(typed_args)} did not match anything in {bindings}."
+        )
 
     def __str__(self) -> str:
         return f"Parser({_to_string(self._args_or_subparsers)})"
@@ -108,23 +133,9 @@ class Parser:
         return str(self)
 
 
-class App:
-    def __init__(self, parser: Parser, func_mapping: Sequence[Binding]):
-        self._parser = parser
-        self._func_mapping = func_mapping
-
-    def run(self, raw_args: List[str] = sys.argv[1:]) -> None:
-        typed_args = self._parser.parse_args(raw_args)
-
-        for binding in self._func_mapping:
-            if isinstance(typed_args, binding.arg_type):
-                binding.func(typed_args)
-                return
-
-        # Should be impossible due to correctness check
-        raise AssertionError(
-            f"Argument type {type(typed_args)} did not match anything in {self._func_mapping}."
-        )
+ArgsOrSubparsers = Union[Type[TypedArgs], SubParsers]
+Bindings = Sequence[Binding]
+BindingsGenerator = Callable[[Parser], Bindings]
 
 
 TypePath = Tuple[str, ...]
@@ -338,10 +349,11 @@ def _build_add_argument_args(
 
     else:
         if len(p.flags) > 0:
-            assert all(flag.startswith("-") for flag in p.flags), (
-                f"Invalid flags: {p.flags}. All flags should start with '-'. "
-                "A positional argument can be created by setting `positional=True`."
-            )
+            if not all(flag.startswith("-") for flag in p.flags):
+                raise ValueError(
+                    f"Invalid flags: {p.flags}. All flags should start with '-'. "
+                    "A positional argument can be created by setting `positional=True`."
+                )
             name_or_flags = list(p.flags)
 
             # Automatically add the long name if the user only specifies the short flag,

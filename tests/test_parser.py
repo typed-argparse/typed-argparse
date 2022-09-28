@@ -170,6 +170,19 @@ def test_flags__single_char() -> None:
         parse(Args, ["-x", "42"])
 
 
+def test_flags__assert_no_positional_names() -> None:
+    class Args(TypedArgs):
+        foo: str = param("foo")
+
+    with pytest.raises(ValueError) as e:
+        parse(Args, ["foo_value"])
+
+    assert (
+        "Invalid flags: ('foo',). All flags should start with '-'. "
+        "A positional argument can be created by setting `positional=True`."
+    ) == str(e.value)
+
+
 # Literals
 
 
@@ -294,10 +307,42 @@ def test_subparser__multiple() -> None:
     assert isinstance(args, Bar)
 
 
-# App run
+# Bindings check
 
 
-def test_app_run() -> None:
+def test_bindings_check() -> None:
+    class FooArgs(TypedArgs):
+        x: str
+
+    class BarArgs(TypedArgs):
+        y: str
+
+    parser = Parser(
+        SubParsers(
+            SubParser("foo", FooArgs),
+            SubParser("bar", BarArgs),
+        )
+    )
+
+    def foo(foo_args: FooArgs) -> None:
+        ...
+
+    def bar(bar_args: BarArgs) -> None:
+        ...
+
+    bindings = parser.bind(Binding(FooArgs, foo), Binding(BarArgs, bar))
+    assert len(bindings) == 2
+
+    with pytest.raises(ValueError) as e:
+        parser.bind(Binding(FooArgs, foo))
+
+    assert "Incomplete bindings: There is no binding for type 'BarArgs'." == str(e.value)
+
+
+# Run
+
+
+def test_parser_run() -> None:
     class Args(TypedArgs):
         verbose: bool
 
@@ -308,8 +353,10 @@ def test_app_run() -> None:
         was_executed = True
         assert args.verbose
 
-    app = Parser(Args).build_app(Binding(Args, runner))
-    app.run(["--verbose"])
+    Parser(Args).run(
+        lambda parser: parser.bind(Binding(Args, runner)),
+        raw_args=["--verbose"],
+    )
 
     assert was_executed
 
