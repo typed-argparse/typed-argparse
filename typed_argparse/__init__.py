@@ -1,13 +1,7 @@
-from .choices import Choices
+from .choices import Choices, get_choices_from, get_choices_from_class
 from .param import Param, param
 from .parser import Binding, Bindings, Parser, SubParser, SubParsers
-from .typed_argparse import (
-    TypedArgs,
-    WithUnionType,
-    get_choices_from,
-    get_choices_from_class,
-    validate_type_union,
-)
+from .typed_args import TypedArgs, WithUnionType, validate_type_union
 
 VERSION = "0.2.3"
 

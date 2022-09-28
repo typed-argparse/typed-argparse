@@ -20,7 +20,7 @@ from typing_extensions import assert_never
 
 from .param import Param, param
 from .type_utils import TypeAnnotation, collect_type_annotations
-from .typed_argparse import TypedArgs
+from .typed_args import TypedArgs
 
 _ARG_COMPLETE_AVAILABLE = False
 

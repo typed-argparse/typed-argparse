@@ -1,13 +1,4 @@
-from typing import (
-    Any,
-    Callable,
-    NamedTuple,
-    Optional,
-    Sequence,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import Any, Callable, NamedTuple, Optional, Sequence, TypeVar, overload
 
 
 class Param(NamedTuple):

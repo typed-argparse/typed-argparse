@@ -5,7 +5,7 @@ from typing import List, NewType, Optional, Union
 import pytest
 from typing_extensions import Literal
 
-from typed_argparse import TypedArgs, WithUnionType, get_choices_from
+from typed_argparse import TypedArgs, WithUnionType
 
 # -----------------------------------------------------------------------------
 # Basics
@@ -252,62 +252,6 @@ def test_optional__as_union_type_2() -> None:
     args_namespace = argparse.Namespace(foo="foo")
     args = Args.from_argparse(args_namespace)
     assert args.foo == "foo"
-
-
-# -----------------------------------------------------------------------------
-# get_choices_from
-# -----------------------------------------------------------------------------
-
-
-def test_get_choices_from() -> None:
-    class EnumInt(enum.Enum):
-        a = 1
-        b = 2
-        c = 3
-
-    assert get_choices_from(Literal[1, 2, 3]) == [1, 2, 3]
-    assert get_choices_from(EnumInt) == [EnumInt.a, EnumInt.b, EnumInt.c]
-
-    # Support list wrapping
-    assert get_choices_from(List[Literal[1, 2, 3]]) == [1, 2, 3]
-    assert get_choices_from(List[EnumInt]) == [EnumInt.a, EnumInt.b, EnumInt.c]
-
-
-def test_get_choices_from_class() -> None:
-    class EnumInt(enum.Enum):
-        a = 1
-        b = 2
-        c = 3
-
-    class EnumStr(enum.Enum):
-        a = "a"
-        b = "b"
-        c = "c"
-
-    class MyClass(TypedArgs):
-        lit_int: Literal[1, 2, 3]
-        lit_str: Literal["a", "b", "c"]
-        enum_int: EnumInt
-        enum_str: EnumStr
-        not_a_lit: int
-
-    assert MyClass.get_choices_from("lit_int") == [1, 2, 3]
-    assert MyClass.get_choices_from("lit_str") == ["a", "b", "c"]
-
-    assert MyClass.get_choices_from("enum_int") == [EnumInt.a, EnumInt.b, EnumInt.c]
-    assert MyClass.get_choices_from("enum_str") == [EnumStr.a, EnumStr.b, EnumStr.c]
-
-    with pytest.raises(
-        TypeError,
-        match="Could not infer literal values of field 'not_a_lit' of type 'int'",
-    ):
-        MyClass.get_choices_from("not_a_lit")
-
-    with pytest.raises(
-        TypeError,
-        match="Class MyClass doesn't have a type annotation for field 'non_existing'",
-    ):
-        MyClass.get_choices_from("non_existing")
 
 
 # -----------------------------------------------------------------------------
