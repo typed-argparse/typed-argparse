@@ -10,12 +10,10 @@ class CommonArgs(TypedArgs):
 
 
 class ArgsFoo(CommonArgs):
-    # mode: Literal["foo"]
     file: str = param(help="The file")
 
 
 class ArgsBar(CommonArgs):
-    # mode: Literal["bar"]
     src: str = param(help="The source")
     dst: str = param(help="The destination")
 

@@ -1,4 +1,5 @@
 import argparse
+import textwrap
 from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
@@ -362,6 +363,36 @@ def test_parser_run() -> None:
 
 
 # Misc
+
+
+def test_forwarding_of_argparse_kwargs(capsys: pytest.CaptureFixture[str]) -> None:
+    class Args(TypedArgs):
+        verbose: bool
+
+    parser = Parser(
+        Args,
+        prog="my_prog",
+        usage="my_usage",
+        description="my description",
+        epilog="my epilog",
+    )
+    with pytest.raises(SystemExit):
+        parser.parse_args(["-h"])
+
+    captured = capsys.readouterr()
+    assert captured.out == textwrap.dedent(
+        """\
+        usage: my_usage
+
+        my description
+
+        optional arguments:
+          -h, --help  show this help message and exit
+          --verbose
+
+        my epilog
+        """
+    )
 
 
 def test_readability_of_parser_structures() -> None:

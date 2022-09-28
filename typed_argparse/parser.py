@@ -76,11 +76,48 @@ class Binding:
 
 
 class Parser:
-    def __init__(self, args_or_subparsers: "ArgsOrSubparsers"):
+    def __init__(
+        self,
+        args_or_subparsers: "ArgsOrSubparsers",
+        prog: Optional[str] = None,
+        usage: Optional[str] = None,
+        description: Optional[str] = None,
+        epilog: Optional[str] = None,
+        add_help: bool = True,
+        allow_abbrev: bool = True,
+    ):
+        """
+        This class offers a declarative API to wrap argparse based on TypedArgs definitions.
+
+        Keyword arguments forward to argparse:
+            - prog -- The name of the program (default: sys.argv[0])
+            - usage -- A usage message (default: auto-generated from arguments)
+            - description -- A description of what the program does
+            - epilog -- Text following the argument descriptions
+            - add_help -- Add a -h/-help option
+            - allow_abbrev -- Allow long options to be abbreviated unambiguously
+        """
+
         self._args_or_subparsers = args_or_subparsers
+        self._prog = prog
+        self._usage = usage
+        self._description = description
+        self._epilog = epilog
+        self._add_help = add_help
+        self._allow_abbrev = allow_abbrev
 
     def parse_args(self, raw_args: List[str] = sys.argv[1:]) -> TypedArgs:
-        parser = argparse.ArgumentParser()
+        """
+        Parses the given list of arguments into a TypedArgs instance.
+        """
+        parser = argparse.ArgumentParser(
+            prog=self._prog,
+            usage=self._usage,
+            description=self._description,
+            epilog=self._epilog,
+            add_help=self._add_help,
+            allow_abbrev=self._allow_abbrev,
+        )
 
         all_leaf_paths = _traverse_build_parser(self._args_or_subparsers, parser)
         type_mapping = _traverse_get_type_mapping(self._args_or_subparsers)
@@ -95,6 +132,9 @@ class Parser:
         return arg_type.from_argparse(argparse_namespace)
 
     def bind(self, *bindings: Binding) -> "Bindings":
+        """
+        Verifies the completeness of a given list of bindings w.r.t. this parser structure.
+        """
         type_mapping = _traverse_get_type_mapping(self._args_or_subparsers)
 
         offered_bindings = set(binding.arg_type for binding in bindings)
@@ -112,6 +152,9 @@ class Parser:
         bindings_generator: "BindingsGenerator",
         raw_args: List[str] = sys.argv[1:],
     ) -> None:
+        """
+        Parse arguments and execute the given (lazy) bindings on the result.
+        """
         typed_args = self.parse_args(raw_args)
 
         bindings = bindings_generator(self)

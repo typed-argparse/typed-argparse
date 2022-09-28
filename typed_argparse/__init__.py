@@ -1,6 +1,6 @@
 from .choices import Choices
 from .param import Param, param
-from .parser import Binding, Parser, SubParser, SubParsers
+from .parser import Binding, Bindings, Parser, SubParser, SubParsers
 from .typed_argparse import (
     TypedArgs,
     WithUnionType,
@@ -9,7 +9,7 @@ from .typed_argparse import (
     validate_type_union,
 )
 
-VERSION = "0.2.2"
+VERSION = "0.2.3"
 
 __all__ = [
     "Choices",
@@ -24,4 +24,5 @@ __all__ = [
     "Param",
     "param",
     "Binding",
+    "Bindings",
 ]
