@@ -28,24 +28,22 @@ RawTypeAnnotation = object
 def collect_type_annotations(
     cls: type, *, include_super_types: bool
 ) -> Dict[str, "TypeAnnotation"]:
-    all_annotations: Dict[str, "TypeAnnotation"] = dict()
+    if include_super_types:
+        return _collect_all_type_annotations(cls)
 
-    # Order by less specific (object) to more specific (actual type) to overwrite
-    # effective annotations
-    types = list(reversed(cls.mro()))
-    if not include_super_types:
-        types = types[-1:]
+    else:
+        own_annotations = _collect_all_type_annotations(cls)
 
-    for cls in types:
-        if hasattr(cls, "__annotations__"):
-            all_annotations.update(
-                **{
-                    name: TypeAnnotation(annotation)
-                    for name, annotation in get_type_hints(cls).items()
-                }
-            )
+        types = cls.mro()
+        if len(types) > 1:
+            parent_annotations = _collect_all_type_annotations(types[1])
+            return {k: v for k, v in own_annotations.items() if k not in parent_annotations}
+        else:
+            return own_annotations
 
-    return all_annotations
+
+def _collect_all_type_annotations(cls: type) -> Dict[str, "TypeAnnotation"]:
+    return {name: TypeAnnotation(annotation) for name, annotation in get_type_hints(cls).items()}
 
 
 def typename(t: RawTypeAnnotation) -> str:
@@ -121,14 +119,14 @@ class TypeAnnotation:
 
                 return converter
 
-            allowed_values_if_emum = self.get_allowed_values_if_enum()
+            allowed_values_if_enum = self.get_allowed_values_if_enum()
             if (
-                allowed_values_if_emum is not None
+                allowed_values_if_enum is not None
                 and isinstance(self.raw_type, type)
                 and issubclass(self.raw_type, enum.Enum)
             ):
                 enum_type: Type[enum.Enum] = self.raw_type
-                allowed_values = allowed_values_if_emum
+                allowed_values = allowed_values_if_enum
 
                 def converter(x: object) -> object:
 

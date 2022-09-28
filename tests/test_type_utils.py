@@ -1,8 +1,8 @@
 from typing import List, Optional
+
 from typing_extensions import Literal
 
-from typed_argparse.type_utils import TypeAnnotation
-
+from typed_argparse.type_utils import TypeAnnotation, collect_type_annotations
 
 # -----------------------------------------------------------------------------
 # TypeAnnotation
@@ -78,3 +78,26 @@ def test_type_annotation__literals() -> None:
     assert t.validate(2) == (2, None)
     assert t.validate(3) == (3, None)
     assert t.validate(4) == (4, "value 4 does not match any allowed literal value in (1, 2, 3)")
+
+
+# collect_type_annotations
+
+
+def test_collect_type_annotations() -> None:
+    class Base:
+        base: int
+
+    class Derived(Base):
+        derived: int
+
+    annotations = collect_type_annotations(Base, include_super_types=True)
+    assert set(annotations.keys()) == {"base"}
+
+    annotations = collect_type_annotations(Base, include_super_types=False)
+    assert set(annotations.keys()) == {"base"}
+
+    annotations = collect_type_annotations(Derived, include_super_types=True)
+    assert set(annotations.keys()) == {"base", "derived"}
+
+    annotations = collect_type_annotations(Derived, include_super_types=False)
+    assert set(annotations.keys()) == {"derived"}

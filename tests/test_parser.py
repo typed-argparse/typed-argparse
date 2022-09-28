@@ -1,4 +1,5 @@
 import argparse
+import textwrap
 from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
@@ -132,6 +133,24 @@ def test_positional() -> None:
     assert args.file == "my_file"
 
 
+def test_positional__with_hyphens() -> None:
+    """
+    Since argparse does not allow positional arguments to have a `dest` that is different
+    from the user-facing parameter, we have an issue: By default we convert the
+    positional_with_underscores to positional-with-underscores, because we want the user
+    facing variable to have hyphens. Argparse will simply put it in the namespace under that
+    spelling. In the validation in TypedArgs, we then look for a variable according to the
+    name of the Python annotation, i.e., positional_with_underscores, and thus the lookup
+    fails. As a work-around, we currently use a fallback lookup under the 'hyphened' name.
+    """
+
+    class Args(TypedArgs):
+        positional_with_underscores: str = param(positional=True)
+
+    args = parse(Args, ["foo"])
+    assert args.positional_with_underscores == "foo"
+
+
 # Flags
 
 
@@ -181,6 +200,25 @@ def test_flags__assert_no_positional_names() -> None:
         "Invalid flags: ('foo',). All flags should start with '-'. "
         "A positional argument can be created by setting `positional=True`."
     ) == str(e.value)
+
+
+# Type parser
+
+
+def test_type_parsers() -> None:
+    class ArgsIllegal1(TypedArgs):
+        len_of_str: int = param(type=lambda s: "")  # type: ignore
+
+    class ArgsIllegal2(TypedArgs):
+        foo: int = param(default="", type=lambda s: len(s))  # type: ignore
+        bar: str = param(default="", type=lambda s: len(s))  # type: ignore
+
+    class Args(TypedArgs):
+        len_of_str: int = param(positional=True, type=lambda s: len(s))
+
+    assert parse(Args, ["1"]).len_of_str == 1
+    assert parse(Args, ["12"]).len_of_str == 2
+    assert parse(Args, ["123"]).len_of_str == 3
 
 
 # Literals
@@ -239,7 +277,7 @@ def test_enum() -> None:
     )
 
 
-# Subparser
+# Subparsers
 
 
 def test_subparser__basic() -> None:
@@ -307,6 +345,48 @@ def test_subparser__multiple() -> None:
     assert isinstance(args, Bar)
 
 
+# Subparsers with common args
+
+
+def test_subparser_common_args__basic() -> None:
+    class CommonArgs(TypedArgs):
+        verbose: bool
+
+    class FooArgs(CommonArgs):
+        x: str
+
+    class BarArgs(CommonArgs):
+        y: str
+
+    parser = Parser(
+        SubParsers(
+            SubParser("foo", FooArgs),
+            SubParser("bar", BarArgs),
+            common_args=CommonArgs,
+        )
+    )
+
+    args = parser.parse_args(["foo", "--x", "x_value"])
+    assert isinstance(args, FooArgs)
+    assert args.x == "x_value"
+    assert not args.verbose
+
+    args = parser.parse_args(["bar", "--y", "y_value"])
+    assert isinstance(args, BarArgs)
+    assert args.y == "y_value"
+    assert not args.verbose
+
+    args = parser.parse_args(["--verbose", "foo", "--x", "x_value"])
+    assert isinstance(args, FooArgs)
+    assert args.x == "x_value"
+    assert args.verbose
+
+    args = parser.parse_args(["--verbose", "bar", "--y", "y_value"])
+    assert isinstance(args, BarArgs)
+    assert args.y == "y_value"
+    assert args.verbose
+
+
 # Bindings check
 
 
@@ -362,6 +442,36 @@ def test_parser_run() -> None:
 
 
 # Misc
+
+
+def test_forwarding_of_argparse_kwargs(capsys: pytest.CaptureFixture[str]) -> None:
+    class Args(TypedArgs):
+        verbose: bool
+
+    parser = Parser(
+        Args,
+        prog="my_prog",
+        usage="my_usage",
+        description="my description",
+        epilog="my epilog",
+    )
+    with pytest.raises(SystemExit):
+        parser.parse_args(["-h"])
+
+    captured = capsys.readouterr()
+    assert captured.out == textwrap.dedent(
+        """\
+        usage: my_usage
+
+        my description
+
+        optional arguments:
+          -h, --help  show this help message and exit
+          --verbose
+
+        my epilog
+        """
+    )
 
 
 def test_readability_of_parser_structures() -> None:

@@ -20,7 +20,7 @@ from typing_extensions import assert_never
 
 from .param import Param, param
 from .type_utils import TypeAnnotation, collect_type_annotations
-from .typed_argparse import TypedArgs
+from .typed_args import TypedArgs
 
 _ARG_COMPLETE_AVAILABLE = False
 
@@ -51,8 +51,13 @@ class SubParser:
 
 
 class SubParsers:
-    def __init__(self, *subparsers: SubParser):
+    def __init__(
+        self,
+        *subparsers: SubParser,
+        common_args: Optional[Type[TypedArgs]] = None,
+    ):
         self._subparsers = subparsers
+        self._common_args = common_args
 
     def __str__(self) -> str:
         return f"SubParsers({', '.join(map(str, self._subparsers))})"
@@ -76,11 +81,48 @@ class Binding:
 
 
 class Parser:
-    def __init__(self, args_or_subparsers: "ArgsOrSubparsers"):
+    def __init__(
+        self,
+        args_or_subparsers: "ArgsOrSubparsers",
+        prog: Optional[str] = None,
+        usage: Optional[str] = None,
+        description: Optional[str] = None,
+        epilog: Optional[str] = None,
+        add_help: bool = True,
+        allow_abbrev: bool = True,
+    ):
+        """
+        This class offers a declarative API to wrap argparse based on TypedArgs definitions.
+
+        Keyword arguments forward to argparse:
+            - prog -- The name of the program (default: sys.argv[0])
+            - usage -- A usage message (default: auto-generated from arguments)
+            - description -- A description of what the program does
+            - epilog -- Text following the argument descriptions
+            - add_help -- Add a -h/-help option
+            - allow_abbrev -- Allow long options to be abbreviated unambiguously
+        """
+
         self._args_or_subparsers = args_or_subparsers
+        self._prog = prog
+        self._usage = usage
+        self._description = description
+        self._epilog = epilog
+        self._add_help = add_help
+        self._allow_abbrev = allow_abbrev
 
     def parse_args(self, raw_args: List[str] = sys.argv[1:]) -> TypedArgs:
-        parser = argparse.ArgumentParser()
+        """
+        Parses the given list of arguments into a TypedArgs instance.
+        """
+        parser = argparse.ArgumentParser(
+            prog=self._prog,
+            usage=self._usage,
+            description=self._description,
+            epilog=self._epilog,
+            add_help=self._add_help,
+            allow_abbrev=self._allow_abbrev,
+        )
 
         all_leaf_paths = _traverse_build_parser(self._args_or_subparsers, parser)
         type_mapping = _traverse_get_type_mapping(self._args_or_subparsers)
@@ -90,11 +132,17 @@ class Parser:
 
         argparse_namespace = parser.parse_args(raw_args)
 
+        # print("Raw args:", raw_args)
+        # print("Argparse namespace:", argparse_namespace)
+
         arg_type = _determine_arg_type(all_leaf_paths, argparse_namespace, type_mapping)
 
         return arg_type.from_argparse(argparse_namespace)
 
     def bind(self, *bindings: Binding) -> "Bindings":
+        """
+        Verifies the completeness of a given list of bindings w.r.t. this parser structure.
+        """
         type_mapping = _traverse_get_type_mapping(self._args_or_subparsers)
 
         offered_bindings = set(binding.arg_type for binding in bindings)
@@ -112,6 +160,9 @@ class Parser:
         bindings_generator: "BindingsGenerator",
         raw_args: List[str] = sys.argv[1:],
     ) -> None:
+        """
+        Parse arguments and execute the given (lazy) bindings on the result.
+        """
         typed_args = self.parse_args(raw_args)
 
         bindings = bindings_generator(self)
@@ -151,6 +202,11 @@ def _traverse_build_parser(
         all_leaf_paths = set()
 
     if isinstance(args_or_subparsers, SubParsers):
+        if args_or_subparsers._common_args is not None:
+            _traverse_build_parser(
+                args_or_subparsers._common_args, parser, cur_path, all_leaf_paths
+            )
+
         subparser_decls = args_or_subparsers._subparsers
 
         # It looks like wrapping the `dest` variable for argparse into `<...>` leads to
@@ -262,7 +318,7 @@ def _add_arguments(
     parser: ArgparseParser,
 ) -> None:
     annotations = collect_type_annotations(arg_type, include_super_types=False)
-    # print(f"Annotations of {arg_type}: {annotations}")
+    # print(f"Annotations of {arg_type.__name__}: {annotations}")
 
     for attr_name, annotation in annotations.items():
         if not hasattr(arg_type, attr_name):
@@ -321,9 +377,12 @@ def _build_add_argument_args(
 
     else:
         # We must not declare 'type' for boolean switches, which have an action instead.
-        type_converter = annotation.get_underlying_type_converter()
-        if type_converter is not None:
-            kwargs["type"] = type_converter
+        if p.type is not None:
+            kwargs["type"] = p.type
+        else:
+            type_converter = annotation.get_underlying_type_converter()
+            if type_converter is not None:
+                kwargs["type"] = type_converter
 
         if p.default is not None:
             kwargs["default"] = copy.deepcopy(p.default)

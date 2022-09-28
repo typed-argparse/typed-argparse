@@ -1,17 +1,11 @@
 import argparse
 from typing import Dict, Generic, List, Type, TypeVar, cast
 
-from .choices import Choices
+from .choices import Choices, get_choices_from_class
 from .dataclass_transform_backport import dataclass_transform
 from .param import Param
 from .runtime_generic import RuntimeGeneric
-from .type_utils import (
-    RawTypeAnnotation,
-    TypeAnnotation,
-    assert_not_none,
-    collect_type_annotations,
-    typename,
-)
+from .type_utils import TypeAnnotation, collect_type_annotations
 
 C = TypeVar("C", bound="TypedArgs")
 
@@ -79,13 +73,20 @@ def _argparse_namespace_to_dict(
         if arg_name in TypedArgs.__dict__:
             raise TypeError(f"A type must not have an argument called '{arg_name}'")
 
+        # Validate the value and add as attribute
         if hasattr(args, arg_name):
-            # Validate the value and add as attribute
             value: object = getattr(args, arg_name)
             value = type_annotation.validate_with_error(value, arg_name)
             kwargs[arg_name] = value
         else:
-            missing_args.append(arg_name)
+            arg_name_with_hyphen = arg_name.replace("_", "-")
+            if hasattr(args, arg_name_with_hyphen):
+                value = getattr(args, arg_name_with_hyphen)
+                value = type_annotation.validate_with_error(value, arg_name)
+                kwargs[arg_name] = value
+
+            else:
+                missing_args.append(arg_name)
 
     # Report missing args if any
     if len(missing_args) > 0:
@@ -106,47 +107,6 @@ def _argparse_namespace_to_dict(
                 raise TypeError(f"Arguments object has unexpected extra arguments {extra_args}")
 
     return kwargs
-
-
-def get_choices_from_class(cls: type, field: str) -> Choices:
-    """
-    Helper function to extract allowed values from class field (which is a literal/enum like).
-
-    Use case: Forward as `choices=...` argument to argparse.
-    """
-    if field in cls.__annotations__:
-        raw_type_annotation: RawTypeAnnotation = cls.__annotations__[field]
-        try:
-            return get_choices_from(raw_type_annotation)
-        except TypeError as e:
-            raise TypeError(
-                f"Could not infer literal values of field '{field}' "
-                f"of type {typename(raw_type_annotation)}"
-            ) from e
-    else:
-        raise TypeError(f"Class {cls.__name__} doesn't have a type annotation for field '{field}'")
-
-
-def get_choices_from(raw_type_annotation: RawTypeAnnotation) -> Choices:
-    """
-    Helper function to extract allowed values from a literal/enum like type.
-
-    Use case: Forward as `choices=...` argument to argparse.
-    """
-    type_annotation = TypeAnnotation(raw_type_annotation)
-
-    while type_annotation.get_underlying_if_list() is not None:
-        type_annotation = assert_not_none(type_annotation.get_underlying_if_list())
-
-    allowed_values = type_annotation.get_allowed_values_if_literal()
-    if allowed_values is not None:
-        return Choices(*allowed_values)
-
-    allowed_values = type_annotation.get_allowed_values_if_enum()
-    if allowed_values is not None:
-        return Choices(*allowed_values)
-
-    raise TypeError(f"Could not infer literal values of type {typename(raw_type_annotation)}")
 
 
 T = TypeVar("T")
