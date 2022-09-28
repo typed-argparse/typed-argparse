@@ -79,13 +79,20 @@ def _argparse_namespace_to_dict(
         if arg_name in TypedArgs.__dict__:
             raise TypeError(f"A type must not have an argument called '{arg_name}'")
 
+        # Validate the value and add as attribute
         if hasattr(args, arg_name):
-            # Validate the value and add as attribute
             value: object = getattr(args, arg_name)
             value = type_annotation.validate_with_error(value, arg_name)
             kwargs[arg_name] = value
         else:
-            missing_args.append(arg_name)
+            arg_name_with_hyphen = arg_name.replace("_", "-")
+            if hasattr(args, arg_name_with_hyphen):
+                value: object = getattr(args, arg_name_with_hyphen)
+                value = type_annotation.validate_with_error(value, arg_name)
+                kwargs[arg_name] = value
+
+            else:
+                missing_args.append(arg_name)
 
     # Report missing args if any
     if len(missing_args) > 0:

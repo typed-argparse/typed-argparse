@@ -133,6 +133,24 @@ def test_positional() -> None:
     assert args.file == "my_file"
 
 
+def test_positional__with_hyphens() -> None:
+    """
+    Since argparse does not allow positional arguments to have a `dest` that is different
+    from the user-facing parameter, we have an issue: By default we convert the
+    positional_with_underscores to positional-with-underscores, because we want the user
+    facing variable to have hyphens. Argparse will simply put it in the namespace under that
+    spelling. In the validation in TypedArgs, we then look for a variable according to the
+    name of the Python annotation, i.e., positional_with_underscores, and thus the lookup
+    fails. As a work-around, we currently use a fallback lookup under the 'hyphened' name.
+    """
+
+    class Args(TypedArgs):
+        positional_with_underscores: str = param(positional=True)
+
+    args = parse(Args, ["foo"])
+    assert args.positional_with_underscores == "foo"
+
+
 # Flags
 
 
@@ -182,6 +200,25 @@ def test_flags__assert_no_positional_names() -> None:
         "Invalid flags: ('foo',). All flags should start with '-'. "
         "A positional argument can be created by setting `positional=True`."
     ) == str(e.value)
+
+
+# Type parser
+
+
+def test_type_parsers() -> None:
+    class ArgsIllegal1(TypedArgs):
+        len_of_str: int = param(type=lambda s: "")  # type: ignore
+
+    class ArgsIllegal2(TypedArgs):
+        foo: int = param(default="", type=lambda s: len(s))  # type: ignore
+        bar: str = param(default="", type=lambda s: len(s))  # type: ignore
+
+    class Args(TypedArgs):
+        len_of_str: int = param(positional=True, type=lambda s: len(s))
+
+    assert parse(Args, ["1"]).len_of_str == 1
+    assert parse(Args, ["12"]).len_of_str == 2
+    assert parse(Args, ["123"]).len_of_str == 3
 
 
 # Literals

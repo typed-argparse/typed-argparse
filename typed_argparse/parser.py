@@ -364,9 +364,12 @@ def _build_add_argument_args(
 
     else:
         # We must not declare 'type' for boolean switches, which have an action instead.
-        type_converter = annotation.get_underlying_type_converter()
-        if type_converter is not None:
-            kwargs["type"] = type_converter
+        if p.type is not None:
+            kwargs["type"] = p.type
+        else:
+            type_converter = annotation.get_underlying_type_converter()
+            if type_converter is not None:
+                kwargs["type"] = type_converter
 
         if p.default is not None:
             kwargs["default"] = copy.deepcopy(p.default)
