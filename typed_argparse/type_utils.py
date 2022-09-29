@@ -26,7 +26,9 @@ RawTypeAnnotation = object
 
 
 def collect_type_annotations(
-    cls: type, *, include_super_types: bool
+    cls: type,
+    *,
+    include_super_types: bool = True,
 ) -> Dict[str, "TypeAnnotation"]:
     if include_super_types:
         return _collect_all_type_annotations(cls)
