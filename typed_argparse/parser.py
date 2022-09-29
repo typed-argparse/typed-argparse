@@ -36,21 +36,21 @@ class SubParser:
     def __init__(
         self,
         name: str,
-        args_or_subparsers: "ArgsOrSubparsers",
+        args_or_group: "ArgsOrGroup",
         aliases: Optional[List[str]] = None,
     ):
         self._name = name
-        self._args_or_subparsers = args_or_subparsers
+        self._args_or_group = args_or_group
         self._aliases = aliases
 
     def __str__(self) -> str:
-        return f"SubParser('{self._name}', {_to_string(self._args_or_subparsers)})"
+        return f"SubParser('{self._name}', {_to_string(self._args_or_group)})"
 
     def __repr__(self) -> str:
         return str(self)
 
 
-class SubParsers:
+class SubParserGroup:
     def __init__(
         self,
         *subparsers: SubParser,
@@ -62,7 +62,7 @@ class SubParsers:
         self._required = required
 
     def __str__(self) -> str:
-        return f"SubParsers({', '.join(map(str, self._sub_parser_declarations))})"
+        return f"SubParserGroup({', '.join(map(str, self._sub_parser_declarations))})"
 
     def __repr__(self) -> str:
         return str(self)
@@ -85,7 +85,7 @@ class Binding:
 class Parser:
     def __init__(
         self,
-        args_or_subparsers: "ArgsOrSubparsers",
+        args_or_group: "ArgsOrGroup",
         prog: Optional[str] = None,
         usage: Optional[str] = None,
         description: Optional[str] = None,
@@ -105,7 +105,7 @@ class Parser:
             - allow_abbrev -- Allow long options to be abbreviated unambiguously
         """
 
-        self._args_or_subparsers = args_or_subparsers
+        self._args_or_group = args_or_group
         self._prog = prog
         self._usage = usage
         self._description = description
@@ -126,8 +126,8 @@ class Parser:
             allow_abbrev=self._allow_abbrev,
         )
 
-        all_leaf_paths = _traverse_build_parser(self._args_or_subparsers, parser)
-        type_mapping = _traverse_get_type_mapping(self._args_or_subparsers)
+        all_leaf_paths = _traverse_build_parser(self._args_or_group, parser)
+        type_mapping = _traverse_get_type_mapping(self._args_or_group)
 
         if _ARG_COMPLETE_AVAILABLE:
             argcomplete.autocomplete(parser)
@@ -142,8 +142,8 @@ class Parser:
         if arg_type is None:
             # Should only be possible in Python 3.6
             parser.exit(
-                message=f"Failed to extract argument type from namespace object {argparse_namespace} "
-                f"(leaf paths: {all_leaf_paths}, type mapping: {type_mapping})"
+                message=f"Failed to extract argument type from namespace object "
+                f"{argparse_namespace} (leaf paths: {all_leaf_paths}, type mapping: {type_mapping})"
             )
 
         else:
@@ -153,7 +153,7 @@ class Parser:
         """
         Verifies the completeness of a given list of bindings w.r.t. this parser structure.
         """
-        type_mapping = _traverse_get_type_mapping(self._args_or_subparsers)
+        type_mapping = _traverse_get_type_mapping(self._args_or_group)
 
         offered_bindings = set(binding.arg_type for binding in bindings)
 
@@ -190,13 +190,13 @@ class Parser:
         )
 
     def __str__(self) -> str:
-        return f"Parser({_to_string(self._args_or_subparsers)})"
+        return f"Parser({_to_string(self._args_or_group)})"
 
     def __repr__(self) -> str:
         return str(self)
 
 
-ArgsOrSubparsers = Union[Type[TypedArgs], SubParsers]
+ArgsOrGroup = Union[Type[TypedArgs], SubParserGroup]
 Bindings = Sequence[Binding]
 BindingsGenerator = Callable[[Parser], Bindings]
 
@@ -205,7 +205,7 @@ TypePath = Tuple[str, ...]
 
 
 def _traverse_build_parser(
-    args_or_subparsers: ArgsOrSubparsers,
+    args_or_group: ArgsOrGroup,
     parser: ArgparseParser,
     cur_path: TypePath = (),
     parent_annotations: Optional[Set[str]] = None,
@@ -216,17 +216,17 @@ def _traverse_build_parser(
     if all_leaf_paths is None:
         all_leaf_paths = set()
 
-    if isinstance(args_or_subparsers, SubParsers):
-        sub_parsers = args_or_subparsers
+    if isinstance(args_or_group, SubParserGroup):
+        group = args_or_group
 
         # Make a copy of parent annotations to avoid leaking changes in other branches.
         parent_annotations = parent_annotations.copy()
 
-        if sub_parsers._common_args is not None:
-            common_args = sub_parsers._common_args
+        if group._common_args is not None:
+            common_args = group._common_args
             _add_arguments(common_args, parser, parent_annotations)
 
-            if not args_or_subparsers._required:
+            if not args_or_group._required:
                 all_leaf_paths.add(cur_path)
 
             parent_annotations.update(collect_type_annotations(common_args).keys())
@@ -246,22 +246,22 @@ def _traverse_build_parser(
             argparse_subparsers = parser.add_subparsers(
                 help="Available sub commands",
                 dest=dest,
-                required=sub_parsers._required,
+                required=group._required,
             )
 
-        for sub_parser_declaration in sub_parsers._sub_parser_declarations:
+        for sub_parser_declaration in group._sub_parser_declarations:
             argparse_subparser = argparse_subparsers.add_parser(sub_parser_declaration._name)
 
             _traverse_build_parser(
-                sub_parser_declaration._args_or_subparsers,
+                sub_parser_declaration._args_or_group,
                 parser=argparse_subparser,
                 cur_path=cur_path + (dest,),
                 parent_annotations=parent_annotations,
                 all_leaf_paths=all_leaf_paths,
             )
 
-    elif issubclass(args_or_subparsers, TypedArgs):
-        arg_type = args_or_subparsers
+    elif issubclass(args_or_group, TypedArgs):
+        arg_type = args_or_group
         assert issubclass(arg_type, TypedArgs)
 
         _add_arguments(arg_type, parser, parent_annotations)
@@ -269,7 +269,7 @@ def _traverse_build_parser(
         all_leaf_paths.add(cur_path)
 
     else:
-        assert_never(args_or_subparsers)
+        assert_never(args_or_group)
 
     return all_leaf_paths
 
@@ -277,32 +277,33 @@ def _traverse_build_parser(
 TypeMapping = Dict[TypePath, Type[TypedArgs]]
 
 
-def _traverse_get_type_mapping(args_or_subparsers: ArgsOrSubparsers) -> TypeMapping:
+def _traverse_get_type_mapping(args_or_group: ArgsOrGroup) -> TypeMapping:
 
     mapping: Dict[TypePath, Type[TypedArgs]] = {}
 
-    def traverse(args_or_subparsers: ArgsOrSubparsers, current_path: TypePath) -> None:
+    def traverse(args_or_group: ArgsOrGroup, current_path: TypePath) -> None:
 
-        if isinstance(args_or_subparsers, SubParsers):
+        if isinstance(args_or_group, SubParserGroup):
+            group = args_or_group
 
-            if args_or_subparsers._common_args is not None and not args_or_subparsers._required:
-                mapping[current_path] = args_or_subparsers._common_args
+            if group._common_args is not None and not group._required:
+                mapping[current_path] = group._common_args
 
-            subparser_decls = args_or_subparsers._sub_parser_declarations
+            subparser_decls = group._sub_parser_declarations
             for subparser_decl in subparser_decls:
                 traverse(
-                    args_or_subparsers=subparser_decl._args_or_subparsers,
+                    args_or_group=subparser_decl._args_or_group,
                     current_path=current_path + (subparser_decl._name,),
                 )
 
-        elif issubclass(args_or_subparsers, TypedArgs):
-            arg_type = args_or_subparsers
+        elif issubclass(args_or_group, TypedArgs):
+            arg_type = args_or_group
             mapping[current_path] = arg_type
 
         else:
-            assert_never(args_or_subparsers)
+            assert_never(args_or_group)
 
-    traverse(args_or_subparsers, current_path=tuple())
+    traverse(args_or_group, current_path=tuple())
 
     return mapping
 
@@ -453,8 +454,8 @@ def _build_add_argument_args(
     return name_or_flags, kwargs
 
 
-def _to_string(args_or_subparsers: ArgsOrSubparsers) -> str:
-    if isinstance(args_or_subparsers, type):
-        return args_or_subparsers.__name__
+def _to_string(args_or_group: ArgsOrGroup) -> str:
+    if isinstance(args_or_group, type):
+        return args_or_group.__name__
     else:
-        return str(args_or_subparsers)
+        return str(args_or_group)
