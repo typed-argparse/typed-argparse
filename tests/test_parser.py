@@ -8,7 +8,7 @@ from typing import Generator, List, Optional, Type, TypeVar
 import pytest
 from typing_extensions import Literal
 
-from typed_argparse import Binding, Parser, SubParser, SubParsers, TypedArgs, param
+from typed_argparse import Binding, Parser, SubParser, SubParserGroup, TypedArgs, param
 
 T = TypeVar("T", bound=TypedArgs)
 
@@ -288,7 +288,7 @@ def test_subparser__basic() -> None:
         y: str
 
     parser = Parser(
-        SubParsers(
+        SubParserGroup(
             SubParser("foo", FooArgs),
             SubParser("bar", BarArgs),
         )
@@ -317,13 +317,13 @@ def test_subparser__multiple() -> None:
         ...
 
     parser = Parser(
-        SubParsers(
+        SubParserGroup(
             SubParser(
                 "foo",
-                SubParsers(
+                SubParserGroup(
                     SubParser(
                         "x",
-                        SubParsers(
+                        SubParserGroup(
                             SubParser("a", FooXA),
                             SubParser("b", FooXB),
                         ),
@@ -360,7 +360,7 @@ def test_subparsers_common_args__basic() -> None:
         y: str
 
     parser = Parser(
-        SubParsers(
+        SubParserGroup(
             SubParser("foo", FooArgs),
             SubParser("bar", BarArgs),
             common_args=CommonArgs,
@@ -404,7 +404,7 @@ def test_subparsers_common_args__via_inheritance_only() -> None:
         y: str
 
     parser = Parser(
-        SubParsers(
+        SubParserGroup(
             SubParser("foo", FooArgs),
             SubParser("bar", BarArgs),
         )
@@ -450,10 +450,10 @@ def test_subparsers_common_args__branch_isolation() -> None:
         foo_root: str = param(default="foo_root_in_other_branch")
 
     parser = Parser(
-        SubParsers(
+        SubParserGroup(
             SubParser(
                 "foo",
-                SubParsers(
+                SubParserGroup(
                     SubParser("a", FooA),
                     SubParser("b", FooB),
                     common_args=FooRoot,
@@ -478,7 +478,7 @@ def test_subparsers_common_args__branch_isolation() -> None:
 # Subparsers executable mapping behavior
 
 
-def test_subparsers_executable_mapping_behavior():
+def test_subparsers_executable_mapping_behavior() -> None:
     class CommonArgs(TypedArgs):
         ...
 
@@ -492,22 +492,22 @@ def test_subparsers_executable_mapping_behavior():
     num_run_foo = 0
     num_run_bar = 0
 
-    def run_common(args: CommonArgs):
+    def run_common(args: CommonArgs) -> None:
         nonlocal num_run_common
         num_run_common += 1
 
-    def run_foo(args: FooArgs):
+    def run_foo(args: FooArgs) -> None:
         nonlocal num_run_foo
         num_run_foo += 1
 
-    def run_bar(args: BarArgs):
+    def run_bar(args: BarArgs) -> None:
         nonlocal num_run_bar
         num_run_bar += 1
 
     # Required case
 
     parser = Parser(
-        SubParsers(
+        SubParserGroup(
             SubParser("foo", FooArgs),
             SubParser("bar", BarArgs),
             common_args=CommonArgs,
@@ -545,7 +545,7 @@ def test_subparsers_executable_mapping_behavior():
     # Non-required case
 
     parser = Parser(
-        SubParsers(
+        SubParserGroup(
             SubParser("foo", FooArgs),
             SubParser("bar", BarArgs),
             common_args=CommonArgs,
@@ -605,7 +605,7 @@ def test_bindings_check() -> None:
         y: str
 
     parser = Parser(
-        SubParsers(
+        SubParserGroup(
             SubParser("foo", FooArgs),
             SubParser("bar", BarArgs),
         )
@@ -689,12 +689,12 @@ def test_readability_of_parser_structures() -> None:
         y: str
 
     parser = Parser(
-        SubParsers(
+        SubParserGroup(
             SubParser("foo", FooArgs),
             SubParser("bar", BarArgs),
         )
     )
-    expected = "Parser(SubParsers(SubParser('foo', FooArgs), SubParser('bar', BarArgs)))"
+    expected = "Parser(SubParserGroup(SubParser('foo', FooArgs), SubParser('bar', BarArgs)))"
     assert str(parser) == expected
     assert repr(parser) == expected
 

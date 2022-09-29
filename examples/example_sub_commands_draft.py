@@ -2,7 +2,7 @@
 
 from typing import Union
 
-from typed_argparse import Binding, Parser, SubParser, SubParsers, TypedArgs, param
+from typed_argparse import Binding, Parser, SubParser, SubParserGroup, TypedArgs, param
 
 
 class CommonArgs(TypedArgs):
@@ -35,7 +35,7 @@ def run_bar(args: ArgsBar) -> None:
 
 def main() -> None:
     parser = Parser(
-        SubParsers(
+        SubParserGroup(
             SubParser("foo", ArgsFoo, aliases=["co"]),
             SubParser("bar", ArgsBar),
         ),
