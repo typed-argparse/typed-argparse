@@ -55,12 +55,14 @@ class SubParsers:
         self,
         *subparsers: SubParser,
         common_args: Optional[Type[TypedArgs]] = None,
+        required: bool = True,
     ):
-        self._subparsers = subparsers
+        self._sub_parser_declarations = subparsers
         self._common_args = common_args
+        self._required = required
 
     def __str__(self) -> str:
-        return f"SubParsers({', '.join(map(str, self._subparsers))})"
+        return f"SubParsers({', '.join(map(str, self._sub_parser_declarations))})"
 
     def __repr__(self) -> str:
         return str(self)
@@ -137,7 +139,15 @@ class Parser:
 
         arg_type = _determine_arg_type(all_leaf_paths, argparse_namespace, type_mapping)
 
-        return arg_type.from_argparse(argparse_namespace)
+        if arg_type is None:
+            # Should only be possible in Python 3.6
+            parser.exit(
+                message=f"Failed to extract argument type from namespace object {argparse_namespace} "
+                f"(leaf paths: {all_leaf_paths}, type mapping: {type_mapping})"
+            )
+
+        else:
+            return arg_type.from_argparse(argparse_namespace)
 
     def bind(self, *bindings: Binding) -> "Bindings":
         """
@@ -168,7 +178,9 @@ class Parser:
         bindings = bindings_generator(self)
 
         for binding in bindings:
-            if isinstance(typed_args, binding.arg_type):
+            # Note that we don't want `isinstance` but rather exact type equality here,
+            # so that we don't accidentally execute a base function.
+            if type(typed_args) is binding.arg_type:
                 binding.func(typed_args)
                 return
 
@@ -196,18 +208,28 @@ def _traverse_build_parser(
     args_or_subparsers: ArgsOrSubparsers,
     parser: ArgparseParser,
     cur_path: TypePath = (),
+    parent_annotations: Optional[Set[str]] = None,
     all_leaf_paths: Optional[Set[TypePath]] = None,
 ) -> Set[TypePath]:
+    if parent_annotations is None:
+        parent_annotations = set()
     if all_leaf_paths is None:
         all_leaf_paths = set()
 
     if isinstance(args_or_subparsers, SubParsers):
-        if args_or_subparsers._common_args is not None:
-            _traverse_build_parser(
-                args_or_subparsers._common_args, parser, cur_path, all_leaf_paths
-            )
+        sub_parsers = args_or_subparsers
 
-        subparser_decls = args_or_subparsers._subparsers
+        # Make a copy of parent annotations to avoid leaking changes in other branches.
+        parent_annotations = parent_annotations.copy()
+
+        if sub_parsers._common_args is not None:
+            common_args = sub_parsers._common_args
+            _add_arguments(common_args, parser, parent_annotations)
+
+            if not args_or_subparsers._required:
+                all_leaf_paths.add(cur_path)
+
+            parent_annotations.update(collect_type_annotations(common_args).keys())
 
         # It looks like wrapping the `dest` variable for argparse into `<...>` leads to
         # well readable error message while also reducing the risk of an argument name
@@ -216,24 +238,25 @@ def _traverse_build_parser(
         dest = "<" + ((len(cur_path) + 1) * "sub-") + "command>"
 
         if sys.version_info < (3, 7):
-            subparsers = parser.add_subparsers(
+            argparse_subparsers = parser.add_subparsers(
                 help="Available sub commands",
                 dest=dest,
             )
         else:
-            subparsers = parser.add_subparsers(
+            argparse_subparsers = parser.add_subparsers(
                 help="Available sub commands",
                 dest=dest,
-                required=True,
+                required=sub_parsers._required,
             )
 
-        for subparser_decl in subparser_decls:
-            sub_parser = subparsers.add_parser(subparser_decl._name)
+        for sub_parser_declaration in sub_parsers._sub_parser_declarations:
+            argparse_subparser = argparse_subparsers.add_parser(sub_parser_declaration._name)
 
             _traverse_build_parser(
-                subparser_decl._args_or_subparsers,
-                parser=sub_parser,
+                sub_parser_declaration._args_or_subparsers,
+                parser=argparse_subparser,
                 cur_path=cur_path + (dest,),
+                parent_annotations=parent_annotations,
                 all_leaf_paths=all_leaf_paths,
             )
 
@@ -241,7 +264,7 @@ def _traverse_build_parser(
         arg_type = args_or_subparsers
         assert issubclass(arg_type, TypedArgs)
 
-        _add_arguments(arg_type, parser)
+        _add_arguments(arg_type, parser, parent_annotations)
 
         all_leaf_paths.add(cur_path)
 
@@ -261,7 +284,11 @@ def _traverse_get_type_mapping(args_or_subparsers: ArgsOrSubparsers) -> TypeMapp
     def traverse(args_or_subparsers: ArgsOrSubparsers, current_path: TypePath) -> None:
 
         if isinstance(args_or_subparsers, SubParsers):
-            subparser_decls = args_or_subparsers._subparsers
+
+            if args_or_subparsers._common_args is not None and not args_or_subparsers._required:
+                mapping[current_path] = args_or_subparsers._common_args
+
+            subparser_decls = args_or_subparsers._sub_parser_declarations
             for subparser_decl in subparser_decls:
                 traverse(
                     args_or_subparsers=subparser_decl._args_or_subparsers,
@@ -282,7 +309,7 @@ def _traverse_get_type_mapping(args_or_subparsers: ArgsOrSubparsers) -> TypeMapp
 
 def _determine_arg_type(
     key_paths: Set[TypePath], argparse_namespace: argparse.Namespace, type_mapping: TypeMapping
-) -> Type[TypedArgs]:
+) -> Optional[Type[TypedArgs]]:
     # We sort leaf paths from longer (more specific) to shorter (less specific).
     # This should only become relevant when subparsers are non-mandatory, i.e.,
     # then can be executable with a shorter leaf path as well. In this case we
@@ -302,25 +329,24 @@ def _determine_arg_type(
             value_path: TypePath = tuple(getattr(argparse_namespace, dest) for dest in key_path)
             if value_path in type_mapping:
                 arg_type = type_mapping[value_path]
-                break
+                return arg_type
         except AttributeError:
             pass
 
-    assert arg_type is not None, (
-        f"Failed to extract argument type from namespace object {argparse_namespace} "
-        f"(leaf paths: {sorted_key_paths}, type mapping: {type_mapping})"
-    )
-    return arg_type
+    # Should be impossible in Python 3.7, but in Python 3.6 non-required subparsers can cause this.
+    return None
 
 
 def _add_arguments(
-    arg_type: Type[TypedArgs],
-    parser: ArgparseParser,
+    arg_type: Type[TypedArgs], parser: ArgparseParser, parent_annotations: Set[str]
 ) -> None:
-    annotations = collect_type_annotations(arg_type, include_super_types=False)
-    # print(f"Annotations of {arg_type.__name__}: {annotations}")
+    annotations = collect_type_annotations(arg_type)
+    # print(f"Adding {arg_type.__name__}, {annotations.keys() = }, {parent_annotations = }")
 
     for attr_name, annotation in annotations.items():
+        if attr_name in parent_annotations:
+            continue
+
         if not hasattr(arg_type, attr_name):
             p = param()
         else:

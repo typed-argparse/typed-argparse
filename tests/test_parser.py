@@ -348,9 +348,10 @@ def test_subparser__multiple() -> None:
 # Subparsers with common args
 
 
-def test_subparser_common_args__basic() -> None:
+def test_subparsers_common_args__basic() -> None:
     class CommonArgs(TypedArgs):
         verbose: bool
+        other: str = param(default="default")
 
     class FooArgs(CommonArgs):
         x: str
@@ -370,21 +371,227 @@ def test_subparser_common_args__basic() -> None:
     assert isinstance(args, FooArgs)
     assert args.x == "x_value"
     assert not args.verbose
+    assert args.other == "default"
+
+    args = parser.parse_args(["bar", "--y", "y_value"])
+    assert isinstance(args, BarArgs)
+    assert args.y == "y_value"
+    assert not args.verbose
+    assert args.other == "default"
+
+    args = parser.parse_args(["--verbose", "--other", "1", "foo", "--x", "x_value"])
+    assert isinstance(args, FooArgs)
+    assert args.x == "x_value"
+    assert args.verbose
+    assert args.other == "1"
+
+    args = parser.parse_args(["--verbose", "--other", "2", "bar", "--y", "y_value"])
+    assert isinstance(args, BarArgs)
+    assert args.y == "y_value"
+    assert args.verbose
+    assert args.other == "2"
+
+
+def test_subparsers_common_args__via_inheritance_only() -> None:
+    class CommonArgs(TypedArgs):
+        verbose: bool
+        other: str = param(default="default")
+
+    class FooArgs(CommonArgs):
+        x: str
+
+    class BarArgs(CommonArgs):
+        y: str
+
+    parser = Parser(
+        SubParsers(
+            SubParser("foo", FooArgs),
+            SubParser("bar", BarArgs),
+        )
+    )
+
+    args = parser.parse_args(["foo", "--x", "x_value"])
+    assert isinstance(args, FooArgs)
+    assert args.x == "x_value"
+    assert not args.verbose
 
     args = parser.parse_args(["bar", "--y", "y_value"])
     assert isinstance(args, BarArgs)
     assert args.y == "y_value"
     assert not args.verbose
 
-    args = parser.parse_args(["--verbose", "foo", "--x", "x_value"])
+    args = parser.parse_args(["foo", "--x", "x_value", "--verbose", "--other", "1"])
     assert isinstance(args, FooArgs)
     assert args.x == "x_value"
     assert args.verbose
+    assert args.other == "1"
 
-    args = parser.parse_args(["--verbose", "bar", "--y", "y_value"])
+    args = parser.parse_args(["bar", "--y", "y_value", "--verbose", "--other", "2"])
     assert isinstance(args, BarArgs)
     assert args.y == "y_value"
     assert args.verbose
+    assert args.other == "2"
+
+
+def test_subparsers_common_args__branch_isolation() -> None:
+    class Root(TypedArgs):
+        root: str = param(default="root")
+
+    class FooRoot(Root):
+        foo_root: str = param(default="foo_root")
+
+    class FooA(FooRoot):
+        a: str = param(default="a")
+
+    class FooB(FooRoot):
+        b: str = param(default="b")
+
+    class Bar(Root):
+        foo_root: str = param(default="foo_root_in_other_branch")
+
+    parser = Parser(
+        SubParsers(
+            SubParser(
+                "foo",
+                SubParsers(
+                    SubParser("a", FooA),
+                    SubParser("b", FooB),
+                    common_args=FooRoot,
+                ),
+            ),
+            SubParser("bar", Bar),
+            common_args=Root,
+        )
+    )
+    args = parser.parse_args(["foo", "a"])
+    assert isinstance(args, FooA)
+    assert args.root == "root"
+    assert args.foo_root == "foo_root"
+    assert args.a == "a"
+
+    args = parser.parse_args(["bar"])
+    assert isinstance(args, Bar)
+    assert args.root == "root"
+    assert args.foo_root == "foo_root_in_other_branch"
+
+
+# Subparsers executable mapping behavior
+
+
+def test_subparsers_executable_mapping_behavior():
+    class CommonArgs(TypedArgs):
+        ...
+
+    class FooArgs(CommonArgs):
+        ...
+
+    class BarArgs(CommonArgs):
+        ...
+
+    num_run_common = 0
+    num_run_foo = 0
+    num_run_bar = 0
+
+    def run_common(args: CommonArgs):
+        nonlocal num_run_common
+        num_run_common += 1
+
+    def run_foo(args: FooArgs):
+        nonlocal num_run_foo
+        num_run_foo += 1
+
+    def run_bar(args: BarArgs):
+        nonlocal num_run_bar
+        num_run_bar += 1
+
+    # Required case
+
+    parser = Parser(
+        SubParsers(
+            SubParser("foo", FooArgs),
+            SubParser("bar", BarArgs),
+            common_args=CommonArgs,
+        )
+    )
+
+    parser.run(
+        lambda parser: parser.bind(
+            Binding(FooArgs, run_foo),
+            Binding(BarArgs, run_bar),
+        ),
+        raw_args=["foo"],
+    )
+    assert (num_run_common, num_run_foo, num_run_bar) == (0, 1, 0)
+
+    parser.run(
+        lambda parser: parser.bind(
+            Binding(FooArgs, run_foo),
+            Binding(BarArgs, run_bar),
+        ),
+        raw_args=["bar"],
+    )
+    assert (num_run_common, num_run_foo, num_run_bar) == (0, 1, 1)
+
+    # Note that error differs here for Python 3.6 due to non-required subparser
+    with pytest.raises(SystemExit):
+        parser.run(
+            lambda parser: parser.bind(
+                Binding(FooArgs, run_foo),
+                Binding(BarArgs, run_bar),
+            ),
+            raw_args=[],
+        )
+
+    # Non-required case
+
+    parser = Parser(
+        SubParsers(
+            SubParser("foo", FooArgs),
+            SubParser("bar", BarArgs),
+            common_args=CommonArgs,
+            required=False,
+        )
+    )
+
+    with pytest.raises(ValueError) as e:
+        parser.run(
+            lambda parser: parser.bind(
+                Binding(FooArgs, run_foo),
+                Binding(BarArgs, run_bar),
+            ),
+            raw_args=[],
+        )
+    assert "Incomplete bindings: There is no binding for type 'CommonArgs'." == str(e.value)
+
+    parser.run(
+        lambda parser: parser.bind(
+            Binding(CommonArgs, run_common),
+            Binding(FooArgs, run_foo),
+            Binding(BarArgs, run_bar),
+        ),
+        raw_args=[],
+    )
+    assert (num_run_common, num_run_foo, num_run_bar) == (1, 1, 1)
+
+    parser.run(
+        lambda parser: parser.bind(
+            Binding(CommonArgs, run_common),
+            Binding(FooArgs, run_foo),
+            Binding(BarArgs, run_bar),
+        ),
+        raw_args=["foo"],
+    )
+    assert (num_run_common, num_run_foo, num_run_bar) == (1, 2, 1)
+
+    parser.run(
+        lambda parser: parser.bind(
+            Binding(CommonArgs, run_common),
+            Binding(FooArgs, run_foo),
+            Binding(BarArgs, run_bar),
+        ),
+        raw_args=["bar"],
+    )
+    assert (num_run_common, num_run_foo, num_run_bar) == (1, 2, 2)
 
 
 # Bindings check
