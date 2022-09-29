@@ -2,20 +2,20 @@
 
 from typing import Union
 
-from typed_argparse import Binding, Parser, SubParser, SubParserGroup, TypedArgs, param
+from typed_argparse import Binding, Parser, SubParser, SubParserGroup, TypedArgs, arg
 
 
 class CommonArgs(TypedArgs):
-    verbose: bool = param(help="Enables verbose mode")
+    verbose: bool = arg(help="Enables verbose mode")
 
 
 class ArgsFoo(CommonArgs):
-    file: str = param(help="The file")
+    file: str = arg(help="The file")
 
 
 class ArgsBar(CommonArgs):
-    src: str = param(help="The source")
-    dst: str = param(help="The destination")
+    src: str = arg(help="The source")
+    dst: str = arg(help="The destination")
 
 
 Args = Union[ArgsFoo, ArgsBar]

@@ -18,7 +18,8 @@ from typing import (
 
 from typing_extensions import assert_never
 
-from .param import Param, param
+from .arg import Arg
+from .arg import arg as make_arg
 from .type_utils import TypeAnnotation, collect_type_annotations
 from .typed_args import TypedArgs
 
@@ -349,17 +350,17 @@ def _add_arguments(
             continue
 
         if not hasattr(arg_type, attr_name):
-            p = param()
+            arg = make_arg()
         else:
-            p = getattr(arg_type, attr_name)
+            arg = getattr(arg_type, attr_name)
 
-        if not isinstance(p, Param):
+        if not isinstance(arg, Arg):
             raise RuntimeError(
-                f"Class attribute '{attr_name}' of type {type(p).__name__} isn't of type Param. "
-                "All parameters should have a '... = params(...)' declaration."
+                f"Class attribute '{attr_name}' of type {type(arg).__name__} isn't of type Arg. "
+                "Arguments must be annotated with '... = arg(...)'."
             )
 
-        args, kwargs = _build_add_argument_args(attr_name, annotation, p)
+        args, kwargs = _build_add_argument_args(attr_name, annotation, arg)
 
         # print(f"Adding argument: {args} {kwargs}")
         parser.add_argument(*args, **kwargs)
@@ -368,11 +369,11 @@ def _add_arguments(
 def _build_add_argument_args(
     python_arg_name: str,
     annotation: TypeAnnotation,
-    p: Param,
+    arg: Arg,
 ) -> Tuple[List[str], Dict[str, Any]]:
 
     kwargs: Dict[str, Any] = {
-        "help": p.help,
+        "help": arg.help,
     }
 
     # Unwrap collections
@@ -388,7 +389,7 @@ def _build_add_argument_args(
     if annotation.is_bool:
         is_required = False
     else:
-        if annotation.is_optional or p.default is not None or p.positional:
+        if annotation.is_optional or arg.default is not None or arg.positional:
             is_required = False
         else:
             is_required = True
@@ -400,32 +401,32 @@ def _build_add_argument_args(
 
     # Value handling
     if annotation.is_bool:
-        if p.default is not None:
-            if p.default is True:
+        if arg.default is not None:
+            if arg.default is True:
                 kwargs["action"] = "store_false"
-            elif p.default is False:
+            elif arg.default is False:
                 kwargs["action"] = "store_true"
             else:
-                raise RuntimeError(f"Invalid default for bool '{p.default}'")
+                raise RuntimeError(f"Invalid default for bool '{arg.default}'")
         else:
             kwargs["action"] = "store_true"
 
     else:
         # We must not declare 'type' for boolean switches, which have an action instead.
-        if p.type is not None:
-            kwargs["type"] = p.type
+        if arg.type is not None:
+            kwargs["type"] = arg.type
         else:
             type_converter = annotation.get_underlying_type_converter()
             if type_converter is not None:
                 kwargs["type"] = type_converter
 
-        if p.default is not None:
-            kwargs["default"] = copy.deepcopy(p.default)
+        if arg.default is not None:
+            kwargs["default"] = copy.deepcopy(arg.default)
 
             # Argparse requires positionals with defaults to have nargs="?"
             # Note that for list-like (real nargs) arguments that happens to have a default
             # (a list as well), the nargs value will be overwritten below.
-            if p.positional:
+            if arg.positional:
                 kwargs["nargs"] = "?"
 
         allowed_values_if_literal = annotation.get_allowed_values_if_literal()
@@ -438,13 +439,16 @@ def _build_add_argument_args(
 
     # Nargs handling
     if is_collection:
-        kwargs["nargs"] = "*"
+        if arg.nargs is None:
+            kwargs["nargs"] = "*"
+        else:
+            kwargs["nargs"] = arg.nargs
 
     # Name handling
     cli_arg_name = python_arg_name.replace("_", "-")
     name_or_flags: List[str]
 
-    if p.positional:
+    if arg.positional:
         # Note that argparse does not allow to specify the 'dest' for positional arguments.
         # We have to rely on the fact the the hyphenated version of the name gets converted
         # back to exactly our `python_attr_name` as the internal dest, but that should
@@ -452,17 +456,17 @@ def _build_add_argument_args(
         name_or_flags = [cli_arg_name]
 
     else:
-        if len(p.flags) > 0:
-            if not all(flag.startswith("-") for flag in p.flags):
+        if len(arg.flags) > 0:
+            if not all(flag.startswith("-") for flag in arg.flags):
                 raise ValueError(
-                    f"Invalid flags: {p.flags}. All flags should start with '-'. "
+                    f"Invalid flags: {arg.flags}. All flags should start with '-'. "
                     "A positional argument can be created by setting `positional=True`."
                 )
-            name_or_flags = list(p.flags)
+            name_or_flags = list(arg.flags)
 
             # Automatically add the long name if the user only specifies the short flag,
             # but only if the original name is more than 1 char.
-            if all(len(flag) == 2 for flag in p.flags) and len(python_arg_name) > 1:
+            if all(len(flag) == 2 for flag in arg.flags) and len(python_arg_name) > 1:
                 name_or_flags += [f"--{cli_arg_name}"]
         else:
             name_or_flags = [f"--{cli_arg_name}"]
