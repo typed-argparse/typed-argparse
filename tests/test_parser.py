@@ -133,6 +133,24 @@ def test_positional() -> None:
     assert args.file == "my_file"
 
 
+def test_positional__with_default() -> None:
+    class Args(TypedArgs):
+        file_a: str = param(positional=True, default="file_a")
+        file_b: str = param(positional=True, default="file_b")
+
+    args = parse(Args, [])
+    assert args.file_a == "file_a"
+    assert args.file_b == "file_b"
+
+    args = parse(Args, ["custom_a"])
+    assert args.file_a == "custom_a"
+    assert args.file_b == "file_b"
+
+    args = parse(Args, ["custom_a", "custom_b"])
+    assert args.file_a == "custom_a"
+    assert args.file_b == "custom_b"
+
+
 def test_positional__with_hyphens() -> None:
     """
     Since argparse does not allow positional arguments to have a `dest` that is different
@@ -275,6 +293,46 @@ def test_enum() -> None:
         "argument --enum-int: invalid choice: 'c' (choose from <IntEnum.a: 1>, <IntEnum.b: 2>)"
         == str(e.error)
     )
+
+
+# Nargs
+
+
+def test_nargs__basic_list_support() -> None:
+    class Args(TypedArgs):
+        files: List[Path]
+
+    args = parse(Args, ["--files"])
+    assert args.files == []
+
+    args = parse(Args, ["--files", "a", "b", "c"])
+    assert args.files == [Path("a"), Path("b"), Path("c")]
+
+
+def test_nargs__with_default() -> None:
+    class Args(TypedArgs):
+        actions: List[str] = param(default=["foo", "bar"])
+
+    args = parse(Args, [])
+    assert args.actions == ["foo", "bar"]
+
+    # Make sure that mutating the default doesn't mutate the instance we got.
+    Args.actions.default.append("baz")  # type: ignore
+    assert args.actions == ["foo", "bar"]
+
+    args = parse(Args, ["--actions"])
+    assert args.actions == []
+
+
+def test_nargs__with_default__positional() -> None:
+    class Args(TypedArgs):
+        actions: List[str] = param(positional=True, default=["foo", "bar"])
+
+    args = parse(Args, [])
+    assert args.actions == ["foo", "bar"]
+
+    args = parse(Args, ["single"])
+    assert args.actions == ["single"]
 
 
 # Subparsers
