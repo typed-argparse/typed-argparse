@@ -1,16 +1,16 @@
 import argparse
 from typing import Dict, Generic, List, Type, TypeVar, cast
 
+from .arg import Arg
 from .choices import Choices, get_choices_from_class
 from .dataclass_transform_backport import dataclass_transform
-from .param import Param
 from .runtime_generic import RuntimeGeneric
 from .type_utils import TypeAnnotation, collect_type_annotations
 
 C = TypeVar("C", bound="TypedArgs")
 
 
-@dataclass_transform(kw_only_default=True, field_specifiers=(Param,))
+@dataclass_transform(kw_only_default=True, field_specifiers=(Arg,))
 class TypedArgs:
     def __init__(self, *args: object, **kwargs: object):
         """
@@ -20,7 +20,7 @@ class TypedArgs:
         match the type annotations.
         """
 
-        # Temporary backwards compatibility. To be removed in 0.3.
+        # Temporary backwards compatibility. To be removed in a future version.
         if len(args) == 1 and isinstance(args[0], argparse.Namespace):
             kwargs = _argparse_namespace_to_dict(type(self), args[0], disallow_extra_args=False)
 

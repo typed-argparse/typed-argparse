@@ -1,5 +1,5 @@
 from .choices import Choices, get_choices_from, get_choices_from_class
-from .param import Param, param
+from .arg import Arg, arg
 from .parser import Binding, Bindings, Parser, SubParser, SubParserGroup
 from .typed_args import TypedArgs, WithUnionType, validate_type_union
 
@@ -15,8 +15,8 @@ __all__ = [
     "Parser",
     "SubParser",
     "SubParserGroup",
-    "Param",
-    "param",
+    "Arg",
+    "arg",
     "Binding",
     "Bindings",
 ]

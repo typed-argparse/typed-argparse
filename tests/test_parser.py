@@ -8,7 +8,7 @@ from typing import Generator, List, Optional, Type, TypeVar
 import pytest
 from typing_extensions import Literal
 
-from typed_argparse import Binding, Parser, SubParser, SubParserGroup, TypedArgs, param
+from typed_argparse import Binding, Parser, SubParser, SubParserGroup, TypedArgs, arg
 
 T = TypeVar("T", bound=TypedArgs)
 
@@ -63,7 +63,7 @@ def test_bool_switch() -> None:
 
 def test_bool_switch__default_false() -> None:
     class Args(TypedArgs):
-        verbose: bool = param(default=False)
+        verbose: bool = arg(default=False)
 
     args = parse(Args, [])
     assert args.verbose is False
@@ -74,7 +74,7 @@ def test_bool_switch__default_false() -> None:
 
 def test_bool_switch__default_true() -> None:
     class Args(TypedArgs):
-        no_verbose: bool = param(default=True)
+        no_verbose: bool = arg(default=True)
 
     args = parse(Args, [])
     assert args.no_verbose is True
@@ -85,7 +85,7 @@ def test_bool_switch__default_true() -> None:
 
 def test_bool_switch__invalid_default() -> None:
     class Args(TypedArgs):
-        verbose: bool = param(default="foo")  # type: ignore
+        verbose: bool = arg(default="foo")  # type: ignore
 
     with pytest.raises(RuntimeError) as e:
         parse(Args, [])
@@ -102,8 +102,8 @@ def test_other_scalar_types() -> None:
         some_float: float
         other_int: Optional[int]
         other_float: Optional[float]
-        other_int_with_default: int = param(default=43)
-        other_float_with_default: float = param(default=2.0)
+        other_int_with_default: int = arg(default=43)
+        other_float_with_default: float = arg(default=2.0)
 
     args = parse(Args, ["--some-int", "42", "--some-float", "1.0"])
     assert args.some_int == 42
@@ -127,7 +127,7 @@ def test_path() -> None:
 
 def test_positional() -> None:
     class Args(TypedArgs):
-        file: str = param(positional=True)
+        file: str = arg(positional=True)
 
     args = parse(Args, ["my_file"])
     assert args.file == "my_file"
@@ -135,8 +135,8 @@ def test_positional() -> None:
 
 def test_positional__with_default() -> None:
     class Args(TypedArgs):
-        file_a: str = param(positional=True, default="file_a")
-        file_b: str = param(positional=True, default="file_b")
+        file_a: str = arg(positional=True, default="file_a")
+        file_b: str = arg(positional=True, default="file_b")
 
     args = parse(Args, [])
     assert args.file_a == "file_a"
@@ -154,7 +154,7 @@ def test_positional__with_default() -> None:
 def test_positional__with_hyphens() -> None:
     """
     Since argparse does not allow positional arguments to have a `dest` that is different
-    from the user-facing parameter, we have an issue: By default we convert the
+    from the user-facing argument, we have an issue: By default we convert the
     positional_with_underscores to positional-with-underscores, because we want the user
     facing variable to have hyphens. Argparse will simply put it in the namespace under that
     spelling. In the validation in TypedArgs, we then look for a variable according to the
@@ -163,7 +163,7 @@ def test_positional__with_hyphens() -> None:
     """
 
     class Args(TypedArgs):
-        positional_with_underscores: str = param(positional=True)
+        positional_with_underscores: str = arg(positional=True)
 
     args = parse(Args, ["foo"])
     assert args.positional_with_underscores == "foo"
@@ -174,7 +174,7 @@ def test_positional__with_hyphens() -> None:
 
 def test_flags() -> None:
     class Args(TypedArgs):
-        file: str = param("-f")
+        file: str = arg("-f")
 
     args = parse(Args, ["-f", "my_file"])
     assert args.file == "my_file"
@@ -185,7 +185,7 @@ def test_flags() -> None:
 
 def test_flags__renaming() -> None:
     class Args(TypedArgs):
-        foo: str = param("--bar")
+        foo: str = arg("--bar")
 
     args = parse(Args, ["--bar", "bar"])
     assert args.foo == "bar"
@@ -197,7 +197,7 @@ def test_flags__renaming() -> None:
 
 def test_flags__single_char() -> None:
     class Args(TypedArgs):
-        x: int = param("-y")
+        x: int = arg("-y")
 
     args = parse(Args, ["-y", "42"])
     assert args.x == 42
@@ -209,7 +209,7 @@ def test_flags__single_char() -> None:
 
 def test_flags__assert_no_positional_names() -> None:
     class Args(TypedArgs):
-        foo: str = param("foo")
+        foo: str = arg("foo")
 
     with pytest.raises(ValueError) as e:
         parse(Args, ["foo_value"])
@@ -225,14 +225,14 @@ def test_flags__assert_no_positional_names() -> None:
 
 def test_type_parsers() -> None:
     class ArgsIllegal1(TypedArgs):
-        len_of_str: int = param(type=lambda s: "")  # type: ignore
+        len_of_str: int = arg(type=lambda s: "")  # type: ignore
 
     class ArgsIllegal2(TypedArgs):
-        foo: int = param(default="", type=lambda s: len(s))  # type: ignore
-        bar: str = param(default="", type=lambda s: len(s))  # type: ignore
+        foo: int = arg(default="", type=lambda s: len(s))  # type: ignore
+        bar: str = arg(default="", type=lambda s: len(s))  # type: ignore
 
     class Args(TypedArgs):
-        len_of_str: int = param(positional=True, type=lambda s: len(s))
+        len_of_str: int = arg(positional=True, type=lambda s: len(s))
 
     assert parse(Args, ["1"]).len_of_str == 1
     assert parse(Args, ["12"]).len_of_str == 2
@@ -311,7 +311,7 @@ def test_nargs__basic_list_support() -> None:
 
 def test_nargs__with_default() -> None:
     class Args(TypedArgs):
-        actions: List[str] = param(default=["foo", "bar"])
+        actions: List[str] = arg(default=["foo", "bar"])
 
     args = parse(Args, [])
     assert args.actions == ["foo", "bar"]
@@ -326,13 +326,49 @@ def test_nargs__with_default() -> None:
 
 def test_nargs__with_default__positional() -> None:
     class Args(TypedArgs):
-        actions: List[str] = param(positional=True, default=["foo", "bar"])
+        actions: List[str] = arg(positional=True, default=["foo", "bar"])
 
     args = parse(Args, [])
     assert args.actions == ["foo", "bar"]
 
     args = parse(Args, ["single"])
     assert args.actions == ["single"]
+
+
+def test_nargs__with_explicit_nargs() -> None:
+    class Args(TypedArgs):
+        files: List[Path] = arg(nargs="*")
+
+    args = parse(Args, ["--files"])
+    assert args.files == []
+
+    args = parse(Args, ["--files", "a", "b", "c"])
+    assert args.files == [Path("a"), Path("b"), Path("c")]
+
+
+def test_nargs__non_zero_nargs() -> None:
+    class Args(TypedArgs):
+        files: List[Path] = arg(nargs="+")
+
+    with pytest.raises(SystemExit):
+        parse(Args, ["--files"])
+
+    args = parse(Args, ["--files", "a"])
+    assert args.files == [Path("a")]
+
+
+def test_nargs__fixed_number_of_args() -> None:
+    class Args(TypedArgs):
+        files: List[Path] = arg(nargs=2)
+
+    with pytest.raises(SystemExit):
+        parse(Args, ["--files", "a"])
+
+    with pytest.raises(SystemExit):
+        parse(Args, ["--files", "a", "b", "c"])
+
+    args = parse(Args, ["--files", "a", "b"])
+    assert args.files == [Path("a"), Path("b")]
 
 
 # Subparsers
@@ -409,7 +445,7 @@ def test_subparser__multiple() -> None:
 def test_subparsers_common_args__basic() -> None:
     class CommonArgs(TypedArgs):
         verbose: bool
-        other: str = param(default="default")
+        other: str = arg(default="default")
 
     class FooArgs(CommonArgs):
         x: str
@@ -453,7 +489,7 @@ def test_subparsers_common_args__basic() -> None:
 def test_subparsers_common_args__via_inheritance_only() -> None:
     class CommonArgs(TypedArgs):
         verbose: bool
-        other: str = param(default="default")
+        other: str = arg(default="default")
 
     class FooArgs(CommonArgs):
         x: str
@@ -493,19 +529,19 @@ def test_subparsers_common_args__via_inheritance_only() -> None:
 
 def test_subparsers_common_args__branch_isolation() -> None:
     class Root(TypedArgs):
-        root: str = param(default="root")
+        root: str = arg(default="root")
 
     class FooRoot(Root):
-        foo_root: str = param(default="foo_root")
+        foo_root: str = arg(default="foo_root")
 
     class FooA(FooRoot):
-        a: str = param(default="a")
+        a: str = arg(default="a")
 
     class FooB(FooRoot):
-        b: str = param(default="b")
+        b: str = arg(default="b")
 
     class Bar(Root):
-        foo_root: str = param(default="foo_root_in_other_branch")
+        foo_root: str = arg(default="foo_root_in_other_branch")
 
     parser = Parser(
         SubParserGroup(
@@ -769,4 +805,4 @@ def test_illegal_param_type() -> None:
     with pytest.raises(RuntimeError) as e:
         Parser(Args).parse_args([])
 
-    assert "Class attribute 'foo' of type str isn't of type Param." in str(e.value)
+    assert "Class attribute 'foo' of type str isn't of type Arg." in str(e.value)
