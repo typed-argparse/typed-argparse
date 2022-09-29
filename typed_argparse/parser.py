@@ -375,13 +375,20 @@ def _build_add_argument_args(
         "help": p.help,
     }
 
-    # TODO: Incorporate explicit naming
-    is_positional = p.positional
+    # Unwrap collections
+    underlying_if_list = annotation.get_underlying_if_list()
+    if underlying_if_list is not None:
+        is_collection = True
+        annotation = underlying_if_list
+        # TODO: How should we handle e.g. List[bool]?
+    else:
+        is_collection = False
 
+    # Determine is_required
     if annotation.is_bool:
         is_required = False
     else:
-        if annotation.is_optional or p.default is not None or is_positional:
+        if annotation.is_optional or p.default is not None or p.positional:
             is_required = False
         else:
             is_required = True
@@ -391,6 +398,7 @@ def _build_add_argument_args(
     if is_required:
         kwargs["required"] = True
 
+    # Value handling
     if annotation.is_bool:
         if p.default is not None:
             if p.default is True:
@@ -414,6 +422,12 @@ def _build_add_argument_args(
         if p.default is not None:
             kwargs["default"] = copy.deepcopy(p.default)
 
+            # Argparse requires positionals with defaults to have nargs="?"
+            # Note that for list-like (real nargs) arguments that happens to have a default
+            # (a list as well), the nargs value will be overwritten below.
+            if p.positional:
+                kwargs["nargs"] = "?"
+
         allowed_values_if_literal = annotation.get_allowed_values_if_literal()
         if allowed_values_if_literal is not None:
             kwargs["choices"] = allowed_values_if_literal
@@ -422,11 +436,15 @@ def _build_add_argument_args(
         if allowed_values_if_enum is not None:
             kwargs["choices"] = allowed_values_if_enum
 
+    # Nargs handling
+    if is_collection:
+        kwargs["nargs"] = "*"
+
     # Name handling
     cli_arg_name = python_arg_name.replace("_", "-")
     name_or_flags: List[str]
 
-    if is_positional:
+    if p.positional:
         # Note that argparse does not allow to specify the 'dest' for positional arguments.
         # We have to rely on the fact the the hyphenated version of the name gets converted
         # back to exactly our `python_attr_name` as the internal dest, but that should
