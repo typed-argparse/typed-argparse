@@ -9,6 +9,7 @@ import pytest
 from typing_extensions import Literal
 
 from typed_argparse import Binding, Parser, SubParser, SubParserGroup, TypedArgs, arg
+from typed_argparse.parser import Bindings
 
 T = TypeVar("T", bound=TypedArgs)
 
@@ -681,24 +682,24 @@ def test_bindings_check() -> None:
         parser.bind(foo)
     assert "Incomplete bindings: There is no binding for type 'BarArgs'." == str(e.value)
 
-    def func_with_no_args():
+    def func_with_no_args():  # type: ignore
         ...
 
     with pytest.raises(ValueError) as e:
         parser.bind(func_with_no_args)  # type: ignore
     assert "Type annotations of func_with_no_args are empty." == str(e.value)
 
-    def func_with_no_annotations(x):
+    def func_with_no_annotations(x):  # type: ignore
         ...
 
     with pytest.raises(ValueError) as e:
         parser.bind(func_with_no_annotations)
     assert "Type annotations of func_with_no_annotations are empty." == str(e.value)
 
-    def func_with_wrong_first_arg_1(x: int):
+    def func_with_wrong_first_arg_1(x: int):  # type: ignore
         ...
 
-    def func_with_wrong_first_arg_2(x: Union[str, int]):
+    def func_with_wrong_first_arg_2(x: Union[str, int]):  # type: ignore
         ...
 
     with pytest.raises(ValueError) as e:
@@ -731,6 +732,25 @@ def test_parser_run() -> None:
         assert args.verbose
 
     Parser(Args).bind(runner).run(["--verbose"])
+
+    assert was_executed
+
+
+def test_parser_run__typical_lazy_syntax() -> None:
+    class Args(TypedArgs):
+        verbose: bool
+
+    was_executed = False
+
+    def runner(args: Args) -> None:
+        nonlocal was_executed
+        was_executed = True
+        assert args.verbose
+
+    def make_bindings() -> Bindings:
+        return [runner]
+
+    Parser(Args).bind_lazy(make_bindings).run(["--verbose"])
 
     assert was_executed
 

@@ -48,7 +48,8 @@ class Binding:
 
         if not isinstance(first_type, type):
             raise ValueError(
-                f"Expected first argument of {func.__name__} to be of type 'type' but got {first_type}."
+                f"Expected first argument of {func.__name__} to be of type 'type' "
+                f"but got {first_type}."
             )
         else:
             if not issubclass(first_type, TypedArgs):
