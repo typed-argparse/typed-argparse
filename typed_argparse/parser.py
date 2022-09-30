@@ -2,19 +2,7 @@ import argparse
 import copy
 import sys
 from argparse import ArgumentParser as ArgparseParser
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
 
 from typing_extensions import assert_never
 
@@ -31,6 +19,52 @@ try:
     _ARG_COMPLETE_AVAILABLE = True
 except ImportError:
     pass
+
+
+T = TypeVar("T", bound=TypedArgs)
+
+
+# Initially I considered making the bindings generic, but I don't think there is a significant
+# benefit. It requires to write Binding[CommonArgs](CommonArgs, run_toplevel) on user site because
+# the implicitly inferred generic arg seems to be Binding[TypedArg], which then leads to a type
+# mismatch. Also, annotating the generics below in the usages felt awkward. This is probably a
+# case where we want type erasure.
+class Binding:
+    def __init__(self, arg_type: Type[T], func: Callable[[T], None]):
+        self.arg_type: Type[TypedArgs] = arg_type
+        self.func: Callable[[Any], None] = func
+
+    @staticmethod
+    def from_func(func: Callable[[Any], None]) -> "Binding":
+        if not hasattr(func, "__annotations__"):
+            raise ValueError(f"Function {func} misses type annotations")
+
+        annotations = func.__annotations__
+
+        if len(annotations) == 0:
+            raise ValueError(f"Type annotations of {func} are empty")
+
+        first_type: object = next(iter(annotations.values()))
+
+        if not isinstance(first_type, type):
+            raise ValueError(
+                f"Expected first argument of {func} to be of type 'type' but got {first_type}"
+            )
+        else:
+            if not issubclass(first_type, TypedArgs):
+                raise ValueError(
+                    f"Expected first argument of {func} to be a subclass of 'TypedArgs' "
+                    f"but got {first_type}"
+                )
+            else:
+                return Binding(first_type, func)
+
+
+def _homogenize_bindings(bindings: "Bindings") -> List[Binding]:
+    return [
+        binding if isinstance(binding, Binding) else Binding.from_func(binding)
+        for binding in bindings
+    ]
 
 
 class SubParser:
@@ -69,21 +103,11 @@ class SubParserGroup:
         return str(self)
 
 
-T = TypeVar("T", bound=TypedArgs)
-
-
-# Initially I considered making the bindings generic, but I don't think there is a significant
-# benefit. It requires to write Binding[CommonArgs](CommonArgs, run_toplevel) on user site because
-# the implicitly inferred generic arg seems to be Binding[TypedArg], which then leads to a type
-# mismatch. Also, annotating the generics below in the usages felt awkward. This is probably a
-# case where we want type erasure.
-class Binding:
-    def __init__(self, arg_type: Type[T], func: Callable[[T], None]):
-        self.arg_type: Type[TypedArgs] = arg_type
-        self.func: Callable[[Any], None] = func
-
-
 class Parser:
+    """
+    This class offers a declarative API to wrap argparse based on TypedArgs definitions.
+    """
+
     def __init__(
         self,
         args_or_group: "ArgsOrGroup",
@@ -95,7 +119,9 @@ class Parser:
         allow_abbrev: bool = True,
     ):
         """
-        This class offers a declarative API to wrap argparse based on TypedArgs definitions.
+        The parser constructor requires one positional argument, which is either
+        - directly a TypedArgs type to be used to define the arguments
+        - a SubParserGroup, which itself contains TypedArgs within subparsers.
 
         Keyword arguments forward to argparse:
             - prog -- The name of the program (default: sys.argv[0])
@@ -150,13 +176,15 @@ class Parser:
         else:
             return arg_type.from_argparse(argparse_namespace)
 
-    def bind(self, *bindings: Binding) -> "Bindings":
+    def verify(self, bindings: "Bindings") -> None:
         """
         Verifies the completeness of a given list of bindings w.r.t. this parser structure.
+
+        Raises a ValueError is the bindings are complete.
         """
         type_mapping = _traverse_get_type_mapping(self._args_or_group)
 
-        offered_bindings = set(binding.arg_type for binding in bindings)
+        offered_bindings = set(binding.arg_type for binding in _homogenize_bindings(bindings))
 
         for arg_type in type_mapping.values():
             if arg_type not in offered_bindings:
@@ -164,21 +192,55 @@ class Parser:
                     f"Incomplete bindings: There is no binding for type '{arg_type.__name__}'."
                 )
 
-        return bindings
-
-    def run(
-        self,
-        bindings_generator: "BindingsGenerator",
-        raw_args: List[str] = sys.argv[1:],
-    ) -> None:
+    def bind(self, *binding: "AnyBinding") -> "App":
         """
-        Parse arguments and execute the given (lazy) bindings on the result.
+        Turn the parser into an executable app (with eager bindings).
+
+        Bindings are verified immediately.
         """
-        typed_args = self.parse_args(raw_args)
+        bindings = list(binding)
+        self.verify(bindings)
+        return App(self, bindings)
 
-        bindings = bindings_generator(self)
+    def bind_lazy(self, lazy_bindings: "LazyBindings") -> "App":
+        """
+        Turn the parser into an executable app (with lazy bindings).
 
-        for binding in bindings:
+        Bindings verification is postponed into running the app.
+        """
+        return App(self, lazy_bindings)
+
+    def __str__(self) -> str:
+        return f"Parser({_to_string(self._args_or_group)})"
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
+class App:
+    def __init__(self, parser: Parser, bindings: "EagerOrLazyBindings"):
+        self._parser = parser
+        self._bindings = bindings
+
+    def run(self, raw_args: List[str] = sys.argv[1:]) -> None:
+        """
+        Parse arguments, verify the (possibly lazy) bindings, and execute them.
+        """
+
+        # Argument parsing must come first for responsiveness
+        typed_args = self._parser.parse_args(raw_args)
+
+        # Resolve possibly lazy bindings
+        if callable(self._bindings):
+            bindings = self._bindings()
+        else:
+            bindings = self._bindings
+
+        # Verify bindings
+        self._parser.verify(bindings)
+
+        # Identify bindings branch to execute
+        for binding in _homogenize_bindings(bindings):
             # Note that we don't want `isinstance` but rather exact type equality here,
             # so that we don't accidentally execute a base function.
             if type(typed_args) is binding.arg_type:
@@ -190,16 +252,13 @@ class Parser:
             f"Argument type {type(typed_args)} did not match anything in {bindings}."
         )
 
-    def __str__(self) -> str:
-        return f"Parser({_to_string(self._args_or_group)})"
-
-    def __repr__(self) -> str:
-        return str(self)
-
 
 ArgsOrGroup = Union[Type[TypedArgs], SubParserGroup]
-Bindings = Sequence[Binding]
-BindingsGenerator = Callable[[Parser], Bindings]
+
+AnyBinding = Union[Binding, Callable[[Any], None]]
+Bindings = List[AnyBinding]
+LazyBindings = Callable[[], Bindings]
+EagerOrLazyBindings = Union[Bindings, LazyBindings]
 
 
 TypePath = Tuple[str, ...]

@@ -2,7 +2,7 @@
 
 from typing import Union
 
-from typed_argparse import Binding, Parser, SubParser, SubParserGroup, TypedArgs, arg
+from typed_argparse import Parser, SubParser, SubParserGroup, TypedArgs, arg
 
 
 class CommonArgs(TypedArgs):
@@ -38,15 +38,11 @@ def main() -> None:
         SubParserGroup(
             SubParser("foo", ArgsFoo, aliases=["co"]),
             SubParser("bar", ArgsBar),
+            common_args=CommonArgs,
+            required=False,
         ),
     )
-    parser.run(
-        lambda parser: parser.bind(
-            Binding(CommonArgs, run_toplevel),
-            Binding(ArgsFoo, run_foo),
-            Binding(ArgsBar, run_bar),
-        )
-    )
+    parser.bind(run_toplevel, run_foo, run_bar).run()
 
 
 if __name__ == "__main__":
