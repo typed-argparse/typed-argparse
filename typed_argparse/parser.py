@@ -37,24 +37,24 @@ class Binding:
     @staticmethod
     def from_func(func: Callable[[Any], None]) -> "Binding":
         if not hasattr(func, "__annotations__"):
-            raise ValueError(f"Function {func} misses type annotations")
+            raise ValueError(f"Function {func.__name__} misses type annotations.")
 
         annotations = func.__annotations__
 
         if len(annotations) == 0:
-            raise ValueError(f"Type annotations of {func} are empty")
+            raise ValueError(f"Type annotations of {func.__name__} are empty.")
 
         first_type: object = next(iter(annotations.values()))
 
         if not isinstance(first_type, type):
             raise ValueError(
-                f"Expected first argument of {func} to be of type 'type' but got {first_type}"
+                f"Expected first argument of {func.__name__} to be of type 'type' but got {first_type}."
             )
         else:
             if not issubclass(first_type, TypedArgs):
                 raise ValueError(
-                    f"Expected first argument of {func} to be a subclass of 'TypedArgs' "
-                    f"but got {first_type}"
+                    f"Expected first argument of {func.__name__} to be a subclass of 'TypedArgs' "
+                    f"but got {first_type}."
                 )
             else:
                 return Binding(first_type, func)
