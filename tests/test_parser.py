@@ -3,7 +3,7 @@ import textwrap
 from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
-from typing import Generator, List, Optional, Type, TypeVar
+from typing import Generator, List, Optional, Type, TypeVar, Union
 
 import pytest
 from typing_extensions import Literal
@@ -670,16 +670,50 @@ def test_bindings_check() -> None:
     def bar(bar_args: BarArgs) -> None:
         ...
 
-    parser.verify([Binding(FooArgs, foo), Binding(BarArgs, bar)])
-    parser.verify([foo, bar])
+    parser.bind(Binding(FooArgs, foo), Binding(BarArgs, bar))
+    parser.bind(foo, bar)
 
     with pytest.raises(ValueError) as e:
-        parser.verify([Binding(FooArgs, foo)])
+        parser.bind(Binding(FooArgs, foo))
     assert "Incomplete bindings: There is no binding for type 'BarArgs'." == str(e.value)
 
     with pytest.raises(ValueError) as e:
-        parser.verify([foo])
+        parser.bind(foo)
     assert "Incomplete bindings: There is no binding for type 'BarArgs'." == str(e.value)
+
+    def func_with_no_args():
+        ...
+
+    with pytest.raises(ValueError) as e:
+        parser.bind(func_with_no_args)  # type: ignore
+    assert "Type annotations of func_with_no_args are empty." == str(e.value)
+
+    def func_with_no_annotations(x):
+        ...
+
+    with pytest.raises(ValueError) as e:
+        parser.bind(func_with_no_annotations)
+    assert "Type annotations of func_with_no_annotations are empty." == str(e.value)
+
+    def func_with_wrong_first_arg_1(x: int):
+        ...
+
+    def func_with_wrong_first_arg_2(x: Union[str, int]):
+        ...
+
+    with pytest.raises(ValueError) as e:
+        parser.bind(func_with_wrong_first_arg_1)
+    assert (
+        "Expected first argument of func_with_wrong_first_arg_1 to be a "
+        "subclass of 'TypedArgs' but got <class 'int'>."
+    ) == str(e.value)
+
+    with pytest.raises(ValueError) as e:
+        parser.bind(func_with_wrong_first_arg_2)
+    assert (
+        "Expected first argument of func_with_wrong_first_arg_2 to be of type 'type' "
+        "but got typing.Union[str, int]."
+    ) == str(e.value)
 
 
 # Run
