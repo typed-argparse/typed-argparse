@@ -608,33 +608,15 @@ def test_subparsers_executable_mapping_behavior() -> None:
         )
     )
 
-    parser.run(
-        lambda parser: parser.bind(
-            Binding(FooArgs, run_foo),
-            Binding(BarArgs, run_bar),
-        ),
-        raw_args=["foo"],
-    )
+    parser.bind(run_foo, run_bar).run(["foo"])
     assert (num_run_common, num_run_foo, num_run_bar) == (0, 1, 0)
 
-    parser.run(
-        lambda parser: parser.bind(
-            Binding(FooArgs, run_foo),
-            Binding(BarArgs, run_bar),
-        ),
-        raw_args=["bar"],
-    )
+    parser.bind(run_foo, run_bar).run(["bar"])
     assert (num_run_common, num_run_foo, num_run_bar) == (0, 1, 1)
 
     # Note that error differs here for Python 3.6 due to non-required subparser
     with pytest.raises(SystemExit):
-        parser.run(
-            lambda parser: parser.bind(
-                Binding(FooArgs, run_foo),
-                Binding(BarArgs, run_bar),
-            ),
-            raw_args=[],
-        )
+        parser.bind(run_foo, run_bar).run([])
 
     # Non-required case
 
@@ -648,43 +630,20 @@ def test_subparsers_executable_mapping_behavior() -> None:
     )
 
     with pytest.raises(ValueError) as e:
-        parser.run(
-            lambda parser: parser.bind(
-                Binding(FooArgs, run_foo),
-                Binding(BarArgs, run_bar),
-            ),
-            raw_args=[],
-        )
+        parser.bind(run_foo, run_bar).run([])
     assert "Incomplete bindings: There is no binding for type 'CommonArgs'." == str(e.value)
 
-    parser.run(
-        lambda parser: parser.bind(
-            Binding(CommonArgs, run_common),
-            Binding(FooArgs, run_foo),
-            Binding(BarArgs, run_bar),
-        ),
-        raw_args=[],
-    )
+    with pytest.raises(ValueError) as e:
+        parser.bind_lazy(lambda: [run_foo, run_bar]).run([])
+    assert "Incomplete bindings: There is no binding for type 'CommonArgs'." == str(e.value)
+
+    parser.bind(run_common, run_foo, run_bar).run([])
     assert (num_run_common, num_run_foo, num_run_bar) == (1, 1, 1)
 
-    parser.run(
-        lambda parser: parser.bind(
-            Binding(CommonArgs, run_common),
-            Binding(FooArgs, run_foo),
-            Binding(BarArgs, run_bar),
-        ),
-        raw_args=["foo"],
-    )
+    parser.bind(run_common, run_foo, run_bar).run(["foo"])
     assert (num_run_common, num_run_foo, num_run_bar) == (1, 2, 1)
 
-    parser.run(
-        lambda parser: parser.bind(
-            Binding(CommonArgs, run_common),
-            Binding(FooArgs, run_foo),
-            Binding(BarArgs, run_bar),
-        ),
-        raw_args=["bar"],
-    )
+    parser.bind(run_common, run_foo, run_bar).run(["bar"])
     assert (num_run_common, num_run_foo, num_run_bar) == (1, 2, 2)
 
 
@@ -711,12 +670,15 @@ def test_bindings_check() -> None:
     def bar(bar_args: BarArgs) -> None:
         ...
 
-    bindings = parser.bind(Binding(FooArgs, foo), Binding(BarArgs, bar))
-    assert len(bindings) == 2
+    parser.verify([Binding(FooArgs, foo), Binding(BarArgs, bar)])
+    parser.verify([foo, bar])
 
     with pytest.raises(ValueError) as e:
-        parser.bind(Binding(FooArgs, foo))
+        parser.verify([Binding(FooArgs, foo)])
+    assert "Incomplete bindings: There is no binding for type 'BarArgs'." == str(e.value)
 
+    with pytest.raises(ValueError) as e:
+        parser.verify([foo])
     assert "Incomplete bindings: There is no binding for type 'BarArgs'." == str(e.value)
 
 
@@ -734,10 +696,7 @@ def test_parser_run() -> None:
         was_executed = True
         assert args.verbose
 
-    Parser(Args).run(
-        lambda parser: parser.bind(Binding(Args, runner)),
-        raw_args=["--verbose"],
-    )
+    Parser(Args).bind(runner).run(["--verbose"])
 
     assert was_executed
 
