@@ -22,6 +22,7 @@ class Arg(NamedTuple):
     type: Optional[Callable[[str], object]]
     nargs: Optional[NArgs]
     help: Optional[str]
+    auto_default_help: bool
 
 
 T = TypeVar("T")
@@ -35,6 +36,7 @@ def arg(
     positional: bool = ...,
     default: T,
     help: Optional[str] = ...,
+    auto_default_help: bool = ...,
 ) -> T:
     ...
 
@@ -45,6 +47,7 @@ def arg(
     positional: bool = ...,
     type: Callable[[str], T],
     help: Optional[str] = ...,
+    auto_default_help: bool = ...,
 ) -> T:
     ...
 
@@ -56,6 +59,7 @@ def arg(
     default: T,
     type: Callable[[str], T],
     help: Optional[str] = ...,
+    auto_default_help: bool = ...,
 ) -> T:
     ...
 
@@ -70,6 +74,7 @@ def arg(
     default: T,
     nargs: NArgs,
     help: Optional[str] = ...,
+    auto_default_help: bool = ...,
 ) -> T:
     ...
 
@@ -81,6 +86,7 @@ def arg(
     type: Callable[[str], T],
     nargs: NArgs,
     help: Optional[str] = ...,
+    auto_default_help: bool = ...,
 ) -> T:
     ...
 
@@ -93,6 +99,7 @@ def arg(
     type: Callable[[str], T],
     nargs: NArgs,
     help: Optional[str] = ...,
+    auto_default_help: bool = ...,
 ) -> T:
     ...
 
@@ -106,6 +113,7 @@ def arg(
     positional: bool = ...,
     nargs: NArgs,
     help: Optional[str] = ...,
+    auto_default_help: bool = ...,
 ) -> List[Any]:
     ...
 
@@ -116,6 +124,7 @@ def arg(
     positional: bool = ...,
     nargs: Optional[NArgs] = ...,
     help: Optional[str] = ...,
+    auto_default_help: bool = ...,
 ) -> Any:
     ...
 
@@ -130,6 +139,7 @@ def arg(
     type: Optional[Callable[[str], object]] = None,
     nargs: Optional[NArgs] = None,
     help: Optional[str] = None,
+    auto_default_help: bool = True,
 ) -> Any:
     """
     Helper function to annotate arguments.
@@ -156,4 +166,5 @@ def arg(
         type=type,
         nargs=nargs,
         help=help,
+        auto_default_help=auto_default_help,
     )

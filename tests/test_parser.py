@@ -755,6 +755,49 @@ def test_parser_run__typical_lazy_syntax() -> None:
     assert was_executed
 
 
+# Defaults in help text
+
+
+def test_defaults_in_help_text__on_by_default(capsys: pytest.CaptureFixture[str]) -> None:
+    class Args(TypedArgs):
+        epsilon: float = arg(help="Some epsilon", default=0.1)
+
+    parser = Parser(Args)
+    with pytest.raises(SystemExit):
+        parser.parse_args(["-h"])
+
+    captured = capsys.readouterr()
+    assert captured.out == textwrap.dedent(
+        """\
+        usage: pytest [-h] [--epsilon EPSILON]
+
+        optional arguments:
+          -h, --help         show this help message and exit
+          --epsilon EPSILON  Some epsilon [default: 0.1]
+        """
+    )
+
+
+def test_defaults_in_help_text__off_if_desired(capsys: pytest.CaptureFixture[str]) -> None:
+    class Args(TypedArgs):
+        epsilon: float = arg(help="Some epsilon", default=0.1, auto_default_help=False)
+
+    parser = Parser(Args)
+    with pytest.raises(SystemExit):
+        parser.parse_args(["-h"])
+
+    captured = capsys.readouterr()
+    assert captured.out == textwrap.dedent(
+        """\
+        usage: pytest [-h] [--epsilon EPSILON]
+
+        optional arguments:
+          -h, --help         show this help message and exit
+          --epsilon EPSILON  Some epsilon
+        """
+    )
+
+
 # Misc
 
 
