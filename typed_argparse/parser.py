@@ -422,7 +422,7 @@ def _build_add_argument_args(
 ) -> Tuple[List[str], Dict[str, Any]]:
 
     kwargs: Dict[str, Any] = {
-        "help": arg.help,
+        "help": _generate_help_text(arg),
     }
 
     # Unwrap collections
@@ -523,6 +523,20 @@ def _build_add_argument_args(
         kwargs["dest"] = python_arg_name
 
     return name_or_flags, kwargs
+
+
+def _generate_help_text(arg: Arg) -> Optional[str]:
+    if arg.help is not None and arg.default is not None and arg.auto_default_help:
+
+        try:
+            from yachalk import chalk
+
+            return f"{arg.help} {chalk.gray(f'[default: {arg.default}]')}"
+
+        except ImportError:
+            return f"{arg.help} [default: {arg.default}]"
+    else:
+        return arg.help
 
 
 def _to_string(args_or_group: ArgsOrGroup) -> str:

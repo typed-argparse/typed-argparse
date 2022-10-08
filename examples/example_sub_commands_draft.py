@@ -11,6 +11,7 @@ class CommonArgs(TypedArgs):
 
 class ArgsFoo(CommonArgs):
     file: str = arg(help="The file")
+    epsilon: float = arg(help="Some epsilon", default=0.1)
 
 
 class ArgsBar(CommonArgs):
