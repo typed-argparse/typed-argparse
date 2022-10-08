@@ -11,16 +11,6 @@ from .arg import arg as make_arg
 from .type_utils import TypeAnnotation, collect_type_annotations
 from .typed_args import TypedArgs
 
-_ARG_COMPLETE_AVAILABLE = False
-
-try:
-    import argcomplete
-
-    _ARG_COMPLETE_AVAILABLE = True
-except ImportError:
-    pass
-
-
 T = TypeVar("T", bound=TypedArgs)
 
 
@@ -157,8 +147,7 @@ class Parser:
         all_leaf_paths = _traverse_build_parser(self._args_or_group, parser)
         type_mapping = _traverse_get_type_mapping(self._args_or_group)
 
-        if _ARG_COMPLETE_AVAILABLE:
-            argcomplete.autocomplete(parser)
+        _install_argcomplete_if_available(parser)
 
         argparse_namespace = parser.parse_args(raw_args)
 
@@ -541,3 +530,12 @@ def _to_string(args_or_group: ArgsOrGroup) -> str:
         return args_or_group.__name__
     else:
         return str(args_or_group)
+
+
+def _install_argcomplete_if_available(parser: ArgparseParser) -> None:
+    try:
+        import argcomplete
+
+        argcomplete.autocomplete(parser)
+    except ImportError:
+        pass
