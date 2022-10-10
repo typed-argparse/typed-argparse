@@ -1,0 +1,3 @@
+high_level_api/basic_usage.py:
+  - "-h"
+  - "--foo foo --files file_a file_b"

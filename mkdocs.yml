@@ -1,0 +1,41 @@
+site_name: typed_argparse
+
+theme:
+  name: material
+
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+  icon:
+    repo: fontawesome/brands/github
+
+repo_name: bluenote10/typed_argparse
+repo_url: https://github.com/bluenote10/typed_argparse
+edit_uri: ""
+
+markdown_extensions:
+  #- codehilite
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+extra_css:
+  - css/termynal.css
+  - css/custom.css
+
+extra_javascript:
+  - js/termynal.js
+  - js/custom.js
+
+nav:
+  - Overview: index.md
+  - High-level API: high_level_api.md
