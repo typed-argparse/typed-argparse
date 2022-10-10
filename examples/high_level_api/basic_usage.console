@@ -1,0 +1,12 @@
+$ python basic_usage.py -h
+usage: basic_usage.py [-h] --foo FOO [--num NUM] --files [FILES [FILES ...]]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --foo FOO             A foo
+  --num NUM             A number
+  --files [FILES [FILES ...]]
+                        Some files
+
+$ python basic_usage.py --foo foo --files file_a file_b
+Args(foo='foo', num=None, files=['file_a', 'file_b'])
