@@ -1,0 +1,12 @@
+$ python positional_arguments.py -h
+usage: positional_arguments.py [-h] src dst
+
+positional arguments:
+  src         Source file
+  dst         Destination file
+
+optional arguments:
+  -h, --help  show this help message and exit
+
+$ python positional_arguments.py my_source_file my_destination_file
+Print copying from 'my_source_file' to 'my_destination_file'

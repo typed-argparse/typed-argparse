@@ -1,12 +1,17 @@
 $ python basic_usage.py -h
-usage: basic_usage.py [-h] --foo FOO [--num NUM] --files [FILES [FILES ...]]
+usage: basic_usage.py [-h] --my-arg MY_ARG [--number-a NUMBER_A]
+                      [--number-b NUMBER_B] [--verbose] --names
+                      [NAMES [NAMES ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --foo FOO             A foo
-  --num NUM             A number
-  --files [FILES [FILES ...]]
-                        Some files
+  --my-arg MY_ARG       some help
+  --number-a NUMBER_A   some help [default: 42]
+  --number-b NUMBER_B   some help
+  --verbose             some help
+  --names [NAMES [NAMES ...]]
+                        some help
 
-$ python basic_usage.py --foo foo --files file_a file_b
-Args(foo='foo', num=None, files=['file_a', 'file_b'])
+$ python basic_usage.py --my-arg foo --names a b c
+Running my app with args:
+Args(my_arg='foo', number_a=42, number_b=None, verbose=False, names=['a', 'b', 'c'])
