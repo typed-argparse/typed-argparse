@@ -1,0 +1,10 @@
+$ python option_names.py -h
+usage: option_names.py [-h] -f FOO --external-name INTERNAL_NAME
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f FOO, --foo FOO
+  --external-name INTERNAL_NAME
+
+$ python option_names.py -f xxx --external-name yyy
+args = Args(foo='xxx', internal_name='yyy')

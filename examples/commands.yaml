@@ -1,3 +1,9 @@
 high_level_api/basic_usage.py:
   - "-h"
-  - "--foo foo --files file_a file_b"
+  - "--my-arg foo --names a b c"
+high_level_api/positional_arguments.py:
+  - "-h"
+  - "my_source_file my_destination_file"
+high_level_api/option_names.py:
+  - "-h"
+  - "-f xxx --external-name yyy"

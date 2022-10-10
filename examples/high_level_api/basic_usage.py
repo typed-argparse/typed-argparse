@@ -3,16 +3,21 @@ from typing import List, Optional
 import typed_argparse as tap
 
 
+# 1. Argument definition
 class Args(tap.TypedArgs):
-    foo: str = tap.arg(help="A foo")
-    num: Optional[int] = tap.arg(help="A number")
-    files: List[str] = tap.arg(help="Some files")
+    my_arg: str = tap.arg(help="some help")
+    number_a: int = tap.arg(default=42, help="some help")
+    number_b: Optional[int] = tap.arg(help="some help")
+    verbose: bool = tap.arg(help="some help")
+    names: List[str] = tap.arg(help="some help")
 
 
+# 2. Business logic
 def runner(args: Args):
-    print(args)
+    print(f"Running my app with args:\n{args}")
 
 
+# 3. Bind & run argument definition + business logic
 def main() -> None:
     tap.Parser(Args).bind(runner).run()
 
