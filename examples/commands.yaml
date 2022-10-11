@@ -7,3 +7,9 @@ high_level_api/positional_arguments.py:
 high_level_api/option_names.py:
   - "-h"
   - "-f xxx --external-name yyy"
+high_level_api/sub_commands_basic.py:
+  - "-h"
+  - "foo -h"
+  - "foo start"
+  - "foo stop"
+  - "bar"

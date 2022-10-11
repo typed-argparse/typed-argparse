@@ -68,3 +68,40 @@ Similar to regular argparse, multiple names/flags can be specified.
 --8<-- "examples/high_level_api/option_names.console"
 ```
 </div>
+
+
+## Sub-commands
+
+Let's assume we want to write a complex CLI involving many, possible deeply nested, sub-commands (think `git`).
+For instance, imagine the an app that takes either `foo` or `bar` as the first level sub-command, and the `foo` sub-command is further split into `start` and `stop`, i.e. the possible command paths are:
+
+```console
+$ demo_app foo start
+$ demo_app foo stop
+$ demo_app bar
+```
+
+In `typed_argparse` such a tree-like command structure can be directly modeled as a tree of parsers:
+
+```python title="sub_commands_basic.py"
+--8<-- "examples/high_level_api/sub_commands_basic.py"
+```
+
+<div class="termy">
+```console
+--8<-- "examples/high_level_api/sub_commands_basic.console"
+```
+</div>
+
+Some observations:
+
+- In general a `Parser` or a `SubParser` can either take a `TypedArg` object directly (with leads to no further nesting)
+  or a `SubParserGroup` container one or more `SubParser` commands (with adds one level of nesting).
+- The general `Parser.bind().run()` pattern is the same as with shallow CLIs.
+  The main difference is that sub-commands CLIs bind a runner method for each "leaf" in the argument tree.
+
+!!! Note
+    `typed_argparse` internally performs a correctness and completeness check on the functions passed to `Parser.bind()`.
+    This makes sure that you cannot accidentally forget to bind a leaf of the argument tree,
+    and that all argument types have a matching binding.
+    If you plan to write unit tests for your CLI, including a call to `Parser.bind()` is therefore a sensible test that make sure that everything is bound properly.
