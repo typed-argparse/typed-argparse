@@ -75,7 +75,7 @@ def arg(
     nargs: NArgs,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-) -> T:
+) -> List[T]:
     ...
 
 
@@ -87,7 +87,7 @@ def arg(
     nargs: NArgs,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-) -> T:
+) -> List[T]:
     ...
 
 
@@ -100,7 +100,7 @@ def arg(
     nargs: NArgs,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-) -> T:
+) -> List[T]:
     ...
 
 
