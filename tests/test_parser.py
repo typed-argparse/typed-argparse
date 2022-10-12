@@ -372,6 +372,26 @@ def test_nargs__fixed_number_of_args() -> None:
     assert args.files == [Path("a"), Path("b")]
 
 
+def test_nargs__type_checks() -> None:
+    class ArgsDefault(TypedArgs):
+        files: List[str] = arg(nargs="*", default="foo")
+
+    class ArgsType(TypedArgs):
+        files: List[str] = arg(nargs="*", type=lambda s: s)
+
+    class ArgsDefaultType(TypedArgs):
+        files: List[str] = arg(nargs="*", type=lambda s: s, default="foo")
+
+    class ArgsBadDefault(TypedArgs):
+        files: List[str] = arg(nargs="*", default=42)  # type: ignore
+
+    class ArgsBadType(TypedArgs):
+        files: List[str] = arg(nargs="*", type=lambda s: 42)  # type: ignore
+
+    class ArgsBadDefaultType(TypedArgs):
+        files: List[str] = arg(nargs="*", type=lambda s: 42, default=42)  # type: ignore
+
+
 # Subparsers
 
 
