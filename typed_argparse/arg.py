@@ -19,6 +19,8 @@ class Arg(NamedTuple):
     flags: Sequence[str]
     positional: bool
     default: Optional[object]
+    dynamic_default: Optional[Callable[[], object]]
+    dynamic_choices: Optional[Callable[[], Sequence[object]]]
     type: Optional[Callable[[str], object]]
     nargs: Optional[NArgs]
     help: Optional[str]
@@ -27,16 +29,17 @@ class Arg(NamedTuple):
 
 T = TypeVar("T")
 
-# Overloads for default / type / default + type
+
+# Overloads for cases with only a single 'type revealing' field set
 
 
 @overload
 def arg(
     *flags: str,
     positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
     default: T,
-    help: Optional[str] = ...,
-    auto_default_help: bool = ...,
 ) -> T:
     ...
 
@@ -45,36 +48,46 @@ def arg(
 def arg(
     *flags: str,
     positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    dynamic_default: Optional[Callable[[], T]],
+) -> T:
+    ...
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    dynamic_choices: Optional[Callable[[], Sequence[T]]],
+) -> T:
+    ...
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
     type: Callable[[str], T],
-    help: Optional[str] = ...,
-    auto_default_help: bool = ...,
 ) -> T:
     ...
+
+
+# Same for nargs
 
 
 @overload
 def arg(
     *flags: str,
     positional: bool = ...,
-    default: T,
-    type: Callable[[str], T],
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-) -> T:
-    ...
-
-
-# Overload for default / type / default + type with nargs
-
-
-@overload
-def arg(
-    *flags: str,
-    positional: bool = ...,
     default: T,
     nargs: NArgs,
-    help: Optional[str] = ...,
-    auto_default_help: bool = ...,
 ) -> List[T]:
     ...
 
@@ -83,10 +96,10 @@ def arg(
 def arg(
     *flags: str,
     positional: bool = ...,
-    type: Callable[[str], T],
-    nargs: NArgs,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
+    dynamic_default: Optional[Callable[[], T]],
+    nargs: NArgs,
 ) -> List[T]:
     ...
 
@@ -95,11 +108,213 @@ def arg(
 def arg(
     *flags: str,
     positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    dynamic_choices: Optional[Callable[[], Sequence[T]]],
+    nargs: NArgs,
+) -> List[T]:
+    ...
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    type: Callable[[str], T],
+    nargs: NArgs,
+) -> List[T]:
+    ...
+
+
+# Overloads for cases with two 'type revealing' field set
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    default: T,
+    dynamic_choices: Optional[Callable[[], Sequence[T]]],
+) -> T:
+    ...
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    dynamic_default: Optional[Callable[[], T]],
+    dynamic_choices: Optional[Callable[[], Sequence[T]]],
+) -> T:
+    ...
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    default: T,
+    type: Callable[[str], T],
+) -> T:
+    ...
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    dynamic_default: Optional[Callable[[], T]],
+    type: Callable[[str], T],
+) -> T:
+    ...
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    dynamic_choices: Optional[Callable[[], Sequence[T]]],
+    type: Callable[[str], T],
+) -> T:
+    ...
+
+
+# Same for nargs
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    default: T,
+    dynamic_choices: Optional[Callable[[], Sequence[T]]],
+    nargs: NArgs,
+) -> List[T]:
+    ...
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    dynamic_default: Optional[Callable[[], T]],
+    dynamic_choices: Optional[Callable[[], Sequence[T]]],
+    nargs: NArgs,
+) -> List[T]:
+    ...
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
     default: T,
     type: Callable[[str], T],
     nargs: NArgs,
+) -> List[T]:
+    ...
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
+    dynamic_default: Optional[Callable[[], T]],
+    type: Callable[[str], T],
+    nargs: NArgs,
+) -> List[T]:
+    ...
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    dynamic_choices: Optional[Callable[[], Sequence[T]]],
+    type: Callable[[str], T],
+    nargs: NArgs,
+) -> List[T]:
+    ...
+
+
+# Overloads for cases with three 'type revealing' field set
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    default: T,
+    dynamic_choices: Optional[Callable[[], Sequence[T]]],
+    type: Callable[[str], T],
+) -> T:
+    ...
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    dynamic_default: Optional[Callable[[], T]],
+    dynamic_choices: Optional[Callable[[], Sequence[T]]],
+    type: Callable[[str], T],
+) -> T:
+    ...
+
+
+# Same for nargs
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    default: T,
+    dynamic_choices: Optional[Callable[[], Sequence[T]]],
+    type: Callable[[str], T],
+    nargs: NArgs,
+) -> List[T]:
+    ...
+
+
+@overload
+def arg(
+    *flags: str,
+    positional: bool = ...,
+    help: Optional[str] = ...,
+    auto_default_help: bool = ...,
+    dynamic_default: Optional[Callable[[], T]],
+    dynamic_choices: Optional[Callable[[], Sequence[T]]],
+    type: Callable[[str], T],
+    nargs: NArgs,
 ) -> List[T]:
     ...
 
@@ -111,10 +326,9 @@ def arg(
 def arg(
     *flags: str,
     positional: bool = ...,
-    nargs: NArgs,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-) -> List[Any]:
+) -> Any:
     ...
 
 
@@ -122,10 +336,10 @@ def arg(
 def arg(
     *flags: str,
     positional: bool = ...,
-    nargs: Optional[NArgs] = ...,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-) -> Any:
+    nargs: NArgs,
+) -> List[Any]:
     ...
 
 
@@ -135,11 +349,13 @@ def arg(
 def arg(
     *flags: str,
     positional: bool = False,
-    default: Optional[object] = None,
-    type: Optional[Callable[[str], object]] = None,
-    nargs: Optional[NArgs] = None,
     help: Optional[str] = None,
     auto_default_help: bool = True,
+    nargs: Optional[NArgs] = None,
+    default: Optional[object] = None,
+    dynamic_default: Optional[Callable[[], object]] = None,
+    dynamic_choices: Optional[Callable[[], Sequence[object]]] = None,
+    type: Optional[Callable[[str], object]] = None,
 ) -> Any:
     """
     Helper function to annotate arguments.
@@ -153,7 +369,7 @@ def arg(
     There is no need to specify it separately.
 
     Available keyword arguments:
-        - positional -- Whether to argument should be positional or an option.
+        - positional -- Whether the argument should be positional or an option.
         - default -- The default value of the argument.
         - type -- A type (= parser function) to convert from string to the target type.
         - nargs -- To specify the semantics of repeated arguments.
@@ -163,6 +379,8 @@ def arg(
         flags=flags,
         positional=positional,
         default=default,
+        dynamic_default=dynamic_default,
+        dynamic_choices=dynamic_choices,
         type=type,
         nargs=nargs,
         help=help,

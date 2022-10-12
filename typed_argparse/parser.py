@@ -438,14 +438,14 @@ def _build_add_argument_args(
     if annotation.is_bool:
         is_required = False
     else:
-        if annotation.is_optional or arg.default is not None or arg.positional:
+        if annotation.is_optional or arg.default is not None:
             is_required = False
         else:
             is_required = True
 
     # Note that argparse forbids setting 'required' at all for positional args,
     # so we must omit it if false.
-    if is_required:
+    if is_required and not arg.positional:
         kwargs["required"] = True
 
     # Value handling
