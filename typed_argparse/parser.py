@@ -1,5 +1,4 @@
 import argparse
-import copy
 import sys
 from argparse import ArgumentParser as ArgparseParser
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union

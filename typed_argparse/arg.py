@@ -1,3 +1,4 @@
+import copy
 from typing import (
     Any,
     Callable,
@@ -39,7 +40,8 @@ class Arg(NamedTuple):
             has_default and has_dynamic_default
         ), "default and dynamic_default are mutually exclusive. Please specify either."
         if has_default:
-            return self.default
+            # Note that argparse itself takes a copy of the default value, but not a deepcopy.
+            return copy.deepcopy(self.default)
         else:
             assert self.dynamic_default is not None
             return self.dynamic_default()
