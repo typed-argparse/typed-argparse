@@ -629,6 +629,49 @@ def test_subparsers_common_args__branch_isolation() -> None:
     assert args.foo_root == "foo_root_in_other_branch"
 
 
+def test_subparsers_common_args__subparser_after_positional() -> None:
+    class CommonArgs(TypedArgs):
+        service: Literal["foo", "bar"] = arg(positional=True)
+
+    class StartArgs(CommonArgs):
+        ...
+
+    class StopArgs(CommonArgs):
+        ...
+
+    parser = Parser(
+        SubParserGroup(
+            SubParser("start", StartArgs),
+            SubParser("stop", StopArgs),
+            common_args=CommonArgs,
+        )
+    )
+
+    args = parser.parse_args(["foo", "start"])
+    assert isinstance(args, StartArgs)
+    assert args.service == "foo"
+
+    args = parser.parse_args(["foo", "stop"])
+    assert isinstance(args, StopArgs)
+    assert args.service == "foo"
+
+    args = parser.parse_args(["bar", "start"])
+    assert isinstance(args, StartArgs)
+    assert args.service == "bar"
+
+    args = parser.parse_args(["bar", "stop"])
+    assert isinstance(args, StopArgs)
+    assert args.service == "bar"
+
+    with argparse_error() as e:
+        parser.parse_args(["start"])
+    assert "argument service: invalid choice: 'start' (choose from 'foo', 'bar')" in str(e.error)
+
+    with argparse_error() as e:
+        parser.parse_args(["invalid", "start"])
+    assert "argument service: invalid choice: 'invalid' (choose from 'foo', 'bar')" in str(e.error)
+
+
 # Subparsers executable mapping behavior
 
 
