@@ -356,7 +356,7 @@ def test_nargs__with_default() -> None:
     args = parse(Args, [])
     assert args.actions == ["foo", "bar"]
 
-    # Make sure that mutating the default doesn't mutate the instance we got.
+    # Ensure copy semantics, i.e., that mutating the default doesn't mutate the instance we got.
     Args.actions.default.append("baz")  # type: ignore
     assert args.actions == ["foo", "bar"]
 
