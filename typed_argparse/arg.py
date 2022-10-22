@@ -106,7 +106,7 @@ def arg(
     positional: bool = ...,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-    default: T,
+    default: Sequence[T],
     nargs: NArgs,
 ) -> List[T]:
     ...
@@ -118,7 +118,7 @@ def arg(
     positional: bool = ...,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-    dynamic_default: Optional[Callable[[], T]],
+    dynamic_default: Optional[Callable[[], Sequence[T]]],
     nargs: NArgs,
 ) -> List[T]:
     ...
@@ -220,7 +220,7 @@ def arg(
     positional: bool = ...,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-    default: T,
+    default: Sequence[T],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     nargs: NArgs,
 ) -> List[T]:
@@ -233,7 +233,7 @@ def arg(
     positional: bool = ...,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-    dynamic_default: Optional[Callable[[], T]],
+    dynamic_default: Optional[Callable[[], Sequence[T]]],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     nargs: NArgs,
 ) -> List[T]:
@@ -246,7 +246,7 @@ def arg(
     positional: bool = ...,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-    default: T,
+    default: Sequence[T],
     type: Callable[[str], T],
     nargs: NArgs,
 ) -> List[T]:
@@ -259,7 +259,7 @@ def arg(
     positional: bool = ...,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-    dynamic_default: Optional[Callable[[], T]],
+    dynamic_default: Optional[Callable[[], Sequence[T]]],
     type: Callable[[str], T],
     nargs: NArgs,
 ) -> List[T]:
@@ -317,7 +317,7 @@ def arg(
     positional: bool = ...,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-    default: T,
+    default: Sequence[T],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     type: Callable[[str], T],
     nargs: NArgs,
@@ -331,7 +331,7 @@ def arg(
     positional: bool = ...,
     help: Optional[str] = ...,
     auto_default_help: bool = ...,
-    dynamic_default: Optional[Callable[[], T]],
+    dynamic_default: Optional[Callable[[], Sequence[T]]],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     type: Callable[[str], T],
     nargs: NArgs,
