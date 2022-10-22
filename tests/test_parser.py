@@ -240,6 +240,45 @@ def test_type_parsers() -> None:
     assert parse(Args, ["123"]).len_of_str == 3
 
 
+# Dynamic defaults
+
+
+def test_dynamic_defaults() -> None:
+    class Args(TypedArgs):
+        foo: str = arg(dynamic_default=lambda: "foo_value")
+
+    args = parse(Args, [])
+    assert args.foo == "foo_value"
+
+
+def test_dynamic_defaults__mutual_exclusiveness_check() -> None:
+    class Args(TypedArgs):
+        foo: str = arg(default="foo_value_1", dynamic_default=lambda: "foo_value_2")  # type: ignore
+
+    with pytest.raises(AssertionError) as e:
+        parse(Args, [])
+    assert (
+        str(e.value) == "default and dynamic_default are mutually exclusive. Please specify either."
+    )
+
+
+# Dynamic choices
+
+
+def test_dynamic_choices() -> None:
+    class Args(TypedArgs):
+        foo: str = arg(dynamic_choices=lambda: ["a", "b"])
+
+    args = parse(Args, ["--foo", "a"])
+    assert args.foo == "a"
+    args = parse(Args, ["--foo", "b"])
+    assert args.foo == "b"
+
+    with argparse_error() as e:
+        parse(Args, ["--foo", "x"])
+    assert "argument --foo: invalid choice: 'x' (choose from 'a', 'b')" == str(e.error)
+
+
 # Literals
 
 

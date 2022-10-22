@@ -26,6 +26,24 @@ class Arg(NamedTuple):
     help: Optional[str]
     auto_default_help: bool
 
+    def has_default(self) -> bool:
+        has_default = self.default is not None
+        has_dynamic_default = self.dynamic_default is not None
+        return has_default or has_dynamic_default
+
+    def resolve_default(self) -> object:
+        has_default = self.default is not None
+        has_dynamic_default = self.dynamic_default is not None
+        assert has_default or has_dynamic_default, "Argument has no default/dynamic_default."
+        assert not (
+            has_default and has_dynamic_default
+        ), "default and dynamic_default are mutually exclusive. Please specify either."
+        if has_default:
+            return self.default
+        else:
+            assert self.dynamic_default is not None
+            return self.dynamic_default()
+
 
 T = TypeVar("T")
 
