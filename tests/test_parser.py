@@ -431,6 +431,87 @@ def test_nargs__type_checks() -> None:
         files: List[str] = arg(nargs="*", type=lambda s: 42, default=42)  # type: ignore
 
 
+# Nargs with choices
+
+
+def test_nargs_with_choices__literal() -> None:
+    Actions = Literal["a", "b"]
+
+    class Args(TypedArgs):
+        actions: List[Actions] = arg(positional=True, default=["a", "b"])
+
+    args = parse(Args, [])
+    assert args.actions == ["a", "b"]
+    args = parse(Args, ["a"])
+    assert args.actions == ["a"]
+    args = parse(Args, ["b"])
+    assert args.actions == ["b"]
+    args = parse(Args, ["a", "a", "b", "b", "a"])
+    assert args.actions == ["a", "a", "b", "b", "a"]
+
+
+def test_nargs_with_choices__literal_illegal_default() -> None:
+    Actions = Literal["a", "b"]
+
+    class Args(TypedArgs):
+        actions: List[Actions] = arg(positional=True, default=["a", "b", "c"])  # type: ignore
+
+    with argparse_error():
+        parse(Args, [])
+
+
+def test_nargs_with_choices__enum() -> None:
+    class Actions(Enum):
+        a = "a"
+        b = "b"
+
+    class Args(TypedArgs):
+        actions: List[Actions] = arg(positional=True, default=[Actions.a, Actions.b])
+
+    args = parse(Args, [])
+    assert args.actions == [Actions.a, Actions.b]
+    args = parse(Args, ["a"])
+    assert args.actions == [Actions.a]
+    args = parse(Args, ["b"])
+    assert args.actions == [Actions.b]
+    args = parse(Args, ["a", "a", "b", "b", "a"])
+    assert args.actions == [Actions.a, Actions.a, Actions.b, Actions.b, Actions.a]
+
+
+def test_nargs_with_choices__enum_illegal_default() -> None:
+    class Actions(Enum):
+        a = "a"
+        b = "b"
+
+    class Args(TypedArgs):
+        actions: List[Actions] = arg(
+            positional=True,
+            default=[Actions.a, Actions.b, "c"],  # type: ignore
+        )
+
+    with argparse_error():
+        parse(Args, [])
+
+
+def test_nargs_with_choices__dynamic_choices_and_dynamic_default() -> None:
+    class Args(TypedArgs):
+        actions: List[str] = arg(
+            positional=True,
+            nargs="*",
+            dynamic_default=lambda: ["a", "b"],
+            dynamic_choices=lambda: ["a", "b"],
+        )
+
+    args = parse(Args, [])
+    assert args.actions == ["a", "b"]
+    args = parse(Args, ["a"])
+    assert args.actions == ["a"]
+    args = parse(Args, ["b"])
+    assert args.actions == ["b"]
+    args = parse(Args, ["a", "a", "b", "b", "a"])
+    assert args.actions == ["a", "a", "b", "b", "a"]
+
+
 # Subparsers
 
 

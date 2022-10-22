@@ -7,6 +7,7 @@ from typing_extensions import assert_never
 
 from .arg import Arg
 from .arg import arg as make_arg
+from .choices import Choices
 from .type_utils import TypeAnnotation, collect_type_annotations
 from .typed_args import TypedArgs
 
@@ -481,14 +482,14 @@ def _build_add_argument_args(
 
         allowed_values_if_literal = annotation.get_allowed_values_if_literal()
         if allowed_values_if_literal is not None:
-            kwargs["choices"] = allowed_values_if_literal
+            kwargs["choices"] = Choices(*allowed_values_if_literal)
 
         allowed_values_if_enum = annotation.get_allowed_values_if_enum()
         if allowed_values_if_enum is not None:
-            kwargs["choices"] = allowed_values_if_enum
+            kwargs["choices"] = Choices(*allowed_values_if_enum)
 
         if arg.dynamic_choices is not None:
-            kwargs["choices"] = arg.dynamic_choices()
+            kwargs["choices"] = Choices(*arg.dynamic_choices())
 
     # Nargs handling
     if is_collection:
