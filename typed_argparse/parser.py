@@ -438,7 +438,7 @@ def _build_add_argument_args(
     if annotation.is_bool:
         is_required = False
     else:
-        if annotation.is_optional or arg.default is not None:
+        if annotation.is_optional or arg.has_default():
             is_required = False
         else:
             is_required = True
@@ -450,13 +450,14 @@ def _build_add_argument_args(
 
     # Value handling
     if annotation.is_bool:
-        if arg.default is not None:
-            if arg.default is True:
+        if arg.has_default():
+            default_value = arg.resolve_default()
+            if default_value is True:
                 kwargs["action"] = "store_false"
-            elif arg.default is False:
+            elif default_value is False:
                 kwargs["action"] = "store_true"
             else:
-                raise RuntimeError(f"Invalid default for bool '{arg.default}'")
+                raise RuntimeError(f"Invalid default for bool '{default_value}'")
         else:
             kwargs["action"] = "store_true"
 
@@ -469,8 +470,9 @@ def _build_add_argument_args(
             if type_converter is not None:
                 kwargs["type"] = type_converter
 
-        if arg.default is not None:
-            kwargs["default"] = copy.deepcopy(arg.default)
+        if arg.has_default():
+            default_value = arg.resolve_default()
+            kwargs["default"] = default_value
 
             # Argparse requires positionals with defaults to have nargs="?"
             # Note that for list-like (real nargs) arguments that happens to have a default
@@ -485,6 +487,9 @@ def _build_add_argument_args(
         allowed_values_if_enum = annotation.get_allowed_values_if_enum()
         if allowed_values_if_enum is not None:
             kwargs["choices"] = allowed_values_if_enum
+
+        if arg.dynamic_choices is not None:
+            kwargs["choices"] = arg.dynamic_choices()
 
     # Nargs handling
     if is_collection:
