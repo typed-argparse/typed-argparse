@@ -282,7 +282,7 @@ def test_dynamic_choices() -> None:
 # Literals
 
 
-def test_literal() -> None:
+def test_literal__basics() -> None:
     class Args(TypedArgs):
         literal_string: Literal["a", "b"]
         literal_int: Literal[1, 2]
@@ -300,39 +300,178 @@ def test_literal() -> None:
     assert "argument --literal-int: invalid choice: '3' (choose from 1, 2)" == str(e.error)
 
 
+def test_literal__fuzzy_matching() -> None:
+    class Args(TypedArgs):
+        literal_string: Literal["some_foo", "SOME-BAR"]
+
+    args = parse(Args, ["--literal-string", "some_foo"])
+    assert args.literal_string == "some_foo"
+    args = parse(Args, ["--literal-string", "some-foo"])
+    assert args.literal_string == "some_foo"
+    args = parse(Args, ["--literal-string", "SoMe-FoO"])
+    assert args.literal_string == "some_foo"
+
+    args = parse(Args, ["--literal-string", "some_bar"])
+    assert args.literal_string == "SOME-BAR"
+    args = parse(Args, ["--literal-string", "some-bar"])
+    assert args.literal_string == "SOME-BAR"
+    args = parse(Args, ["--literal-string", "SoMe-BaR"])
+    assert args.literal_string == "SOME-BAR"
+
+    with argparse_error():
+        parse(Args, ["--literal-string", "some_foox"])
+    with argparse_error():
+        parse(Args, ["--literal-string", "xsome_foo"])
+    with argparse_error():
+        parse(Args, ["--literal-string", "somefoo"])
+
+
 # Enums
 
 
-def test_enum() -> None:
-    class StrEnum(Enum):
-        a = "a"
-        b = "b"
+@pytest.mark.parametrize("use_literal_enum", [False, True])
+def test_enum__basics(use_literal_enum: bool) -> None:
+    if not use_literal_enum:
 
-    class IntEnum(Enum):
-        a = 1
-        b = 2
+        class StrEnum(Enum):
+            a = "a-value"
+            b = "b-value"
+
+            def __repr__(self) -> str:
+                return self.name
+
+        class IntEnum(Enum):
+            a = 1
+            b = 2
+
+            def __repr__(self) -> str:
+                return self.name
+
+    else:
+
+        class StrEnum(str, Enum):  # type: ignore
+            a = "a-value"
+            b = "b-value"
+
+            def __repr__(self) -> str:
+                return self.name
+
+        class IntEnum(int, Enum):  # type: ignore
+            a = 1
+            b = 2
+
+            def __repr__(self) -> str:
+                return self.name
 
     class Args(TypedArgs):
         enum_string: StrEnum
         enum_int: IntEnum
 
+    # Match by names
     args = parse(Args, ["--enum-string", "a", "--enum-int", "a"])
+    assert args.enum_string == StrEnum.a
+    assert args.enum_int == IntEnum.a
+
+    # Match by values
+    args = parse(Args, ["--enum-string", "a-value", "--enum-int", "1"])
     assert args.enum_string == StrEnum.a
     assert args.enum_int == IntEnum.a
 
     with argparse_error() as e:
         parse(Args, ["--enum-string", "c", "--enum-int", "a"])
-    assert (
-        "argument --enum-string: invalid choice: 'c' (choose from <StrEnum.a: 'a'>, <StrEnum.b: 'b'>)"  # noqa
-        == str(e.error)
-    )
+    assert "argument --enum-string: invalid choice: 'c' (choose from a, b)" == str(e.error)  # noqa
 
     with argparse_error() as e:
         parse(Args, ["--enum-string", "a", "--enum-int", "c"])
-    assert (
-        "argument --enum-int: invalid choice: 'c' (choose from <IntEnum.a: 1>, <IntEnum.b: 2>)"
-        == str(e.error)
+    assert "argument --enum-int: invalid choice: 'c' (choose from a, b)" == str(e.error)
+
+
+def test_enum__help_text(capsys: pytest.CaptureFixture[str]) -> None:
+    class StrEnum(Enum):
+        a = "a-value"
+        b = "b-value"
+
+        def __str__(self) -> str:
+            return self.name
+
+    class IntEnum(Enum):
+        a = 1
+        b = 2
+
+        def __str__(self) -> str:
+            return self.name
+
+    class Args(TypedArgs):
+        enum_string: StrEnum
+        enum_int: IntEnum
+
+    with pytest.raises(SystemExit):
+        Parser(Args).parse_args(["-h"])
+
+    captured = capsys.readouterr()
+    assert captured.out == textwrap.dedent(
+        """\
+        usage: pytest [-h] --enum-string {a,b} --enum-int {a,b}
+
+        optional arguments:
+          -h, --help           show this help message and exit
+          --enum-string {a,b}
+          --enum-int {a,b}
+        """
     )
+
+
+@pytest.mark.parametrize("use_literal_enum", [False, True])
+def test_enum__fuzzy_matching(use_literal_enum: bool) -> None:
+    if not use_literal_enum:
+
+        class StrEnum(Enum):
+            some_foo = "some_foo_value"
+            SOME_BAR = "SOME-BAR_VALUE"
+
+    else:
+
+        class StrEnum(str, Enum):  # type: ignore
+            some_foo = "some_foo_value"
+            SOME_BAR = "SOME-BAR_VALUE"
+
+    class Args(TypedArgs):
+        enum_string: StrEnum
+
+    args = parse(Args, ["--enum-string", "some_foo"])
+    assert args.enum_string == StrEnum.some_foo
+    args = parse(Args, ["--enum-string", "some-foo"])
+    assert args.enum_string == StrEnum.some_foo
+    args = parse(Args, ["--enum-string", "SoMe-FoO"])
+    assert args.enum_string == StrEnum.some_foo
+
+    args = parse(Args, ["--enum-string", "some_foo_value"])
+    assert args.enum_string == StrEnum.some_foo
+    args = parse(Args, ["--enum-string", "some-foo-value"])
+    assert args.enum_string == StrEnum.some_foo
+    args = parse(Args, ["--enum-string", "SoMe-FoO-VaLuE"])
+    assert args.enum_string == StrEnum.some_foo
+
+    args = parse(Args, ["--enum-string", "some_bar"])
+    assert args.enum_string == StrEnum.SOME_BAR
+    args = parse(Args, ["--enum-string", "some-bar"])
+    assert args.enum_string == StrEnum.SOME_BAR
+    args = parse(Args, ["--enum-string", "SoMe-BaR"])
+    assert args.enum_string == StrEnum.SOME_BAR
+
+    args = parse(Args, ["--enum-string", "some_bar_value"])
+    assert args.enum_string == StrEnum.SOME_BAR
+    args = parse(Args, ["--enum-string", "some-bar-value"])
+    assert args.enum_string == StrEnum.SOME_BAR
+    args = parse(Args, ["--enum-string", "SoMe-BaR-VaLuE"])
+    assert args.enum_string == StrEnum.SOME_BAR
+
+    with argparse_error():
+        parse(Args, ["--enum-string", "some_foox"])
+    with argparse_error():
+        parse(Args, ["--enum-string", "xsome_foo"])
+    with argparse_error():
+        parse(Args, ["--enum-string", "somefoo"])
 
 
 # Nargs
