@@ -1,5 +1,5 @@
-import enum
 import sys
+from enum import Enum
 from typing import (
     Callable,
     Dict,
@@ -87,8 +87,8 @@ class TypeAnnotation:
         # TODO: Iterate branches of Union to check for None?
         return self.get_underlying_if_optional() is not None
 
-    def get_underlying_type_converter(self) -> Optional[Union[type, Callable[[object], object]]]:
-        if isinstance(self.raw_type, type) and not issubclass(self.raw_type, enum.Enum):
+    def get_underlying_type_converter(self) -> Optional[Union[type, Callable[[str], object]]]:
+        if isinstance(self.raw_type, type) and not issubclass(self.raw_type, Enum):
             return self.raw_type
         else:
             underlying = self.get_underlying_if_optional()
@@ -101,51 +101,17 @@ class TypeAnnotation:
             allowed_values_if_literal = self.get_allowed_values_if_literal()
             if allowed_values_if_literal is not None:
                 allowed_values = allowed_values_if_literal
-
-                def converter(x: object) -> object:
-
-                    for allowed_value in allowed_values:
-                        if x == allowed_value:
-                            return allowed_value
-                        else:
-                            try:
-                                x_converted = type(allowed_value)(x)  # type: ignore
-                                if x_converted == allowed_value:
-                                    return allowed_value
-                            except (ValueError, TypeError):
-                                pass
-
-                    # Here we could raise a TypeError or ValueError, but it looks like relying
-                    # on `choices` instead actually produces a better error message.
-                    return x
-
-                return converter
+                return _create_literal_type_converter(allowed_values)
 
             allowed_values_if_enum = self.get_allowed_values_if_enum()
             if (
                 allowed_values_if_enum is not None
                 and isinstance(self.raw_type, type)
-                and issubclass(self.raw_type, enum.Enum)
+                and issubclass(self.raw_type, Enum)
             ):
-                enum_type: Type[enum.Enum] = self.raw_type
                 allowed_values = allowed_values_if_enum
-
-                def converter(x: object) -> object:
-
-                    for allowed_value in allowed_values:
-                        if x == allowed_value or x == allowed_value.value:  # type: ignore
-                            return allowed_value
-                        else:
-                            try:
-                                return enum_type[x]  # type: ignore
-                            except KeyError:
-                                pass
-
-                    # Here we could raise a TypeError or ValueError, but it looks like relying
-                    # on `choices` instead actually produces a better error message.
-                    return x
-
-                return converter
+                enum_type: Type[Enum] = self.raw_type
+                return _create_enum_type_converter(allowed_values, enum_type)
 
             return None
 
@@ -201,8 +167,8 @@ class TypeAnnotation:
         else:
             raise AssertionError(f"Python version {sys.version_info} is not supported")
 
-    def get_allowed_values_if_enum(self) -> Optional[Tuple[enum.Enum, ...]]:
-        if isinstance(self.raw_type, type) and issubclass(self.raw_type, enum.Enum):
+    def get_allowed_values_if_enum(self) -> Optional[Tuple[Enum, ...]]:
+        if isinstance(self.raw_type, type) and issubclass(self.raw_type, Enum):
             return tuple(self.raw_type)
         else:
             return None
@@ -317,3 +283,58 @@ T = TypeVar("T")
 def assert_not_none(x: Optional[T]) -> T:
     assert x is not None
     return x
+
+
+def _create_literal_type_converter(allowed_values: Tuple[object, ...]) -> Callable[[str], object]:
+    def converter(x: str) -> object:
+
+        for allowed_value in allowed_values:
+            if _fuzzy_compare(x, allowed_value):
+                return allowed_value
+            else:
+                try:
+                    x_converted = type(allowed_value)(x)  # type: ignore
+                    if _fuzzy_compare(x_converted, allowed_value):
+                        return allowed_value
+                except (ValueError, TypeError):
+                    pass
+
+        # Here we could raise a TypeError or ValueError, but it looks like relying
+        # on `choices` instead actually produces a better error message.
+        return x
+
+    return converter
+
+
+def _create_enum_type_converter(
+    allowed_values: Tuple[Enum, ...], enum_type: Type[Enum]
+) -> Callable[[str], object]:
+    def converter(x: str) -> object:
+
+        for allowed_value in allowed_values:
+            assert isinstance(allowed_value, Enum)
+            if _fuzzy_compare(x, allowed_value.name):
+                return allowed_value
+            else:
+                if _fuzzy_compare(x, allowed_value.value):
+                    return allowed_value
+                else:
+                    try:
+                        x_converted = type(allowed_value.value)(x)
+                        if _fuzzy_compare(x_converted, allowed_value.value):
+                            return allowed_value
+                    except (ValueError, TypeError):
+                        pass
+
+        # Here we could raise a TypeError or ValueError, but it looks like relying
+        # on `choices` instead actually produces a better error message.
+        return x
+
+    return converter
+
+
+def _fuzzy_compare(a: object, b: object) -> bool:
+    if isinstance(a, str) and isinstance(b, str):
+        return a.lower().replace("-", "_") == b.lower().replace("-", "_")
+    else:
+        return a == b
