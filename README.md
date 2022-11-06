@@ -3,8 +3,8 @@
 💡 write type-safe and elegant CLIs with a clear separation of concerns.
 
 [![PyPI version](https://badge.fury.io/py/typed-argparse.svg)](https://badge.fury.io/py/typed_argparse)
-[![Build Status](https://github.com/bluenote10/typed_argparse/workflows/ci/badge.svg)](https://github.com/bluenote10/typed_argparse/actions?query=workflow%3Aci)
-[![codecov](https://codecov.io/gh/bluenote10/typed_argparse/branch/master/graph/badge.svg?token=6I98R2661Z)](https://codecov.io/gh/bluenote10/typed_argparse)
+[![Build Status](https://github.com/typed-argparse/typed-argparse/workflows/ci/badge.svg)](https://github.com/typed-argparse/typed-argparse/actions?query=workflow%3Aci)
+[![codecov](https://codecov.io/gh/typed-argparse/typed-argparse/branch/master/graph/badge.svg?token=6I98R2661Z)](https://codecov.io/gh/typed-argparse/typed-argparse)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![mypy](https://img.shields.io/badge/mypy-strict-blue)](http://mypy-lang.org/)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](LICENSE)
@@ -77,7 +77,7 @@ def main() -> None:
 
 ## Documentation
 
-See [full documentation](https://typed-argparse.github.io/typed-argparse/)
+See [full documentation](https://typed-argparse.github.io/typed-argparse/).
 
 
 ## Changes
@@ -87,4 +87,4 @@ See [change log](CHANGES.md).
 
 ## License
 
-This project is licensed under the terms of the MIT license.
+This project is licensed under the terms of the [MIT license](LICENSE).
