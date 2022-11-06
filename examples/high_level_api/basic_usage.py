@@ -17,7 +17,7 @@ def runner(args: Args):
     print(f"Running my app with args:\n{args}")
 
 
-# 3. Bind & run argument definition + business logic
+# 3. Bind argument definition + business logic & run
 def main() -> None:
     tap.Parser(Args).bind(runner).run()
 

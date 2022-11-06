@@ -1,8 +1,8 @@
-# typed_argparse
+# typed-argparse
 
 💡 write type-safe and elegant CLIs with a clear separation of concerns.
 
-[![PyPI version](https://badge.fury.io/py/typed-argparse.svg)](https://badge.fury.io/py/typed_argparse)
+[![PyPI version](https://badge.fury.io/py/typed-argparse.svg)](https://badge.fury.io/py/typed-argparse)
 [![Build Status](https://github.com/typed-argparse/typed-argparse/workflows/ci/badge.svg)](https://github.com/typed-argparse/typed-argparse/actions?query=workflow%3Aci)
 [![codecov](https://codecov.io/gh/typed-argparse/typed-argparse/branch/master/graph/badge.svg?token=6I98R2661Z)](https://codecov.io/gh/typed-argparse/typed-argparse)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -16,25 +16,16 @@
 
 <br>
 
-## Motivation
-
-Want to add type annotations to a code base that makes use of `argparse` without refactoring all you CLIs?
-`typed_argparse` allows to do that with minimal changes:
-
-1. Add a type `Args(TypedArgs)` that inherits from `TypedArgs` and fill it with type annotations.
-2. Wrap the result of e.g. your `parse_args` function with `Args`.
-3. That's it, enjoy IDE auto-completion and strong type safety 😀.
-
-
 ## Features
 
-- Argument parsing based on type annotation (including runtime validation, and support for many common types)
+- Argument parsing based on type annotation (including runtime validation).
+- Support for many common types.
 - Clear separation of concern between argument parsing and business logic.
 - Support for super-low-latency shell auto-completions.
 - Great for [writing sub-command CLIs](https://typed-argparse.github.io/typed-argparse/high_level_api/#sub-commands).
 - Very lightweight.
 - No dependencies.
-- Fully typed, no extra type stubs required.
+- Fully typed itself, no extra type stubs required.
 - Offers both a [high-level](https://typed-argparse.github.io/typed-argparse/high_level_api.md) and a [low-level](https://typed-argparse.github.io/typed-argparse/low_level_api.md) API.
   The high-level API generally requires less code to write, is fully based on type annotations, and is the preferred way for writing new CLIs.
   The low-level API is mainly a low-effort migration path for incorporating type-safety into existing CLIs based on `argparse`.
@@ -69,7 +60,7 @@ def runner(args: Args):
     print(f"Running my app with args:\n{args}")
 
 
-# 3. Bind & run argument definition + business logic
+# 3. Bind argument definition + business logic & run
 def main() -> None:
     tap.Parser(Args).bind(runner).run()
 ```
