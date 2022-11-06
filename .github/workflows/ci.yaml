@@ -66,7 +66,7 @@ jobs:
           fail_ci_if_error: true
 
 
-  deploy:
+  deploy-pypi:
 
     needs: tests
 
@@ -103,7 +103,7 @@ jobs:
 
           ./scripts/ci_integration
 
-      - name: Publish to PyPI
+      - name: Publish to PyPI (if on master)
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -111,3 +111,31 @@ jobs:
           password: ${{ secrets.PYPI_API_TOKEN }}
           skip_existing: true
 
+  deploy-docs:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install mkdocs-material
+        run: pip install mkdocs-material
+
+      - name: Build docs
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        run: |
+          set -e
+          mkdocs build
+
+      - name: Publish docs (if on master)
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        run: |
+          set -e
+          mkdocs gh-deploy
