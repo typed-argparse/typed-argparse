@@ -137,4 +137,4 @@ jobs:
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         run: |
           set -e
-          mkdocs gh-deploy
+          mkdocs gh-deploy --force

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.6
+
+- Update package meta data on PyPI to reflect changed project URL/name.
+
 ## 0.2.5
 
 - Support for fuzzy choice matching

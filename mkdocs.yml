@@ -1,4 +1,4 @@
-site_name: typed_argparse
+site_name: typed-argparse
 
 theme:
   name: material
@@ -16,8 +16,8 @@ theme:
   icon:
     repo: fontawesome/brands/github
 
-repo_name: typed_argparse
-repo_url: https://github.com/bluenote10/typed_argparse
+repo_name: typed-argparse
+repo_url: https://github.com/typed-argparse/typed-argparse
 edit_uri: ""
 
 markdown_extensions:
