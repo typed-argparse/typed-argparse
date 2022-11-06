@@ -1,11 +1,6 @@
 # typed_argparse
 
-
-💡 type-safe args for argparse without much refactoring.
-
-<!--
-💡 `typed_argparse` allows to write type-safe and elegant CLIs with a clear separation of concerns.
--->
+💡 write type-safe and elegant CLIs with a clear separation of concerns.
 
 [![PyPI version](https://badge.fury.io/py/typed-argparse.svg)](https://badge.fury.io/py/typed_argparse)
 [![Build Status](https://github.com/bluenote10/typed_argparse/workflows/ci/badge.svg)](https://github.com/bluenote10/typed_argparse/actions?query=workflow%3Aci)
@@ -14,19 +9,14 @@
 [![mypy](https://img.shields.io/badge/mypy-strict-blue)](http://mypy-lang.org/)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](LICENSE)
 
-
-<br>
-
 ---
-
-<br>
 
 ## Features
 
 - Argument parsing based on type annotation (including runtime validation, and support for many common types)
 - Clear separation of concern between argument parsing and business logic.
 - Support for super-low-latency shell auto-completions.
-- Great for [writing sub-command CLIs](http://127.0.0.1:8000/high_level_api/#sub-commands).
+- Great for [writing sub-command CLIs](high_level_api/#sub-commands).
 - Very lightweight.
 - No dependencies.
 - Fully typed, no extra type stubs required.
