@@ -32,6 +32,9 @@ class Arg(NamedTuple):
         has_dynamic_default = self.dynamic_default is not None
         return has_default or has_dynamic_default
 
+    def nargs_with_default(self) -> NArgs:
+        return self.nargs if self.nargs is not None else "*"
+
     def resolve_default(self) -> object:
         has_default = self.default is not None
         has_dynamic_default = self.dynamic_default is not None

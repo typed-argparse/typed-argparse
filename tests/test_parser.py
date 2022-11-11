@@ -481,6 +481,10 @@ def test_nargs__basic_list_support() -> None:
     class Args(TypedArgs):
         files: List[Path]
 
+    # TODO: Make this work with argparse_error
+    with pytest.raises(SystemExit):
+        args = parse(Args, [])
+
     args = parse(Args, ["--files"])
     assert args.files == []
 
@@ -488,7 +492,18 @@ def test_nargs__basic_list_support() -> None:
     assert args.files == [Path("a"), Path("b"), Path("c")]
 
 
-def test_nargs__with_default() -> None:
+def test_nargs__with_default__empty() -> None:
+    class Args(TypedArgs):
+        files: List[Path] = arg(default=[])
+
+    args = parse(Args, [])
+    assert args.files == []
+
+    args = parse(Args, ["--files"])
+    assert args.files == []
+
+
+def test_nargs__with_default__non_empty() -> None:
     class Args(TypedArgs):
         actions: List[str] = arg(default=["foo", "bar"])
 
@@ -568,6 +583,32 @@ def test_nargs__type_checks() -> None:
 
     class ArgsBadDefaultType(TypedArgs):
         files: List[str] = arg(nargs="*", type=lambda s: 42, default=42)  # type: ignore
+
+
+# Nargs with optional
+
+
+def test_nargs__list_wrapped_in_optional() -> None:
+    class Args(TypedArgs):
+        tags: Optional[List[str]]
+
+    args = parse(Args, [])
+    assert args.tags is None
+
+    args = parse(Args, ["--tags"])
+    assert args.tags == []
+
+    args = parse(Args, ["--tags", "a", "b", "c"])
+    assert args.tags == ["a", "b", "c"]
+
+
+def test_nargs__list_wrapped_in_optional__illegal_with_nonzero_nargs() -> None:
+    class Args(TypedArgs):
+        tags: Optional[List[str]] = arg(nargs="+")
+
+    with pytest.raises(AssertionError) as e:
+        parse(Args, ["--tags", "a"])
+    assert str(e.value) == "An argument with nargs='+' must not be optional"
 
 
 # Nargs with choices

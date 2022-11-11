@@ -82,11 +82,6 @@ class TypeAnnotation:
     def is_bool(self) -> bool:
         return self.raw_type is bool
 
-    @property
-    def is_optional(self) -> bool:
-        # TODO: Iterate branches of Union to check for None?
-        return self.get_underlying_if_optional() is not None
-
     def get_underlying_type_converter(self) -> Optional[Union[type, Callable[[str], object]]]:
         if isinstance(self.raw_type, type) and not issubclass(self.raw_type, Enum):
             return self.raw_type
