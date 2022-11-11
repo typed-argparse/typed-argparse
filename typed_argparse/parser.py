@@ -425,12 +425,25 @@ def _build_add_argument_args(
         "help": _generate_help_text(arg),
     }
 
+    # Unwrap optionals
+    underlying_if_optional = annotation.get_underlying_if_optional()
+    if underlying_if_optional is not None:
+        is_optional = True
+        annotation = underlying_if_optional
+    else:
+        is_optional = False
+
     # Unwrap collections
     underlying_if_list = annotation.get_underlying_if_list()
     if underlying_if_list is not None:
         is_collection = True
         annotation = underlying_if_list
         # TODO: How should we handle e.g. List[bool]?
+
+        # Sanity checks:
+        if arg.nargs_with_default() == "+" and is_optional:
+            raise AssertionError("An argument with nargs='+' must not be optional")
+
     else:
         is_collection = False
 
@@ -438,7 +451,7 @@ def _build_add_argument_args(
     if annotation.is_bool:
         is_required = False
     else:
-        if annotation.is_optional or arg.has_default():
+        if is_optional or arg.has_default():
             is_required = False
         else:
             is_required = True
@@ -493,10 +506,7 @@ def _build_add_argument_args(
 
     # Nargs handling
     if is_collection:
-        if arg.nargs is None:
-            kwargs["nargs"] = "*"
-        else:
-            kwargs["nargs"] = arg.nargs
+        kwargs["nargs"] = arg.nargs_with_default()
 
     # Name handling
     cli_arg_name = python_arg_name.replace("_", "-")
