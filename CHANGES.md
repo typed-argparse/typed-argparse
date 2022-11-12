@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.7
+
+- Add support for optional list (nargs) arguments.
+
 ## 0.2.6
 
 - Update package meta data on PyPI to reflect changed project URL/name.
