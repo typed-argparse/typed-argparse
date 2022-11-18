@@ -26,7 +26,7 @@
 - Very lightweight.
 - No dependencies.
 - Fully typed itself, no extra type stubs required.
-- Offers both a [high-level](https://typed-argparse.github.io/typed-argparse/high_level_api.md) and a [low-level](https://typed-argparse.github.io/typed-argparse/low_level_api.md) API.
+- Offers both a [high-level](https://typed-argparse.github.io/typed-argparse/high_level_api) and a [low-level](https://typed-argparse.github.io/typed-argparse/low_level_api) API.
   The high-level API generally requires less code to write, is fully based on type annotations, and is the preferred way for writing new CLIs.
   The low-level API is mainly a low-effort migration path for incorporating type-safety into existing CLIs based on `argparse`.
 
