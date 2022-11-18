@@ -37,4 +37,4 @@ The only requirement is a modern Python (3.6+).
 
 ## Next step
 
-Continue with [getting started](http://127.0.0.1:8000/high_level_api/#getting-started).
+Continue with [getting started](high_level_api/#getting-started).
