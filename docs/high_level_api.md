@@ -109,6 +109,6 @@ Some observations:
 
 ## Auto-completion
 
-`typed_argparse` builds on top of `argcomplete`[https://github.com/kislyuk/argcomplete] for auto-completion.
+`typed_argparse` builds on top of [`argcomplete`](https://github.com/kislyuk/argcomplete) for auto-completion.
 The rule is: If you have `argcomplete` installed, `typed_argparse` detects it and automatically installs the auto-completion.
 Check the `argcomplete` documentation how to activate `argcomplete` for your particular shell flavor.
