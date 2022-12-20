@@ -1,20 +1,24 @@
 $ python sub_commands_basic.py -h
 usage: sub_commands_basic.py [-h] {foo,bar} ...
 
-positional arguments:
-  {foo,bar}   Available sub commands
-
-optional arguments:
+options:
   -h, --help  show this help message and exit
+
+subcommands:
+  {foo,bar}   Available sub commands
+    foo       Help of foo
+    bar       Help of bar
 
 $ python sub_commands_basic.py foo -h
 usage: sub_commands_basic.py foo [-h] {start,stop} ...
 
-positional arguments:
-  {start,stop}  Available sub commands
-
-optional arguments:
+options:
   -h, --help    show this help message and exit
+
+subcommands:
+  {start,stop}  Available sub commands
+    start       Help of foo -> start
+    stop        Help of foo -> stop
 
 $ python sub_commands_basic.py foo start
 Running foo start: FooStartArgs()
