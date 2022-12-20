@@ -63,11 +63,13 @@ class SubParser:
         self,
         name: str,
         args_or_group: "ArgsOrGroup",
+        help: Optional[str] = None,
         aliases: Optional[List[str]] = None,
     ):
         self._name = name
         self._args_or_group = args_or_group
         self._aliases = aliases
+        self._help = help
 
     def __str__(self) -> str:
         return f"SubParser('{self._name}', {_to_string(self._args_or_group)})"
@@ -81,11 +83,13 @@ class SubParserGroup:
         self,
         *subparsers: SubParser,
         common_args: Optional[Type[TypedArgs]] = None,
+        description: Optional[str] = None,
         required: bool = True,
     ):
         self._sub_parser_declarations = subparsers
         self._common_args = common_args
         self._required = required
+        self._description = description
 
     def __str__(self) -> str:
         return f"SubParserGroup({', '.join(map(str, self._sub_parser_declarations))})"
@@ -291,16 +295,23 @@ def _traverse_build_parser(
             argparse_subparsers = parser.add_subparsers(
                 help="Available sub commands",
                 dest=dest,
+                description=group._description,
             )
         else:
             argparse_subparsers = parser.add_subparsers(
                 help="Available sub commands",
                 dest=dest,
+                description=group._description,
                 required=group._required,
             )
 
         for sub_parser_declaration in group._sub_parser_declarations:
-            argparse_subparser = argparse_subparsers.add_parser(sub_parser_declaration._name)
+            kwargs = {}
+            if sub_parser_declaration._help is not None:
+                kwargs["help"] = sub_parser_declaration._help
+            argparse_subparser = argparse_subparsers.add_parser(
+                sub_parser_declaration._name, **kwargs
+            )
 
             _traverse_build_parser(
                 sub_parser_declaration._args_or_group,

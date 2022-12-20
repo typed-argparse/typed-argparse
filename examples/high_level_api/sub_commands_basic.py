@@ -33,13 +33,15 @@ def main() -> None:
             tap.SubParser(
                 "foo",
                 tap.SubParserGroup(
-                    tap.SubParser("start", FooStartArgs),
-                    tap.SubParser("stop", FooStopArgs),
+                    tap.SubParser("start", FooStartArgs, help="Help of foo -> start"),
+                    tap.SubParser("stop", FooStopArgs, help="Help of foo -> stop"),
                 ),
+                help="Help of foo",
             ),
             tap.SubParser(
                 "bar",
                 BarArgs,
+                help="Help of bar",
             ),
         ),
     ).bind(

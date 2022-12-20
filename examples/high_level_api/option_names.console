@@ -1,7 +1,7 @@
 $ python option_names.py -h
 usage: option_names.py [-h] -f FOO --external-name INTERNAL_NAME
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -f FOO, --foo FOO
   --external-name INTERNAL_NAME
