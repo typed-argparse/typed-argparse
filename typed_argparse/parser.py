@@ -310,7 +310,7 @@ def _traverse_build_parser(
             if sub_parser_declaration._help is not None:
                 kwargs["help"] = sub_parser_declaration._help
             argparse_subparser = argparse_subparsers.add_parser(
-                sub_parser_declaration._name, **kwargs
+                sub_parser_declaration._name, **kwargs  # type: ignore
             )
 
             _traverse_build_parser(
