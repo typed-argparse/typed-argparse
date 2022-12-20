@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.8
+
+- Add support for forwarding help and description to subparser and subparser groups respectively.
+
 ## 0.2.7
 
 - Add support for optional list (nargs) arguments.
