@@ -1,7 +1,19 @@
 import argparse
 import sys
 from argparse import ArgumentParser as ArgparseParser
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    get_type_hints,
+)
 
 from typing_extensions import assert_never
 
@@ -29,7 +41,7 @@ class Binding:
         if not hasattr(func, "__annotations__"):
             raise ValueError(f"Function {func.__name__} misses type annotations.")
 
-        annotations = func.__annotations__
+        annotations = get_type_hints(func)
 
         if len(annotations) == 0:
             raise ValueError(f"Type annotations of {func.__name__} are empty.")

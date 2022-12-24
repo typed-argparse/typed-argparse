@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.9
+
+- Fix issue when parser is used under `from __future__ import annotations` context.
+
 ## 0.2.8
 
 - Add support for forwarding help and description to subparser and subparser groups respectively.
