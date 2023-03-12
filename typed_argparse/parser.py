@@ -351,11 +351,9 @@ TypeMapping = Dict[TypePath, Type[TypedArgs]]
 
 
 def _traverse_get_type_mapping(args_or_group: ArgsOrGroup) -> TypeMapping:
-
     mapping: Dict[TypePath, Type[TypedArgs]] = {}
 
     def traverse(args_or_group: ArgsOrGroup, current_path: TypePath) -> None:
-
         if isinstance(args_or_group, SubParserGroup):
             group = args_or_group
 
@@ -443,7 +441,6 @@ def _build_add_argument_args(
     annotation: TypeAnnotation,
     arg: Arg,
 ) -> Tuple[List[str], Dict[str, Any]]:
-
     kwargs: Dict[str, Any] = {
         "help": _generate_help_text(arg),
     }
@@ -565,7 +562,6 @@ def _build_add_argument_args(
 
 def _generate_help_text(arg: Arg) -> Optional[str]:
     if arg.help is not None and arg.default is not None and arg.auto_default_help:
-
         try:
             from yachalk import chalk
 

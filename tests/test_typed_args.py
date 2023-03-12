@@ -318,7 +318,6 @@ def test_enum__parse_from_str(use_literal_enum: bool) -> None:
 
 @pytest.mark.parametrize("use_literal_enum", [False, True])
 def test_enum__parse_from_int(use_literal_enum: bool) -> None:
-
     if use_literal_enum:
 
         class IntEnum(int, enum.Enum):
