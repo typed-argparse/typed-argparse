@@ -1,0 +1,11 @@
+$ python enum_arguments.py --help
+usage: enum_arguments.py [-h] --color {1,green} --make {Make.BIG,Make.SMALL}
+
+options:
+  -h, --help            show this help message and exit
+  --color {1,green}
+  --make {Make.BIG,Make.SMALL}
+
+$ python examples/high_level_api/enum_arguments.py --color green --make 1
+Running my app with args:
+Args(color=<Color.GREEN: 'green'>, make=<Make.BIG: 1>)
