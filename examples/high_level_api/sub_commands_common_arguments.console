@@ -1,0 +1,45 @@
+$ python examples/high_level_api/sub_commands_common_arguments.py foo -h
+usage: sub_commands_common_arguments.py foo [-h] {start,stop} ...
+
+options:
+  -h, --help    show this help message and exit
+
+subcommands:
+  {start,stop}  Available sub commands
+    start       Help of foo -> start
+    stop        Help of foo -> stop
+
+$ python examples/high_level_api/sub_commands_common_arguments.py foo start -h
+usage: sub_commands_common_arguments.py foo start [-h] [--verbose]
+
+options:
+  -h, --help  show this help message and exit
+  --verbose   Enable verbose log output. [default: False]
+
+$ python examples/high_level_api/sub_commands_common_arguments.py bar -h
+usage: sub_commands_common_arguments.py bar [-h] [--verbose] {start,stop} ...
+
+options:
+  -h, --help    show this help message and exit
+  --verbose     Enable verbose log output. [default: False]
+
+subcommands:
+  {start,stop}  Available sub commands
+    start       Help of bar -> start
+    stop        Help of bar -> stop
+
+$ python examples/high_level_api/sub_commands_common_arguments.py bar start -h
+usage: sub_commands_common_arguments.py bar start [-h]
+
+options:
+  -h, --help  show this help message and exit
+
+
+$ python examples/high_level_api/sub_commands_common_arguments.py foo start --verbose
+Running foo start with FooStartArgs(verbose=True) verbosely!
+
+$ python examples/high_level_api/sub_commands_common_arguments.py bar start --verbose
+usage: sub_commands_common_arguments.py [-h] {foo,bar} ...
+sub_commands_common_arguments.py: error: unrecognized arguments: --verbose
+$ python examples/high_level_api/sub_commands_common_arguments.py bar --verbose start                                                                                                               2 ↵
+Running bar start with BarStartArgs(verbose=True) verbosely!

@@ -96,7 +96,7 @@ In `typed_argparse` such a tree-like command structure can be directly modeled a
 Some observations:
 
 - In general a `Parser` or a `SubParser` can either take a `TypedArg` object directly (with leads to no further nesting)
-  or a `SubParserGroup` container one or more `SubParser` commands (with adds one level of nesting).
+  or a `SubParserGroup` container which in turn contains one or more `SubParser` commands (with adds one level of nesting).
 - The general `Parser.bind().run()` pattern is the same as with shallow CLIs.
   The main difference is that sub-commands CLIs bind a runner method for each "leaf" in the argument tree.
 
@@ -104,7 +104,34 @@ Some observations:
     `typed_argparse` internally performs a correctness and completeness check on the functions passed to `Parser.bind()`.
     This makes sure that you cannot accidentally forget to bind a leaf of the argument tree,
     and that all argument types have a matching binding.
-    If you plan to write unit tests for your CLI, including a call to `Parser.bind()` is therefore a sensible test that make sure that everything is bound properly.
+    If you plan to write unit tests for your CLI, including a call to `Parser.bind()` is therefore a sensible test that makes sure that everything is bound properly.
+
+
+## Common arguments in sub-commands
+
+If some arguments should be shared between multiple sub-commands, provide a base class with those arguments and have the class defining the arguments subclass this.
+
+In the example below, the common argumen is `--verbose` and `CommonArgs` just describes this argument.
+There are two options for how these options need to be passed on the command line.
+In the example, the two sub-commands `foo` and `bar` use the two options different options:
+
+- For `foo` the `CommonArgs` are just used as subclass and not passed via the `common_args=...` argument to the subparser group.
+  The common arguments will be added to each command indivdually, i.e., usage becomes `<myapp> foo start --verbose` and `<myapp> foo stop --verbose`.
+- For `bar` the `CommonArgs` are used as subclass and additionally passed as the `common_args=...` argument to the subparser group.
+  The common argument will be added at the parent level, i.e., usage becomes `<myapp> bar --verbose start` and `<myapp> bar --verbose stop`.
+
+
+```python title="sub_commands_common_arguments.py"
+--8<-- "examples/high_level_api/sub_commands_common_arguments.py"
+```
+
+Compare the help output for the two different sub-commands:
+
+<div class="termy">
+```console
+--8<-- "examples/high_level_api/sub_commands_common_arguments.console"
+```
+</div>
 
 
 ## Auto-completion
@@ -112,3 +139,27 @@ Some observations:
 `typed_argparse` builds on top of [`argcomplete`](https://github.com/kislyuk/argcomplete) for auto-completion.
 The rule is: If you have `argcomplete` installed, `typed_argparse` detects it and automatically installs the auto-completion.
 Check the `argcomplete` documentation how to activate `argcomplete` for your particular shell flavor.
+
+
+## Enums
+
+Passing `Enum` values as argument is straight forward.
+They are handled just like any other type.
+
+There is just a single caveat, when it comes to the help output.
+If the default `__str__` method of the enum is used, the help output will not display the values bur rather the names.
+A simple solution is hence to overwrite `__str__` so that the value is printed.
+(Note: From Python 3.11 onwards, the `StrEnum` class does that automatically.)
+
+
+```python title="enum_arguments.py"
+--8<-- "examples/high_level_api/enum_arguments.py"
+```
+
+Compare the help output for the two different enums:
+
+<div class="termy">
+```console
+--8<-- "examples/high_level_api/enum_arguments.console"
+```
+</div>
