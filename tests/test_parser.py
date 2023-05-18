@@ -170,6 +170,59 @@ def test_positional__with_hyphens() -> None:
     assert args.positional_with_underscores == "foo"
 
 
+def test_positional__non_optional_list() -> None:
+    class Args1(TypedArgs):
+        single: str = arg(positional=True)
+        multi: List[str] = arg(positional=True, nargs="+")
+
+    args = parse(Args1, ["foo", "bar", "baz"])
+    assert args.single == "foo"
+    assert args.multi == ["bar", "baz"]
+
+    class Args2(TypedArgs):
+        multi: List[str] = arg(positional=True, nargs="+")
+        single: str = arg(positional=True)
+
+    args = parse(Args2, ["foo", "bar", "baz"])
+    assert args.multi == ["foo", "bar"]
+    assert args.single == "baz"
+
+
+def test_positional__optional_list() -> None:
+    class Args1(TypedArgs):
+        single: str = arg(positional=True)
+        multi: List[str] = arg(positional=True, nargs="*")
+
+    args = parse(Args1, ["foo"])
+    assert args.single == "foo"
+    assert args.multi == []
+
+    class Args2(TypedArgs):
+        multi: List[str] = arg(positional=True, nargs="*")
+        single: str = arg(positional=True)
+
+    args = parse(Args2, ["foo"])
+    assert args.multi == []
+    assert args.single == "foo"
+
+
+def test_positional__sandwiched() -> None:
+    class Args(TypedArgs):
+        single_before: str = arg(positional=True)
+        multi: List[str] = arg(positional=True, nargs="*")
+        single_after: str = arg(positional=True)
+
+    args = parse(Args, ["foo", "baz"])
+    assert args.single_before == "foo"
+    assert args.multi == []
+    assert args.single_after == "baz"
+
+    args = parse(Args, ["foo", "bar", "baz"])
+    assert args.single_before == "foo"
+    assert args.multi == ["bar"]
+    assert args.single_after == "baz"
+
+
 # Flags
 
 

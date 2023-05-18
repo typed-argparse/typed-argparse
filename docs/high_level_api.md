@@ -31,7 +31,7 @@ Some observations:
 
 ## Positional arguments
 
-By default arguments are option-like, i.e., they are specified as `--some-argument <value>` on the command line.
+By default arguments are option-like, i.e., if the field name is `some_argument` can be specified as `--some-argument <value>` on the command line.
 
 In order to create positional (unnamed) argument, `positional=True` can be passed to the `tap.arg` function.
 For instance:
@@ -44,6 +44,30 @@ For instance:
 ```console
 --8<-- "examples/high_level_api/positional_arguments.console"
 ```
+</div>
+
+
+## Multiple positional arguments
+
+Positional arguments can be turned into lists:
+
+- `nargs=*` corresponds to a list that can be empty, i.e., it is optional to specify any arguments.
+- `nargs=+` corresponds to a list that cannot be empty, i.e., at least one argument must be given.
+
+Using `nargs` implies that in terms of the type signature the arguments becomes a `some_argument: List[T]` instead of `some_argument: T`.
+Correct usage is verified by type_argparse's type signatures.
+
+For example the following would result in similar semantics like `mv` (multiple but non-zero inputs, single output):
+
+```python title="positional_arguments.py"
+--8<-- "examples/high_level_api/positional_arguments_non_optional.py"
+```
+
+<div class="termy">
+```console
+--8<-- "examples/high_level_api/positional_arguments_non_optional.console"
+```
+
 </div>
 
 

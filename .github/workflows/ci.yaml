@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install black flake8 mypy pytest pytest-cov types-PyYAML
+          pip install -r requirements-dev.txt
           # Temporarily install extras manually:
           pip install argparse yachalk
           pip freeze

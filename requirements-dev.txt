@@ -1,0 +1,6 @@
+black
+flake8
+mypy
+pytest
+pytest-cov
+types-PyYAML
