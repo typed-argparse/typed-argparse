@@ -169,6 +169,7 @@ class TypeAnnotation:
             return None
 
     def validate(self, value: object) -> Tuple[object, Optional[str]]:
+
         # Handle optionals
         underlying_if_optional = self.get_underlying_if_optional()
         if underlying_if_optional is not None:
@@ -262,6 +263,7 @@ class TypeAnnotation:
         value: object,
         arg_name: str,
     ) -> object:
+
         value, error = self.validate(value)
 
         if error is not None:
@@ -280,6 +282,7 @@ def assert_not_none(x: Optional[T]) -> T:
 
 def _create_literal_type_converter(allowed_values: Tuple[object, ...]) -> Callable[[str], object]:
     def converter(x: str) -> object:
+
         for allowed_value in allowed_values:
             if _fuzzy_compare(x, allowed_value):
                 return allowed_value
@@ -302,6 +305,7 @@ def _create_enum_type_converter(
     allowed_values: Tuple[Enum, ...], enum_type: Type[Enum]
 ) -> Callable[[str], object]:
     def converter(x: str) -> object:
+
         for allowed_value in allowed_values:
             assert isinstance(allowed_value, Enum)
             if _fuzzy_compare(x, allowed_value.name):
