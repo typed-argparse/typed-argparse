@@ -171,39 +171,39 @@ def test_positional__with_hyphens() -> None:
 
 
 def test_positional__non_optional_list() -> None:
-    class Args1(TypedArgs):
+    class ArgsA(TypedArgs):
         single: str = arg(positional=True)
         multi: List[str] = arg(positional=True, nargs="+")
 
-    args = parse(Args1, ["foo", "bar", "baz"])
-    assert args.single == "foo"
-    assert args.multi == ["bar", "baz"]
+    args_a = parse(ArgsA, ["foo", "bar", "baz"])
+    assert args_a.single == "foo"
+    assert args_a.multi == ["bar", "baz"]
 
-    class Args2(TypedArgs):
+    class ArgsB(TypedArgs):
         multi: List[str] = arg(positional=True, nargs="+")
         single: str = arg(positional=True)
 
-    args = parse(Args2, ["foo", "bar", "baz"])
-    assert args.multi == ["foo", "bar"]
-    assert args.single == "baz"
+    args_b = parse(ArgsB, ["foo", "bar", "baz"])
+    assert args_b.multi == ["foo", "bar"]
+    assert args_b.single == "baz"
 
 
 def test_positional__optional_list() -> None:
-    class Args1(TypedArgs):
+    class ArgsA(TypedArgs):
         single: str = arg(positional=True)
         multi: List[str] = arg(positional=True, nargs="*")
 
-    args = parse(Args1, ["foo"])
-    assert args.single == "foo"
-    assert args.multi == []
+    args_a = parse(ArgsA, ["foo"])
+    assert args_a.single == "foo"
+    assert args_a.multi == []
 
-    class Args2(TypedArgs):
+    class ArgsB(TypedArgs):
         multi: List[str] = arg(positional=True, nargs="*")
         single: str = arg(positional=True)
 
-    args = parse(Args2, ["foo"])
-    assert args.multi == []
-    assert args.single == "foo"
+    args_b = parse(ArgsB, ["foo"])
+    assert args_b.multi == []
+    assert args_b.single == "foo"
 
 
 def test_positional__sandwiched() -> None:
