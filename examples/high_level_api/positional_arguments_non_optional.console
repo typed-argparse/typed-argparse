@@ -1,0 +1,12 @@
+$ python positional_arguments_non_optional.py -h
+usage: positional_arguments_non_optional.py [-h] sources [sources ...] dest
+
+positional arguments:
+  sources     Source path(s)
+  dest        Destination path
+
+options:
+  -h, --help  show this help message and exit
+
+$ python positional_arguments_non_optional.py source_a source_b my_dest
+Moving sources '[PosixPath('source_a'), PosixPath('source_b')]' to dest 'PosixPath('my_dest')'
