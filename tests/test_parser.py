@@ -11,6 +11,8 @@ from typing_extensions import Literal
 from typed_argparse import Binding, Parser, SubParser, SubParserGroup, TypedArgs, arg
 from typed_argparse.parser import Bindings
 
+from .testing_utils import pre_python_10
+
 T = TypeVar("T", bound=TypedArgs)
 
 
@@ -439,6 +441,7 @@ def test_enum__basics(use_literal_enum: bool) -> None:
     assert "argument --enum-int: invalid choice: 'c' (choose from a, b)" == str(e.error)
 
 
+@pre_python_10
 def test_enum__help_text(capsys: pytest.CaptureFixture[str]) -> None:
     class StrEnum(Enum):
         a = "a-value"
@@ -1174,6 +1177,7 @@ def test_parser_run__typical_lazy_syntax() -> None:
 # Defaults in help text
 
 
+@pre_python_10
 def test_defaults_in_help_text__on_by_default(capsys: pytest.CaptureFixture[str]) -> None:
     class Args(TypedArgs):
         epsilon: float = arg(help="Some epsilon", default=0.1)
@@ -1194,6 +1198,7 @@ def test_defaults_in_help_text__on_by_default(capsys: pytest.CaptureFixture[str]
     )
 
 
+@pre_python_10
 def test_defaults_in_help_text__off_if_desired(capsys: pytest.CaptureFixture[str]) -> None:
     class Args(TypedArgs):
         epsilon: float = arg(help="Some epsilon", default=0.1, auto_default_help=False)
@@ -1217,6 +1222,7 @@ def test_defaults_in_help_text__off_if_desired(capsys: pytest.CaptureFixture[str
 # Misc
 
 
+@pre_python_10
 def test_forwarding_of_argparse_kwargs(capsys: pytest.CaptureFixture[str]) -> None:
     class Args(TypedArgs):
         verbose: bool
