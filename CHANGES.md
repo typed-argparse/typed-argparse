@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.10
+
+- Support for `formatter_class` in `Parser`.
+
 ## 0.2.9
 
 - Fix issue when parser is used under `from __future__ import annotations` context.

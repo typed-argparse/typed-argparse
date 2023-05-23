@@ -15,7 +15,7 @@ from typing import (
     get_type_hints,
 )
 
-from typing_extensions import assert_never
+from typing_extensions import Protocol, assert_never
 
 from .arg import Arg
 from .arg import arg as make_arg
@@ -24,6 +24,11 @@ from .type_utils import TypeAnnotation, collect_type_annotations
 from .typed_args import TypedArgs
 
 T = TypeVar("T", bound=TypedArgs)
+
+
+class _FormatterClass(Protocol):
+    def __call__(self, prog: str) -> argparse.HelpFormatter:
+        ...
 
 
 # Initially I considered making the bindings generic, but I don't think there is a significant
@@ -124,6 +129,7 @@ class Parser:
         epilog: Optional[str] = None,
         add_help: bool = True,
         allow_abbrev: bool = True,
+        formatter_class: Optional[_FormatterClass] = None,
     ):
         """
         The parser constructor requires one positional argument, which is either
@@ -146,11 +152,15 @@ class Parser:
         self._epilog = epilog
         self._add_help = add_help
         self._allow_abbrev = allow_abbrev
+        self._formatter_class = formatter_class
 
     def parse_args(self, raw_args: List[str] = sys.argv[1:]) -> TypedArgs:
         """
         Parses the given list of arguments into a TypedArgs instance.
         """
+        formatter_class: _FormatterClass = (
+            self._formatter_class if self._formatter_class is not None else argparse.HelpFormatter  # type: ignore # noqa
+        )
         parser = argparse.ArgumentParser(
             prog=self._prog,
             usage=self._usage,
@@ -158,6 +168,7 @@ class Parser:
             epilog=self._epilog,
             add_help=self._add_help,
             allow_abbrev=self._allow_abbrev,
+            formatter_class=formatter_class,
         )
 
         all_leaf_paths = _traverse_build_parser(self._args_or_group, parser)
