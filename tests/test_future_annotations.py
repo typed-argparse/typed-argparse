@@ -5,9 +5,7 @@ When using annotations, the __annotations__ behave differently and only contain 
 instead of actual types, which needs to be taken into consideration.
 """
 
-from __future__ import (  # type: ignore # noqa # to silence mypy under Python 3.6
-    annotations,
-)
+from __future__ import annotations
 
 import argparse
 from typing import Optional
