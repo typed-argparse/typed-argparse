@@ -11,7 +11,7 @@ from typing_extensions import Literal
 from typed_argparse import Binding, Parser, SubParser, SubParserGroup, TypedArgs, arg
 from typed_argparse.parser import Bindings
 
-from .testing_utils import pre_python_10
+from .testing_utils import compare_verbose, pre_python_10
 
 T = TypeVar("T", bound=TypedArgs)
 
@@ -388,14 +388,14 @@ def test_literal__fuzzy_matching() -> None:
 def test_enum__basics(use_literal_enum: bool) -> None:
     if not use_literal_enum:
 
-        class StrEnum(Enum):
+        class StrEnum(Enum):  # pyright: ignore
             a = "a-value"
             b = "b-value"
 
             def __repr__(self) -> str:
                 return self.name
 
-        class IntEnum(Enum):
+        class IntEnum(Enum):  # pyright: ignore
             a = 1
             b = 2
 
@@ -481,7 +481,7 @@ def test_enum__help_text(capsys: pytest.CaptureFixture[str]) -> None:
 def test_enum__fuzzy_matching(use_literal_enum: bool) -> None:
     if not use_literal_enum:
 
-        class StrEnum(Enum):
+        class StrEnum(Enum):  # pyright: ignore
             some_foo = "some_foo_value"
             SOME_BAR = "SOME-BAR_VALUE"
 
@@ -674,7 +674,7 @@ def test_nargs_with_choices__literal() -> None:
     Actions = Literal["a", "b"]
 
     class Args(TypedArgs):
-        actions: List[Actions] = arg(positional=True, default=["a", "b"])
+        actions: List[Actions] = arg(positional=True, default=["a", "b"])  # pyright: ignore
 
     args = parse(Args, [])
     assert args.actions == ["a", "b"]
@@ -1216,6 +1216,47 @@ def test_defaults_in_help_text__off_if_desired(capsys: pytest.CaptureFixture[str
           -h, --help         show this help message and exit
           --epsilon EPSILON  Some epsilon
         """
+    )
+
+
+# Support of formatter class in help texts
+
+
+@pre_python_10
+def test_formatter_class_support(capsys: pytest.CaptureFixture[str]) -> None:
+    class Args(TypedArgs):
+        foo: int = arg(help="arg line1\narg line2")
+
+    parser = Parser(
+        Args,
+        description="description line 1\ndescription line 2\ndescription line 3",
+        epilog="epilog line 1\nepilog line 2\nepilog line 3",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    with pytest.raises(SystemExit):
+        parser.parse_args(["-h"])
+
+    captured = capsys.readouterr()
+    compare_verbose(
+        captured.out,
+        textwrap.dedent(
+            """\
+            usage: pytest [-h] --foo FOO
+
+            description line 1
+            description line 2
+            description line 3
+
+            optional arguments:
+              -h, --help  show this help message and exit
+              --foo FOO   arg line1
+                          arg line2
+
+            epilog line 1
+            epilog line 2
+            epilog line 3
+            """
+        ),
     )
 
 
