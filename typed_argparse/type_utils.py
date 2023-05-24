@@ -160,7 +160,9 @@ class TypeAnnotation:
             # it necessary to properly detect literal instance.
             # In Python 3.8+, Literal has been integrated into typing itself.
             # Using the import from typing_extensions should make it work in both cases.
-            if self.origin is LiteralFromTypingExtension or self.origin is LiteralFromTyping:
+            if self.origin is LiteralFromTypingExtension or (
+                LiteralFromTyping is not None and self.origin is LiteralFromTyping
+            ):
                 return self.args
             else:
                 return None
