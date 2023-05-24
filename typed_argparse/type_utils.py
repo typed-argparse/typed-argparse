@@ -16,7 +16,7 @@ from typing import (
 from typing_extensions import Literal as LiteralFromTypingExtension
 
 if sys.version_info >= (3, 8):
-    from typing import Literal as LiteralFromTyping
+    from typing import Literal as LiteralFromTyping  # type: ignore
 else:
     LiteralFromTyping = None
 
