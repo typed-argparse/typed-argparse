@@ -1,11 +1,18 @@
 import argparse
 import enum
-from typing import List, NewType, Optional, Union
+import sys
 
 import pytest
-from typing_extensions import Literal
 
 from typed_argparse import TypedArgs, WithUnionType
+
+if sys.version_info < (3, 8):
+    from typing import List, NewType, Optional, Union
+
+    from typing_extensions import Literal
+else:
+    from typing import List, Literal, NewType, Optional, Union
+
 
 # -----------------------------------------------------------------------------
 # Basics
