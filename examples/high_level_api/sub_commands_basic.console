@@ -1,7 +1,7 @@
 $ python sub_commands_basic.py -h
 usage: sub_commands_basic.py [-h] {foo,bar} ...
 
-options:
+optional arguments:
   -h, --help  show this help message and exit
 
 subcommands:
@@ -12,7 +12,7 @@ subcommands:
 $ python sub_commands_basic.py foo -h
 usage: sub_commands_basic.py foo [-h] {start,stop} ...
 
-options:
+optional arguments:
   -h, --help    show this help message and exit
 
 subcommands:

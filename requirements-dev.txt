@@ -4,3 +4,4 @@ mypy
 pytest
 pytest-cov
 types-PyYAML
+pyyaml

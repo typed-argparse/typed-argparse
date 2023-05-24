@@ -5,7 +5,7 @@ positional arguments:
   sources     Source path(s)
   dest        Destination path
 
-options:
+optional arguments:
   -h, --help  show this help message and exit
 
 $ python positional_arguments_non_optional.py source_a source_b my_dest
