@@ -3,7 +3,7 @@ from .choices import Choices, get_choices_from, get_choices_from_class
 from .parser import Binding, Bindings, Parser, SubParser, SubParserGroup
 from .typed_args import TypedArgs, WithUnionType, validate_type_union
 
-VERSION = "0.2.10"
+VERSION = "0.2.11"
 
 __all__ = [
     "Choices",

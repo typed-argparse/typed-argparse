@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.11
+
+- Fix regression introduced by `typing_extensions` version 4.6.0+.
+
 ## 0.2.10
 
 - Support for `formatter_class` in `Parser`.
