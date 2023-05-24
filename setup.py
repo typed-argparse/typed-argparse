@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-import setuptools  # type: ignore
+from setuptools import setup  # type: ignore
 
 if __name__ == "__main__":
-    setuptools.setup(
+    setup(
+        author="Fabian Keller",
         package_data={
             "typed_argparse": ["py.typed"],
         },
