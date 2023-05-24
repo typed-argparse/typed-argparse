@@ -3,3 +3,14 @@
 cd $(dirname $0)/..
 
 python examples/generate_console_outputs.py
+
+git_status=$(git status --porcelain)
+
+if [ -z "$git_status" ]; then
+  echo -e "\nGit status: clean"
+  exit 0
+else
+  echo -e "\nGit status: dirty"
+  git status || true
+  exit 1
+fi

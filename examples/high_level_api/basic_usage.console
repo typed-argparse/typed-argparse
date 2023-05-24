@@ -1,14 +1,16 @@
 $ python basic_usage.py -h
 usage: basic_usage.py [-h] --my-arg MY_ARG [--number-a NUMBER_A]
-                      [--number-b NUMBER_B] [--verbose] --names [NAMES ...]
+                      [--number-b NUMBER_B] [--verbose] --names
+                      [NAMES [NAMES ...]]
 
-options:
-  -h, --help           show this help message and exit
-  --my-arg MY_ARG      some help
-  --number-a NUMBER_A  some help [default: 42]
-  --number-b NUMBER_B  some help
-  --verbose            some help
-  --names [NAMES ...]  some help
+optional arguments:
+  -h, --help            show this help message and exit
+  --my-arg MY_ARG       some help
+  --number-a NUMBER_A   some help [default: 42]
+  --number-b NUMBER_B   some help
+  --verbose             some help
+  --names [NAMES [NAMES ...]]
+                        some help
 
 $ python basic_usage.py --my-arg foo --names a b c
 Running my app with args:

@@ -5,7 +5,7 @@ positional arguments:
   src         Source file
   dst         Destination file
 
-options:
+optional arguments:
   -h, --help  show this help message and exit
 
 $ python positional_arguments.py my_source_file my_destination_file
