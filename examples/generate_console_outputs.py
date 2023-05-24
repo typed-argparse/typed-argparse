@@ -15,7 +15,7 @@ def main() -> None:
     for relative_script_path, all_call_args in scripts.items():
         script_path = _EXAMPLES_PATH / relative_script_path
 
-        print(script_path)
+        print(f"\n *** Processing: '{script_path}'\n")
 
         console_file_contents = []
 
