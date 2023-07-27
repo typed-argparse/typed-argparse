@@ -989,6 +989,28 @@ def test_subparsers_common_args__subparser_after_positional() -> None:
     assert "argument service: invalid choice: 'invalid' (choose from 'foo', 'bar')" in str(e.error)
 
 
+# Legacy code mixing
+
+
+def test_parser_with_legacy_code() -> None:
+    class Args(TypedArgs):
+        verbose: bool
+
+    argparse, parser_internal_data = Parser(Args).build_argparser()
+
+    # Legacy code adds an argument.
+    argparse.add_argument("--other", type=str)
+
+    argparse_namespace = argparse.parse_args(["--verbose", "--other", "abc"])
+    args = Parser(Args).process_argparser_results(argparse_namespace, parser_internal_data)
+
+    assert isinstance(args, Args)
+    # Access from new-style code.
+    assert args.verbose, "New-style parameter not set"
+    # Access from legacy code.
+    assert argparse_namespace.other == "abc", "Legacy parameter not set"
+
+
 # Subparsers executable mapping behavior
 
 

@@ -1,6 +1,7 @@
 import argparse
 import sys
 from argparse import ArgumentParser as ArgparseParser
+from dataclasses import dataclass
 from typing import (
     Any,
     Callable,
@@ -29,6 +30,11 @@ T = TypeVar("T", bound=TypedArgs)
 class _FormatterClass(Protocol):
     def __call__(self, prog: str) -> argparse.HelpFormatter:
         ...
+
+
+@dataclass(frozen=True)
+class InternalProcessingData:
+    all_leaf_paths: Set["TypePath"]
 
 
 # Initially I considered making the bindings generic, but I don't think there is a significant
@@ -154,9 +160,14 @@ class Parser:
         self._allow_abbrev = allow_abbrev
         self._formatter_class = formatter_class
 
-    def parse_args(self, raw_args: List[str] = sys.argv[1:]) -> TypedArgs:
+    def build_argparser(self) -> Tuple[argparse.ArgumentParser, InternalProcessingData]:
         """
-        Parses the given list of arguments into a TypedArgs instance.
+        Advanced usage - only builds a parser so that it can be enhanced manually.
+
+        The recommended usage is to call `parse_args` that will use the parser internally.
+
+        After the call to this method, one should use `process_argparser_results` with the internal_processing_data
+        returned from this method.
         """
         formatter_class: _FormatterClass = (
             self._formatter_class if self._formatter_class is not None else argparse.HelpFormatter  # type: ignore # noqa
@@ -172,26 +183,49 @@ class Parser:
         )
 
         all_leaf_paths = _traverse_build_parser(self._args_or_group, parser)
-        type_mapping = _traverse_get_type_mapping(self._args_or_group)
 
         _install_argcomplete_if_available(parser)
 
-        argparse_namespace = parser.parse_args(raw_args)
+        return parser, InternalProcessingData(all_leaf_paths=all_leaf_paths)
 
-        # print("Raw args:", raw_args)
-        # print("Argparse namespace:", argparse_namespace)
+    def process_argparser_results(
+        self,
+        argparse_namespace: argparse.Namespace,
+        internal_processing_data: InternalProcessingData,
+    ) -> TypedArgs:
+        """
+        Advanced usage - only parse arguments produced by the parser created by `build_argparser`.
+
+        The recommended usage is to call `parse_args` that will use the parser internally.
+
+        One should pass `internal_processing_data` returned from `prase_args`.
+        """
+        all_leaf_paths = internal_processing_data.all_leaf_paths
+        type_mapping = _traverse_get_type_mapping(self._args_or_group)
 
         arg_type = _determine_arg_type(all_leaf_paths, argparse_namespace, type_mapping)
 
         if arg_type is None:
             # Should only be possible in Python 3.6
-            parser.exit(
-                message=f"Failed to extract argument type from namespace object "
-                f"{argparse_namespace} (leaf paths: {all_leaf_paths}, type mapping: {type_mapping})"
+            print(
+                f"Failed to extract argument type from namespace object "
+                f"{argparse_namespace} (leaf paths: {all_leaf_paths}, type mapping: {type_mapping})",
+                file=sys.stderr,
             )
+            sys._exit(0)
 
         else:
             return arg_type.from_argparse(argparse_namespace)
+
+    def parse_args(self, raw_args: List[str] = sys.argv[1:]) -> TypedArgs:
+        """
+        Parses the given list of arguments into a TypedArgs instance.
+        """
+        parser, internal_processing_data = self.build_argparser()
+        argparse_namespace = parser.parse_args(raw_args)
+        # print("Raw args:", raw_args)
+        # print("Argparse namespace:", argparse_namespace)
+        return self.process_argparser_results(argparse_namespace, internal_processing_data)
 
     def verify(self, bindings: "Bindings") -> None:
         """
