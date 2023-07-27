@@ -1,10 +1,13 @@
+import argparse
 import copy
 from typing import (
     Any,
     Callable,
+    Dict,
     List,
     NamedTuple,
     Optional,
+    Protocol,
     Sequence,
     TypeVar,
     Union,
@@ -13,7 +16,30 @@ from typing import (
 
 from typing_extensions import Literal
 
+from .type_utils import TypeAnnotation
+
 NArgs = Union[Literal["*", "+"], int]
+
+
+class ArgparseEntry(NamedTuple):
+    args: List[str]
+    kwargs: Dict[str, Any]
+
+
+class ArgparseEntriesGenerator(Protocol):
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        python_arg_name: str,
+        name_or_flags: List[str],
+        help_text: str,
+        # TODO: do we want to send all these arguments?
+        underlying_annotation: TypeAnnotation,
+        is_optional: bool,
+        is_collection: bool,
+        arg: "Arg",
+    ) -> List[ArgparseEntry]:
+        pass
 
 
 class Arg(NamedTuple):
@@ -26,6 +52,7 @@ class Arg(NamedTuple):
     nargs: Optional[NArgs]
     help: Optional[str]
     auto_default_help: bool
+    generator: Optional[ArgparseEntriesGenerator] = None
 
     def has_default(self) -> bool:
         has_default = self.default is not None
@@ -379,6 +406,7 @@ def arg(
     dynamic_default: Optional[Callable[[], object]] = None,
     dynamic_choices: Optional[Callable[[], Sequence[object]]] = None,
     type: Optional[Callable[[str], object]] = None,
+    generator: ArgparseEntriesGenerator = None,
 ) -> Any:
     """
     Helper function to annotate arguments.
@@ -408,4 +436,5 @@ def arg(
         nargs=nargs,
         help=help,
         auto_default_help=auto_default_help,
+        generator=generator,
     )
