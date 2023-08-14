@@ -1,5 +1,7 @@
 import argparse
-from typing import Dict, Generic, List, Type, TypeVar, cast
+from typing import TYPE_CHECKING, Dict, Generic, List, Type, TypeVar, cast
+
+from typing_extensions import dataclass_transform
 
 from typing_extensions import dataclass_transform
 
@@ -13,20 +15,19 @@ C = TypeVar("C", bound="TypedArgs")
 
 @dataclass_transform(kw_only_default=True, field_specifiers=(Arg,))
 class TypedArgs:
-    def __init__(self, *args: object, **kwargs: object):
-        """
-        Constructs an instance of the TypedArgs class from a given argparse Namespace.
 
-        Performs various validations / sanity check to make sure the runtime values
-        match the type annotations.
-        """
+    # We need to 'hide' the constructor from type checkers, because it would override
+    # the dataclass transform constructor semantics.
+    if not TYPE_CHECKING:
 
-        # Temporary backwards compatibility. To be removed in a future version.
-        if len(args) == 1 and isinstance(args[0], argparse.Namespace):
-            kwargs = _argparse_namespace_to_dict(type(self), args[0], disallow_extra_args=False)
-
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+        def __init__(self, **kwargs: object):
+            """
+            Constructs an instance of the TypedArgs class from a given kwargs object without
+            any validation, simply forwarding its contents. If the construction is done from
+            a typed-checked use-site we know that all fields must have proper types already.
+            """
+            for key, value in kwargs.items():
+                setattr(self, key, value)
 
     @classmethod
     def from_argparse(
