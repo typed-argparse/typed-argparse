@@ -1,9 +1,10 @@
 import argparse
 from typing import Dict, Generic, List, Type, TypeVar, cast
 
+from typing_extensions import dataclass_transform
+
 from .arg import Arg
 from .choices import Choices, get_choices_from_class
-from .dataclass_transform_backport import dataclass_transform
 from .runtime_generic import RuntimeGeneric
 from .type_utils import TypeAnnotation, collect_type_annotations
 

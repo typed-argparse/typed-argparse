@@ -1034,7 +1034,6 @@ def test_subparsers_executable_mapping_behavior() -> None:
     parser.bind(run_foo, run_bar).run(["bar"])
     assert (num_run_common, num_run_foo, num_run_bar) == (0, 1, 1)
 
-    # Note that error differs here for Python 3.6 due to non-required subparser
     with pytest.raises(SystemExit):
         parser.bind(run_foo, run_bar).run([])
 

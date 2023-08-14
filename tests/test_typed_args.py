@@ -1,18 +1,10 @@
 import argparse
 import enum
-import sys
+from typing import List, Literal, NewType, Optional, Union
 
 import pytest
 
 from typed_argparse import TypedArgs, WithUnionType
-
-if sys.version_info < (3, 8):
-    from typing import List, NewType, Optional, Union
-
-    from typing_extensions import Literal
-else:
-    from typing import List, Literal, NewType, Optional, Union
-
 
 # -----------------------------------------------------------------------------
 # Basics
@@ -664,5 +656,5 @@ def test_temporary_backwards_compatibility() -> None:
         foo: str
 
     argparse_namespace = argparse.Namespace(foo="foo")
-    args = Args(argparse_namespace)
+    args = Args.from_argparse(argparse_namespace)
     assert args.foo == "foo"

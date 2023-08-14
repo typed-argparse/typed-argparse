@@ -184,7 +184,8 @@ class Parser:
         arg_type = _determine_arg_type(all_leaf_paths, argparse_namespace, type_mapping)
 
         if arg_type is None:
-            # Should only be possible in Python 3.6
+            # Edge case to investigate: Probably only possible if subparsers are set to
+            # non-required, and none matched.
             parser.exit(
                 message=f"Failed to extract argument type from namespace object "
                 f"{argparse_namespace} (leaf paths: {all_leaf_paths}, type mapping: {type_mapping})"
@@ -314,19 +315,12 @@ def _traverse_build_parser(
         # its raw form. For instance: Namespace(file='f', verbose=False, **{'<sub-command>': 'foo'})
         dest = "<" + ((len(cur_path) + 1) * "sub-") + "command>"
 
-        if sys.version_info < (3, 7):
-            argparse_subparsers = parser.add_subparsers(
-                help="Available sub commands",
-                dest=dest,
-                description=group._description,
-            )
-        else:
-            argparse_subparsers = parser.add_subparsers(
-                help="Available sub commands",
-                dest=dest,
-                description=group._description,
-                required=group._required,
-            )
+        argparse_subparsers = parser.add_subparsers(
+            help="Available sub commands",
+            dest=dest,
+            description=group._description,
+            required=group._required,
+        )
 
         for sub_parser_declaration in group._sub_parser_declarations:
             kwargs = {}
@@ -418,7 +412,6 @@ def _determine_arg_type(
         except AttributeError:
             pass
 
-    # Should be impossible in Python 3.7, but in Python 3.6 non-required subparsers can cause this.
     return None
 
 
