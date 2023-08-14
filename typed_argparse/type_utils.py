@@ -1,25 +1,9 @@
-import sys
 from enum import Enum
-from typing import (
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-    get_type_hints,
-)
+from typing import Callable, Dict, List
+from typing import Literal as LiteralFromTyping
+from typing import Optional, Tuple, Type, TypeVar, Union, cast, get_type_hints
 
-from typing_extensions import Literal as LiteralFromTypingExtension
-
-if sys.version_info >= (3, 8):
-    from typing import Literal as LiteralFromTyping  # type: ignore
-else:
-    LiteralFromTyping = None
-
+from typing_extensions import Literal
 
 _NoneType = type(None)
 
@@ -143,32 +127,17 @@ class TypeAnnotation:
             return []
 
     def get_allowed_values_if_literal(self) -> Optional[Tuple[object, ...]]:
-        if sys.version_info[:2] == (3, 6):
-            # In Python 3.6 Literal must come from typing_extensions. However, it does not
-            # behave like other generics, and proper instance checking doesn't seem to work.
-            # We use the simple heuristic to look for __values__ directly without any instance
-            # checks.
-            if hasattr(self.raw_type, "__values__"):
-                values = getattr(self.raw_type, "__values__")
-                if isinstance(values, tuple):
-                    return values
-            return None
-
-        elif sys.version_info[:2] >= (3, 7):
-            # In Python 3.7 Literal must come from typing_extensions. In contrast to Python 3.6
-            # it uses typing._GenericAlias and __args__ similar to other generics. This makes
-            # it necessary to properly detect literal instance.
-            # In Python 3.8+, Literal has been integrated into typing itself.
-            # Using the import from typing_extensions should make it work in both cases.
-            if self.origin is LiteralFromTypingExtension or (
-                LiteralFromTyping is not None and self.origin is LiteralFromTyping
-            ):
-                return self.args
-            else:
-                return None
-
+        # In Python 3.7 Literal must come from typing_extensions. In contrast to Python 3.6
+        # it uses typing._GenericAlias and __args__ similar to other generics. This makes
+        # it necessary to properly detect literal instance.
+        # In Python 3.8+, Literal has been integrated into typing itself.
+        # Using the import from typing_extensions should make it work in both cases.
+        if self.origin is Literal or (
+            LiteralFromTyping is not None and self.origin is LiteralFromTyping
+        ):
+            return self.args
         else:
-            raise AssertionError(f"Python version {sys.version_info} is not supported")
+            return None
 
     def get_allowed_values_if_enum(self) -> Optional[Tuple[Enum, ...]]:
         if isinstance(self.raw_type, type) and issubclass(self.raw_type, Enum):

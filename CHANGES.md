@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0 WIP
+
+- Drop work-around and backports for Python 3.6 and 3.7
+
 ## 0.2.11
 
 - Fix regression introduced by `typing_extensions` version 4.6.0+.

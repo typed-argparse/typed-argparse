@@ -1,7 +1,4 @@
-import sys
 from typing import List, Optional
-
-import pytest
 
 from typed_argparse.type_utils import TypeAnnotation, collect_type_annotations
 
@@ -88,11 +85,6 @@ def test_type_annotation__literals__from_typing_extensions() -> None:
     assert t.validate(4) == (4, "value 4 does not match any allowed literal value in (1, 2, 3)")
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 8),
-    reason="Literal only available in Python 3.8+",
-    # https://docs.python.org/3/library/typing.html#typing.Literal
-)
 def test_type_annotation__literals__from_typing() -> None:
     # Literal can behave differently whether it comes from typing or typing_extensions
     from typing import Literal  # type: ignore

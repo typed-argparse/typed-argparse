@@ -15,8 +15,5 @@ python ${examples_dir}/example.py --foo foo
 
 python ${examples_dir}/example_choices.py --mode a
 
-if [ $python_version != "3.6" ]; then
-    python ${examples_dir}/example_sub_commands.py foo file
-    python ${examples_dir}/example_sub_commands.py bar --src src --dst dst
-fi
-
+python ${examples_dir}/example_sub_commands.py foo file
+python ${examples_dir}/example_sub_commands.py bar --src src --dst dst

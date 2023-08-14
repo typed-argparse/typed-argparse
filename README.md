@@ -37,7 +37,7 @@
 $ pip install typed-argparse
 ```
 
-The only requirement is a modern Python (3.6+).
+The only requirement is a modern Python (3.8+).
 
 
 ## Basic Usage
