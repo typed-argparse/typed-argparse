@@ -108,9 +108,8 @@ class TypeAnnotation:
         return None
 
     def get_underlying_if_list(self) -> Optional["TypeAnnotation"]:
-        # In Python 3.6 __origin__ is List
-        # In Python 3.7+ __origin__ is list
-        if (self.origin is List or self.origin is list) and len(self.args) >= 1:
+        # In Python 3.6 __origin__ was List; in Python 3.7+ __origin__ is list
+        if self.origin is list and len(self.args) >= 1:
             return TypeAnnotation(self.args[0])
         return None
 
@@ -127,14 +126,7 @@ class TypeAnnotation:
             return []
 
     def get_allowed_values_if_literal(self) -> Optional[Tuple[object, ...]]:
-        # In Python 3.7 Literal must come from typing_extensions. In contrast to Python 3.6
-        # it uses typing._GenericAlias and __args__ similar to other generics. This makes
-        # it necessary to properly detect literal instance.
-        # In Python 3.8+, Literal has been integrated into typing itself.
-        # Using the import from typing_extensions should make it work in both cases.
-        if self.origin is Literal or (
-            LiteralFromTyping is not None and self.origin is LiteralFromTyping
-        ):
+        if self.origin is Literal or self.origin is LiteralFromTyping:
             return self.args
         else:
             return None
