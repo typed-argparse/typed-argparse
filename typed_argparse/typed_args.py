@@ -48,7 +48,7 @@ class TypedArgs:
         if isinstance(other, TypedArgs):
             return self.__dict__ == other.__dict__
         else:
-            return False
+            return NotImplemented
 
     def __ne__(self, other: object) -> bool:
         return not (self == other)

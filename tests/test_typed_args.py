@@ -1,4 +1,5 @@
-from typing import Type, TypeVar, overload
+import argparse
+from typing import List, Optional, Type, TypeVar, overload
 
 from typed_argparse import TypedArgs
 
@@ -98,6 +99,66 @@ def test_constructor__inheritance__invalid_cases() -> None:
         b="s",
         additional=True,  # type: ignore[call-arg]
     )
+
+
+# -----------------------------------------------------------------------------
+# __str__
+# -----------------------------------------------------------------------------
+
+
+def test_string_representation() -> None:
+    class Args(TypedArgs):
+        a: str
+        b: Optional[int]
+        c: Optional[int]
+        list: List[str]
+
+    def parse_args(args: List[str]) -> Args:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--a", type=str, required=True)
+        parser.add_argument("--b", type=int)
+        parser.add_argument("--c", type=int)
+        parser.add_argument("--list", type=str, nargs="*")
+        return Args.from_argparse(parser.parse_args(args))
+
+    args = parse_args(["--a", "a", "--c", "42"])
+    expected = "Args(a='a', b=None, c=42, list=[])"
+    assert str(args) == expected
+    assert repr(args) == expected
+
+
+# -----------------------------------------------------------------------------
+# __eq__
+# -----------------------------------------------------------------------------
+
+
+def test_eq_and_ne() -> None:
+    class Args(TypedArgs):
+        a: str
+        b: int
+
+    assert Args(a="foo", b=42) == Args(a="foo", b=42)
+    assert Args(a="foo", b=42) != Args(a="foo", b=43)
+    assert Args(a="foo", b=42) != 42
+
+
+def test_eq__well_behaved() -> None:
+    # Tests for proper __eq__ semantics when comparing with other types, see e.g.:
+    # https://github.com/jwodder/anys#caveat-custom-classes
+
+    class Args(TypedArgs):
+        ...
+
+    compared_objects = []
+
+    class Other:
+        def __eq__(self, other: object) -> bool:
+            compared_objects.append(other)
+            return False
+
+    instance = Args()
+    assert instance != Other()
+    assert compared_objects == [instance]
 
 
 # -----------------------------------------------------------------------------
