@@ -2,6 +2,7 @@
 
 ## 0.3.0 WIP
 
+- Make constructor of `TypedArgs` adhere to type semantics of dataclass transform.
 - Drop work-around and backports for Python 3.6 and 3.7
 
 ## 0.2.11
