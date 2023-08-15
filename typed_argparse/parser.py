@@ -574,7 +574,7 @@ def _generate_help_text(arg: Arg) -> Optional[str]:
     if arg.help is not None and arg.default is not None and arg.auto_default_help:
 
         try:
-            from yachalk import chalk
+            from yachalk import chalk  # pyright: ignore
 
             return f"{arg.help} {chalk.gray(f'[default: {arg.default}]')}"
 
@@ -593,7 +593,7 @@ def _to_string(args_or_group: ArgsOrGroup) -> str:
 
 def _install_argcomplete_if_available(parser: ArgparseParser) -> None:
     try:
-        import argcomplete
+        import argcomplete  # pyright: ignore
 
         argcomplete.autocomplete(parser)
     except ImportError:

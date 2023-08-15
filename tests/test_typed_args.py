@@ -1,7 +1,5 @@
 from typing import Type, TypeVar, overload
 
-import pytest
-
 from typed_argparse import TypedArgs
 
 # -----------------------------------------------------------------------------
@@ -43,14 +41,55 @@ def test_constructor__basics() -> None:
     assert_type(instance.b, int, ignore=True)  # type: ignore
 
 
-@pytest.mark.skip(reason="doesn't work yet")
+def test_constructor__inheritance() -> None:
+    class BaseArgs(TypedArgs):
+        a: int
+
+    class Args(BaseArgs):
+        b: str
+
+    instance = Args(a=42, b="s")
+    assert instance.a == 42
+    assert instance.b == "s"
+    assert instance.__dict__ == {"a": 42, "b": "s"}
+
+    assert_type(instance.a, int)
+    assert_type(instance.b, str)
+
+    assert_type(instance.a, str, ignore=True)  # type: ignore
+    assert_type(instance.b, int, ignore=True)  # type: ignore
+
+
 def test_constructor__invalid_cases() -> None:
     class Args(TypedArgs):
         a: int
         b: str
 
-    with pytest.raises(ValueError):
-        Args()  # type: ignore[call-arg]
+    Args()  # type: ignore[call-arg]
+    Args(a=42)  # type: ignore[call-arg]
+    Args(b="s")  # type: ignore[call-arg]
+    Args(
+        a=42,
+        b="s",
+        additional=True,  # type: ignore[call-arg]
+    )
+
+
+def test_constructor__inheritance__invalid_cases() -> None:
+    class BaseArgs(TypedArgs):
+        a: int
+
+    class Args(BaseArgs):
+        b: str
+
+    Args()  # type: ignore[call-arg]
+    Args(a=42)  # type: ignore[call-arg]
+    Args(b="s")  # type: ignore[call-arg]
+    Args(
+        a=42,
+        b="s",
+        additional=True,  # type: ignore[call-arg]
+    )
 
 
 # -----------------------------------------------------------------------------
