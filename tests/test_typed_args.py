@@ -69,6 +69,10 @@ def test_constructor__invalid_cases() -> None:
     Args(a=42)  # type: ignore[call-arg]
     Args(b="s")  # type: ignore[call-arg]
     Args(
+        a="s",  # type: ignore[arg-type]
+        b=42,  # type: ignore[arg-type]
+    )
+    Args(
         a=42,
         b="s",
         additional=True,  # type: ignore[call-arg]
@@ -85,6 +89,10 @@ def test_constructor__inheritance__invalid_cases() -> None:
     Args()  # type: ignore[call-arg]
     Args(a=42)  # type: ignore[call-arg]
     Args(b="s")  # type: ignore[call-arg]
+    Args(
+        a="s",  # type: ignore[arg-type]
+        b=42,  # type: ignore[arg-type]
+    )
     Args(
         a=42,
         b="s",
