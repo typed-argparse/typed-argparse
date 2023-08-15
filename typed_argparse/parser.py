@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import sys
 from argparse import ArgumentParser as ArgparseParser
@@ -42,7 +44,7 @@ class Binding:
         self.func: Callable[[Any], None] = func
 
     @staticmethod
-    def from_func(func: Callable[[Any], None]) -> "Binding":
+    def from_func(func: Callable[[Any], None]) -> Binding:
         if not hasattr(func, "__annotations__"):
             raise ValueError(f"Function {func.__name__} misses type annotations.")
 
@@ -79,7 +81,7 @@ class SubParser:
     def __init__(
         self,
         name: str,
-        args_or_group: "ArgsOrGroup",
+        args_or_group: ArgsOrGroup,
         help: Optional[str] = None,
         aliases: Optional[List[str]] = None,
     ):
@@ -122,7 +124,7 @@ class Parser:
 
     def __init__(
         self,
-        args_or_group: "ArgsOrGroup",
+        args_or_group: ArgsOrGroup,
         prog: Optional[str] = None,
         usage: Optional[str] = None,
         description: Optional[str] = None,
@@ -136,13 +138,14 @@ class Parser:
         - directly a TypedArgs type to be used to define the arguments
         - a SubParserGroup, which itself contains TypedArgs within subparsers.
 
-        Keyword arguments forward to argparse:
+        Keyword arguments forwarded to argparse:
             - prog -- The name of the program (default: sys.argv[0])
             - usage -- A usage message (default: auto-generated from arguments)
             - description -- A description of what the program does
             - epilog -- Text following the argument descriptions
             - add_help -- Add a -h/-help option
             - allow_abbrev -- Allow long options to be abbreviated unambiguously
+            - formatter_class -- A argparse conforming formatter class
         """
 
         self._args_or_group = args_or_group
@@ -210,7 +213,7 @@ class Parser:
                     f"Incomplete bindings: There is no binding for type '{arg_type.__name__}'."
                 )
 
-    def bind(self, *binding: "AnyBinding") -> "App":
+    def bind(self, *binding: AnyBinding) -> "App":
         """
         Turn the parser into an executable app (with eager bindings).
 
@@ -220,7 +223,7 @@ class Parser:
         self.verify(bindings)
         return App(self, bindings)
 
-    def bind_lazy(self, lazy_bindings: "LazyBindings") -> "App":
+    def bind_lazy(self, lazy_bindings: LazyBindings) -> "App":
         """
         Turn the parser into an executable app (with lazy bindings).
 
@@ -236,7 +239,7 @@ class Parser:
 
 
 class App:
-    def __init__(self, parser: Parser, bindings: "EagerOrLazyBindings"):
+    def __init__(self, parser: Parser, bindings: EagerOrLazyBindings):
         self._parser = parser
         self._bindings = bindings
 
