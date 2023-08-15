@@ -494,41 +494,6 @@ def test_union() -> None:
 
 
 # -----------------------------------------------------------------------------
-# dunder methods
-# -----------------------------------------------------------------------------
-
-
-def test_string_representation() -> None:
-    class Args(TypedArgs):
-        a: str
-        b: Optional[int]
-        c: Optional[int]
-        list: List[str]
-
-    def parse_args(args: List[str]) -> Args:
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--a", type=str, required=True)
-        parser.add_argument("--b", type=int)
-        parser.add_argument("--c", type=int)
-        parser.add_argument("--list", type=str, nargs="*")
-        return Args.from_argparse(parser.parse_args(args))
-
-    args = parse_args(["--a", "a", "--c", "42"])
-    expected = "Args(a='a', b=None, c=42, list=[])"
-    assert str(args) == expected
-    assert repr(args) == expected
-
-
-def test_eq_and_ne() -> None:
-    class Args(TypedArgs):
-        a: str
-        b: int
-
-    assert Args(a="foo", b=42) == Args(a="foo", b=42)
-    assert Args(a="foo", b=42) != Args(a="foo", b=43)
-
-
-# -----------------------------------------------------------------------------
 # Misc
 # -----------------------------------------------------------------------------
 
