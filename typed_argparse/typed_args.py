@@ -3,8 +3,6 @@ from typing import TYPE_CHECKING, Dict, Generic, List, Type, TypeVar, cast
 
 from typing_extensions import dataclass_transform
 
-from typing_extensions import dataclass_transform
-
 from .arg import Arg
 from .choices import Choices, get_choices_from_class
 from .runtime_generic import RuntimeGeneric
@@ -13,7 +11,10 @@ from .type_utils import TypeAnnotation, collect_type_annotations
 C = TypeVar("C", bound="TypedArgs")
 
 
-@dataclass_transform(kw_only_default=True, field_specifiers=(Arg,))
+@dataclass_transform(
+    kw_only_default=True,
+    field_specifiers=(Arg,),
+)
 class TypedArgs:
 
     # We need to 'hide' the constructor from type checkers, because it would override
