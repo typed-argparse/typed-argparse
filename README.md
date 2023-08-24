@@ -1,7 +1,3 @@
-# typed-argparse
-
-💡 write type-safe and elegant CLIs with a clear separation of concerns.
-
 [![PyPI version](https://badge.fury.io/py/typed-argparse.svg)](https://badge.fury.io/py/typed-argparse)
 [![Build Status](https://github.com/typed-argparse/typed-argparse/workflows/ci/badge.svg)](https://github.com/typed-argparse/typed-argparse/actions?query=workflow%3Aci)
 [![codecov](https://codecov.io/gh/typed-argparse/typed-argparse/branch/master/graph/badge.svg?token=6I98R2661Z)](https://codecov.io/gh/typed-argparse/typed-argparse)
@@ -14,7 +10,9 @@
 <img src="https://raw.githubusercontent.com/typed-argparse/typed-argparse/master/logo.svg" width="900">
 
 <br>
-
+💡 write type-safe and elegant CLIs with a clear separation of concerns.
+<br>
+<br>
 
 ## Features
 
