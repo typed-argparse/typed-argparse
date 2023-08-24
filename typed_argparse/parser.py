@@ -19,7 +19,7 @@ from typing import (
 
 from typing_extensions import Protocol, assert_never
 
-from .arg import Arg
+from .arg import Arg, ArgparseEntry
 from .arg import arg as make_arg
 from .choices import Choices
 from .type_utils import TypeAnnotation, collect_type_annotations
@@ -439,21 +439,96 @@ def _add_arguments(
                 "Arguments must be annotated with '... = arg(...)'."
             )
 
-        args, kwargs = _build_add_argument_args(attr_name, annotation, arg)
-
-        # print(f"Adding argument: {args} {kwargs}")
-        parser.add_argument(*args, **kwargs)
+        _add_to_argparse(parser, attr_name, annotation, arg)
 
 
-def _build_add_argument_args(
+def _default_argparse_generator(
+    parser: ArgparseParser,
+    python_arg_name: str,
+    name_or_flags: List[str],
+    help_text: str,
+    underlying_annotation: TypeAnnotation,
+    is_optional: bool,
+    is_collection: bool,
+    arg: Arg,
+) -> List[ArgparseEntry]:
+    kwargs: Dict[str, Any] = {
+        "help": help_text,
+    }
+
+    # Determine is_required
+    if underlying_annotation.is_bool:
+        is_required = False
+    else:
+        if is_optional or arg.has_default():
+            is_required = False
+        else:
+            is_required = True
+
+    # Note that argparse forbids setting 'required' at all for positional args,
+    # so we must omit it if false.
+    if is_required and not arg.positional:
+        kwargs["required"] = True
+
+    # Value handling
+    if underlying_annotation.is_bool:
+        if arg.has_default():
+            default_value = arg.resolve_default()
+            if default_value is True:
+                kwargs["action"] = "store_false"
+            elif default_value is False:
+                kwargs["action"] = "store_true"
+            else:
+                raise RuntimeError(f"Invalid default for bool '{default_value}'")
+        else:
+            kwargs["action"] = "store_true"
+
+    else:
+        # We must not declare 'type' for boolean switches, which have an action instead.
+        if arg.type is not None:
+            kwargs["type"] = arg.type
+        else:
+            type_converter = underlying_annotation.get_underlying_type_converter()
+            if type_converter is not None:
+                kwargs["type"] = type_converter
+
+        if arg.has_default():
+            default_value = arg.resolve_default()
+            kwargs["default"] = default_value
+
+            # Argparse requires positionals with defaults to have nargs="?"
+            # Note that for list-like (real nargs) arguments that happens to have a default
+            # (a list as well), the nargs value will be overwritten below.
+            if arg.positional:
+                kwargs["nargs"] = "?"
+
+        allowed_values_if_literal = underlying_annotation.get_allowed_values_if_literal()
+        if allowed_values_if_literal is not None:
+            kwargs["choices"] = Choices(*allowed_values_if_literal)
+
+        allowed_values_if_enum = underlying_annotation.get_allowed_values_if_enum()
+        if allowed_values_if_enum is not None:
+            kwargs["choices"] = Choices(*allowed_values_if_enum)
+
+        if arg.dynamic_choices is not None:
+            kwargs["choices"] = Choices(*arg.dynamic_choices())
+
+    # Nargs handling
+    if is_collection:
+        kwargs["nargs"] = arg.nargs_with_default()
+
+    if not arg.positional:
+        kwargs["dest"] = python_arg_name
+
+    parser.add_argument(*name_or_flags, **kwargs)
+
+
+def _add_to_argparse(
+    parser: ArgparseParser,
     python_arg_name: str,
     annotation: TypeAnnotation,
     arg: Arg,
-) -> Tuple[List[str], Dict[str, Any]]:
-
-    kwargs: Dict[str, Any] = {
-        "help": _generate_help_text(arg),
-    }
+) -> List[Tuple[List[str], Dict[str, Any]]]:
 
     # Unwrap optionals
     underlying_if_optional = annotation.get_underlying_if_optional()
@@ -476,67 +551,6 @@ def _build_add_argument_args(
 
     else:
         is_collection = False
-
-    # Determine is_required
-    if annotation.is_bool:
-        is_required = False
-    else:
-        if is_optional or arg.has_default():
-            is_required = False
-        else:
-            is_required = True
-
-    # Note that argparse forbids setting 'required' at all for positional args,
-    # so we must omit it if false.
-    if is_required and not arg.positional:
-        kwargs["required"] = True
-
-    # Value handling
-    if annotation.is_bool:
-        if arg.has_default():
-            default_value = arg.resolve_default()
-            if default_value is True:
-                kwargs["action"] = "store_false"
-            elif default_value is False:
-                kwargs["action"] = "store_true"
-            else:
-                raise RuntimeError(f"Invalid default for bool '{default_value}'")
-        else:
-            kwargs["action"] = "store_true"
-
-    else:
-        # We must not declare 'type' for boolean switches, which have an action instead.
-        if arg.type is not None:
-            kwargs["type"] = arg.type
-        else:
-            type_converter = annotation.get_underlying_type_converter()
-            if type_converter is not None:
-                kwargs["type"] = type_converter
-
-        if arg.has_default():
-            default_value = arg.resolve_default()
-            kwargs["default"] = default_value
-
-            # Argparse requires positionals with defaults to have nargs="?"
-            # Note that for list-like (real nargs) arguments that happens to have a default
-            # (a list as well), the nargs value will be overwritten below.
-            if arg.positional:
-                kwargs["nargs"] = "?"
-
-        allowed_values_if_literal = annotation.get_allowed_values_if_literal()
-        if allowed_values_if_literal is not None:
-            kwargs["choices"] = Choices(*allowed_values_if_literal)
-
-        allowed_values_if_enum = annotation.get_allowed_values_if_enum()
-        if allowed_values_if_enum is not None:
-            kwargs["choices"] = Choices(*allowed_values_if_enum)
-
-        if arg.dynamic_choices is not None:
-            kwargs["choices"] = Choices(*arg.dynamic_choices())
-
-    # Nargs handling
-    if is_collection:
-        kwargs["nargs"] = arg.nargs_with_default()
 
     # Name handling
     cli_arg_name = python_arg_name.replace("_", "-")
@@ -565,9 +579,18 @@ def _build_add_argument_args(
         else:
             name_or_flags = [f"--{cli_arg_name}"]
 
-        kwargs["dest"] = python_arg_name
+    generator = arg.generator if arg.generator is not None else _default_argparse_generator
 
-    return name_or_flags, kwargs
+    generator(
+        parser=parser,
+        python_arg_name=python_arg_name,
+        name_or_flags=name_or_flags,
+        help_text=_generate_help_text(arg),
+        underlying_annotation=annotation,
+        is_optional=is_optional,
+        is_collection=is_collection,
+        arg=arg,
+    )
 
 
 def _generate_help_text(arg: Arg) -> Optional[str]:

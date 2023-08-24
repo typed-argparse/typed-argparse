@@ -96,6 +96,26 @@ def test_bool_switch__invalid_default() -> None:
     assert str(e.value) == "Invalid default for bool 'foo'"
 
 
+# TODO: move to some conrtib/test_bool_flag_with_no.py
+from typed_argparse import contrib
+from typed_argparse.contrib.bool_flag_with_no import bool_with_no_arg
+
+
+def test_custom_bool() -> None:
+    class Args(TypedArgs):
+        verbose: Optional[bool] = arg(generator=bool_with_no_arg)
+
+    args = parse(Args, ["--verbose"])
+    assert args.verbose is True
+
+    args = parse(Args, ["--no-verbose"])
+    assert args.verbose is False
+
+    args = parse(Args, [])
+    assert args.verbose is None
+
+
+
 # Other scalar types
 
 
