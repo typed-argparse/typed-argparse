@@ -9,12 +9,12 @@
 [![mypy](https://img.shields.io/badge/mypy-strict-blue)](http://mypy-lang.org/)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](LICENSE)
 
+<br>
+
+<img src="https://raw.githubusercontent.com/typed-argparse/typed-argparse/master/logo.svg" width="900">
 
 <br>
 
----
-
-<br>
 
 ## Features
 
