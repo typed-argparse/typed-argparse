@@ -749,7 +749,7 @@ def test_parser_run__typical_lazy_syntax() -> None:
         was_executed = True
         assert args.verbose
 
-    def make_bindings() -> Bindings:
+    def make_bindings() -> Bindings[None]:
         return [runner]
 
     Parser(Args).bind_lazy(make_bindings).run(["--verbose"])
