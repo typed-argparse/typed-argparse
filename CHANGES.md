@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1 WIP
+
+- Added collision detection for sub parser with same name (including aliases).
+- Fix handling of sub parser aliases.
+
 ## 0.3.0
 
 - Make constructor of `TypedArgs` adhere to type semantics of dataclass transform.
