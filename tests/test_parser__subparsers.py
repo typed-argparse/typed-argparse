@@ -3,7 +3,15 @@ from typing import Union
 import pytest
 from typing_extensions import Literal
 
-from typed_argparse import Binding, Parser, SubParser, SubParserGroup, TypedArgs, arg
+from typed_argparse import (
+    Binding,
+    Parser,
+    SubParser,
+    SubParserConflict,
+    SubParserGroup,
+    TypedArgs,
+    arg,
+)
 from typed_argparse.parser import _traverse_get_type_mapping
 
 from ._testing_utils import argparse_error
@@ -184,6 +192,76 @@ def test_subparser__aliases_support() -> None:
     args = parser.parse_args(["bar_long", "--y", "y_value"])
     assert isinstance(args, BarArgs)
     assert args.y == "y_value"
+
+
+# Conflict detection
+
+
+def test_subparsers__basic_conflict() -> None:
+    class FooArgs(TypedArgs):
+        x: str
+
+    class BarArgs(TypedArgs):
+        y: str
+
+    with pytest.raises(SubParserConflict) as e:
+        Parser(
+            SubParserGroup(
+                SubParser("foo", FooArgs),
+                SubParser("foo", BarArgs),
+            )
+        )
+    assert str(e.value) == (
+        "Detected a sub parser conflict: Adding sub parser "
+        "`test_subparsers__basic_conflict.<locals>.BarArgs` "
+        "at sub parser path ('foo',) conflicts with other sub parser "
+        "`test_subparsers__basic_conflict.<locals>.FooArgs`."
+    )
+
+
+def test_subparsers__nested_conflict() -> None:
+    class FooArgs(TypedArgs):
+        x: str
+
+    class BarArgs(TypedArgs):
+        y: str
+
+    with pytest.raises(SubParserConflict) as e:
+        Parser(
+            SubParserGroup(
+                SubParser(
+                    "outer",
+                    SubParserGroup(
+                        SubParser("foo", FooArgs),
+                        SubParser("foo", BarArgs),
+                    ),
+                )
+            )
+        )
+    assert "at sub parser path ('outer', 'foo')" in str(e.value)
+
+
+def test_subparsers__conflict_from_aliases() -> None:
+    class FooArgs(TypedArgs):
+        x: str
+
+    class BarArgs(TypedArgs):
+        y: str
+
+    with pytest.raises(SubParserConflict):
+        Parser(
+            SubParserGroup(
+                SubParser("foo", FooArgs, aliases=["bar"]),
+                SubParser("bar", BarArgs),
+            )
+        )
+    with pytest.raises(SubParserConflict):
+        Parser(
+            SubParserGroup(
+                SubParser("foo", FooArgs, aliases=["same"]),
+                SubParser("bar", BarArgs, aliases=["same"]),
+            )
+        )
 
 
 # Subparsers with common args

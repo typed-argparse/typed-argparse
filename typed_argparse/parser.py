@@ -27,6 +27,7 @@ from ._argparse_abstractions import (
 from .arg import Arg
 from .arg import arg as make_arg
 from .choices import Choices
+from .exceptions import SubParserConflict
 from .type_utils import TypeAnnotation, collect_type_annotations
 from .typed_args import TypedArgs
 
@@ -386,7 +387,14 @@ def _traverse_get_type_mapping(args_or_group: ArgsOrGroup) -> TypeMapping:
 
         elif issubclass(args_or_group, TypedArgs):
             arg_type = args_or_group
-            mapping[current_path] = arg_type
+            if current_path in mapping:
+                raise SubParserConflict(
+                    f"Detected a sub parser conflict: Adding sub parser `{arg_type.__qualname__}` at sub "
+                    f"parser path {current_path} conflicts with other sub parser "
+                    f"`{mapping[current_path].__qualname__}`."
+                )
+            else:
+                mapping[current_path] = arg_type
 
         else:
             assert_never(args_or_group)
