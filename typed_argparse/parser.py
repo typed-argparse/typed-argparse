@@ -19,7 +19,11 @@ from typing import (
 
 from typing_extensions import assert_never
 
-from ._argparse_abstractions import AddParserKwArgs, FormatterClass
+from ._argparse_abstractions import (
+    AddParserKwArgs,
+    FormatterClass,
+    create_argparse_parser,
+)
 from .arg import Arg
 from .arg import arg as make_arg
 from .choices import Choices
@@ -145,51 +149,47 @@ class Parser:
         """
 
         self._args_or_group = args_or_group
-        self._prog = prog
-        self._usage = usage
-        self._description = description
-        self._epilog = epilog
-        self._add_help = add_help
-        self._allow_abbrev = allow_abbrev
-        self._formatter_class = formatter_class
+
+        # Validate argument structure and build argparse parser
+        self._argparse_parser = create_argparse_parser(
+            prog=prog,
+            usage=usage,
+            description=description,
+            epilog=epilog,
+            add_help=add_help,
+            allow_abbrev=allow_abbrev,
+            formatter_class=formatter_class,
+        )
+
+        self._all_leaf_dest_paths = _traverse_build_parser(
+            self._args_or_group, self._argparse_parser
+        )
+        self._type_mapping = _traverse_get_type_mapping(self._args_or_group)
 
     def parse_args(self, raw_args: List[str] = sys.argv[1:]) -> TypedArgs:
         """
         Parses the given list of arguments into a TypedArgs instance.
         """
-        formatter_class: FormatterClass = (
-            self._formatter_class if self._formatter_class is not None else argparse.HelpFormatter  # type: ignore # noqa
-        )
-        parser = argparse.ArgumentParser(
-            prog=self._prog,
-            usage=self._usage,
-            description=self._description,
-            epilog=self._epilog,
-            add_help=self._add_help,
-            allow_abbrev=self._allow_abbrev,
-            formatter_class=formatter_class,
-        )
 
-        all_leaf_dest_paths = _traverse_build_parser(self._args_or_group, parser)
-        type_mapping = _traverse_get_type_mapping(self._args_or_group)
+        _install_argcomplete_if_available(self._argparse_parser)
 
-        _install_argcomplete_if_available(parser)
-
-        argparse_namespace = parser.parse_args(raw_args)
+        argparse_namespace = self._argparse_parser.parse_args(raw_args)
 
         # print("Raw args:", raw_args)
         # print("Argparse namespace:", argparse_namespace)
 
-        arg_type = _determine_arg_type(all_leaf_dest_paths, argparse_namespace, type_mapping)
+        arg_type = _determine_arg_type(
+            self._all_leaf_dest_paths, argparse_namespace, self._type_mapping
+        )
 
         if arg_type is None:
             # Edge case to investigate: Probably only possible if subparsers are set to
             # non-required, and none matched.
-            parser.exit(
+            self._argparse_parser.exit(
                 message=f"Failed to extract argument type from namespace object: "
                 f"{argparse_namespace}\n"
-                f"dest paths: {all_leaf_dest_paths}\n"
-                f"type mapping: {type_mapping}"
+                f"dest paths: {self._all_leaf_dest_paths}\n"
+                f"type mapping: {self._type_mapping}"
             )
 
         else:
@@ -201,11 +201,9 @@ class Parser:
 
         Raises a ValueError is the bindings are complete.
         """
-        type_mapping = _traverse_get_type_mapping(self._args_or_group)
-
         offered_bindings = set(binding.arg_type for binding in _homogenize_bindings(bindings))
 
-        for arg_type in type_mapping.values():
+        for arg_type in self._type_mapping.values():
             if arg_type not in offered_bindings:
                 raise ValueError(
                     f"Incomplete bindings: There is no binding for type '{arg_type.__name__}'."
