@@ -326,9 +326,11 @@ def _traverse_build_parser(
         )
 
         for sub_parser_declaration in group._sub_parser_declarations:
-            kwargs = {}
+            kwargs: dict[str, object] = {}
             if sub_parser_declaration._help is not None:
                 kwargs["help"] = sub_parser_declaration._help
+            if sub_parser_declaration._aliases is not None:
+                kwargs["aliases"] = sub_parser_declaration._aliases
             argparse_subparser = argparse_subparsers.add_parser(
                 sub_parser_declaration._name, **kwargs  # type: ignore
             )
