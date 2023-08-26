@@ -151,7 +151,14 @@ class Parser:
 
         self._args_or_group = args_or_group
 
-        # Validate argument structure and build argparse parser
+        # Build type mapping including validation of subparser structure. Note that older versions
+        # of argparse do not internally detect conflicting subparsers, while newer versions do. In
+        # order to obtain consistent behavior we pre-validate the subparser structure before
+        # constructing the actual argparse subparser. This ensures consistently throwing the same
+        # SubParserConflict across all Python versions.
+        self._type_mapping = _traverse_get_type_mapping(self._args_or_group)
+
+        # Build the argparse parser.
         self._argparse_parser = create_argparse_parser(
             prog=prog,
             usage=usage,
@@ -161,11 +168,9 @@ class Parser:
             allow_abbrev=allow_abbrev,
             formatter_class=formatter_class,
         )
-
         self._all_leaf_dest_paths = _traverse_build_parser(
             self._args_or_group, self._argparse_parser
         )
-        self._type_mapping = _traverse_get_type_mapping(self._args_or_group)
 
     def parse_args(self, raw_args: List[str] = sys.argv[1:]) -> TypedArgs:
         """
