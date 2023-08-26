@@ -4,8 +4,92 @@ import pytest
 from typing_extensions import Literal
 
 from typed_argparse import Binding, Parser, SubParser, SubParserGroup, TypedArgs, arg
+from typed_argparse.parser import _traverse_get_type_mapping
 
 from ._testing_utils import argparse_error
+
+# Direct tests of _traverse_get_type_mapping
+
+
+def test_traverse_get_type_mapping__basic() -> None:
+    class FooArgs(TypedArgs):
+        x: str
+
+    class BarArgs(TypedArgs):
+        y: str
+
+    group = SubParserGroup(
+        SubParser("foo", FooArgs),
+        SubParser("bar", BarArgs),
+    )
+    type_mapping = _traverse_get_type_mapping(group)
+    assert type_mapping == {
+        ("foo",): FooArgs,  # type: ignore[dict-item]
+        ("bar",): BarArgs,
+    }
+
+
+def test_traverse_get_type_mapping__nested() -> None:
+    class FooXA(TypedArgs):
+        ...
+
+    class FooXB(TypedArgs):
+        ...
+
+    class FooY(TypedArgs):
+        ...
+
+    class Bar(TypedArgs):
+        ...
+
+    group = SubParserGroup(
+        SubParser(
+            "foo",
+            SubParserGroup(
+                SubParser(
+                    "x",
+                    SubParserGroup(
+                        SubParser("a", FooXA),
+                        SubParser("b", FooXB),
+                    ),
+                ),
+                SubParser("y", FooY),
+            ),
+        ),
+        SubParser("bar", Bar),
+    )
+    type_mapping = _traverse_get_type_mapping(group)
+    assert type_mapping == {
+        ("foo", "x", "a"): FooXA,
+        ("foo", "x", "b"): FooXB,
+        ("foo", "y"): FooY,
+        ("bar",): Bar,
+    }
+
+
+def test_traverse_get_type_mapping__with_aliases() -> None:
+    class FooArgs(TypedArgs):
+        x: str
+
+    class BarArgs(TypedArgs):
+        y: str
+
+    group = SubParserGroup(
+        SubParser("foo", FooArgs, aliases=["f", "foo_long"]),
+        SubParser("bar", BarArgs, aliases=["b", "bar_long"]),
+    )
+    type_mapping = _traverse_get_type_mapping(group)
+    assert type_mapping == {
+        ("f",): FooArgs,  # type: ignore[dict-item]
+        ("foo",): FooArgs,  # type: ignore[dict-item]
+        ("foo_long",): FooArgs,  # type: ignore[dict-item]
+        ("b",): BarArgs,
+        ("bar",): BarArgs,
+        ("bar_long",): BarArgs,
+    }
+
+
+# Basics
 
 
 def test_subparser__basic() -> None:
@@ -31,7 +115,7 @@ def test_subparser__basic() -> None:
     assert args.y == "y_value"
 
 
-def test_subparser__multiple() -> None:
+def test_subparser__nested() -> None:
     class FooXA(TypedArgs):
         ...
 
@@ -71,6 +155,35 @@ def test_subparser__multiple() -> None:
     assert isinstance(args, FooY)
     args = parser.parse_args(["bar"])
     assert isinstance(args, Bar)
+
+
+def test_subparser__aliases_support() -> None:
+    class FooArgs(TypedArgs):
+        x: str
+
+    class BarArgs(TypedArgs):
+        y: str
+
+    parser = Parser(
+        SubParserGroup(
+            SubParser("foo", FooArgs, aliases=["f", "foo_long"]),
+            SubParser("bar", BarArgs, aliases=["b", "bar_long"]),
+        )
+    )
+
+    args = parser.parse_args(["f", "--x", "x_value"])
+    assert isinstance(args, FooArgs)
+    assert args.x == "x_value"
+    args = parser.parse_args(["foo_long", "--x", "x_value"])
+    assert isinstance(args, FooArgs)
+    assert args.x == "x_value"
+
+    args = parser.parse_args(["b", "--y", "y_value"])
+    assert isinstance(args, BarArgs)
+    assert args.y == "y_value"
+    args = parser.parse_args(["bar_long", "--y", "y_value"])
+    assert isinstance(args, BarArgs)
+    assert args.y == "y_value"
 
 
 # Subparsers with common args
