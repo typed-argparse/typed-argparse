@@ -73,7 +73,7 @@ class Binding(Generic[R]):
                 return Binding(first_type, func)
 
 
-AnyBinding = Union[Binding[R], Callable[[Any], None]]
+AnyBinding = Union[Binding[R], Callable[[Any], R]]
 Bindings = List[AnyBinding[R]]
 LazyBindings = Callable[[], Bindings[R]]
 EagerOrLazyBindings = Union[Bindings[R], LazyBindings[R]]
