@@ -12,5 +12,6 @@ if [ -z "$git_status" ]; then
 else
   echo -e "\nGit status: dirty"
   git status || true
+  git diff || true
   exit 1
 fi
