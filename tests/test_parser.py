@@ -7,7 +7,7 @@ from typing import List, Optional, Type, TypeVar
 import pytest
 from typing_extensions import Literal
 
-from typed_argparse import Parser, TypedArgs, arg, SUPPRESS
+from typed_argparse import SUPPRESS, Parser, TypedArgs, arg
 from typed_argparse.parser import Bindings
 
 from ._testing_utils import argparse_error, compare_verbose, pre_python_10
@@ -780,6 +780,7 @@ def test_defaults_in_help_text__on_by_default(capsys: pytest.CaptureFixture[str]
         """
     )
 
+
 @pre_python_10
 def test_defaults_in_help_text__requires_formatter(capsys: pytest.CaptureFixture[str]) -> None:
     class Args(TypedArgs):
@@ -864,6 +865,7 @@ def test_formatter_class_support(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 # Supression of help text
+
 
 @pre_python_10
 def test_supression_of_help_text(capsys: pytest.CaptureFixture[str]) -> None:

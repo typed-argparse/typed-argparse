@@ -598,6 +598,7 @@ def _build_add_argument_args(
 
     return name_or_flags, kwargs
 
+
 def _to_string(args_or_group: ArgsOrGroup) -> str:
     if isinstance(args_or_group, type):
         return args_or_group.__name__
