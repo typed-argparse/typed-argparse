@@ -13,6 +13,8 @@ class DefaultHelpFormatter(argparse.HelpFormatter):
             and action.default is not None
             and action.default is not True
             and action.default is not False
+            # Setting default=SUPPRESS is not supported by typed-argparse, but is used
+            # by argparse for the help (-h/--help) and version (-v/--version) actions.
             and action.default is not argparse.SUPPRESS
         ):
             try:
