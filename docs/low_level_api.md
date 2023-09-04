@@ -144,7 +144,7 @@ def main() -> None:
         # In this branch, mypy knows (only) these fields (and their types)
         print(args.src, args.dst, args.verbose)
 
-    # Alteratively:
+    # Alternatively:
     if isinstance(args, ArgsFoo):
         # It's an ArgsFoo
         ...
