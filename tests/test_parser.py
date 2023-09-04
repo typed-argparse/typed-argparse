@@ -823,6 +823,31 @@ def test_defaults_in_help_text__off_if_desired(capsys: pytest.CaptureFixture[str
     )
 
 
+@pre_python_10
+def test_defaults_in_help_text__off_for_booleans(capsys: pytest.CaptureFixture[str]) -> None:
+    class Args(TypedArgs):
+        implicit: bool = arg(help="Some implicit 'on' switch")
+        enable: bool = arg(help="Some 'on' switch", default=False)
+        disable: bool = arg(help="Some 'off' switch", default=True)
+
+    parser = Parser(Args)
+    with pytest.raises(SystemExit):
+        parser.parse_args(["-h"])
+
+    captured = capsys.readouterr()
+    assert captured.out == textwrap.dedent(
+        """\
+        usage: pytest [-h] [--implicit] [--enable] [--disable]
+
+        optional arguments:
+          -h, --help  show this help message and exit
+          --implicit  Some implicit 'on' switch
+          --enable    Some 'on' switch
+          --disable   Some 'off' switch
+        """
+    )
+
+
 # Support of formatter class in help texts
 
 

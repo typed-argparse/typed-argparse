@@ -11,6 +11,8 @@ class DefaultHelpFormatter(argparse.HelpFormatter):
             not isinstance(action.help, DefaultHelpFormatter.Unformatted)
             and action.help is not None
             and action.default is not None
+            and action.default is not True
+            and action.default is not False
             and action.default is not argparse.SUPPRESS
         ):
             try:
