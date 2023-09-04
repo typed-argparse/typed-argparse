@@ -140,7 +140,7 @@ There are two options for how these options need to be passed on the command lin
 In the example, the two sub-commands `foo` and `bar` use the two options different options:
 
 - For `foo` the `CommonArgs` are just used as subclass and not passed via the `common_args=...` argument to the subparser group.
-  The common arguments will be added to each command indivdually, i.e., usage becomes `<myapp> foo start --verbose` and `<myapp> foo stop --verbose`.
+  The common arguments will be added to each command individually, i.e., usage becomes `<myapp> foo start --verbose` and `<myapp> foo stop --verbose`.
 - For `bar` the `CommonArgs` are used as subclass and additionally passed as the `common_args=...` argument to the subparser group.
   The common argument will be added at the parent level, i.e., usage becomes `<myapp> bar --verbose start` and `<myapp> bar --verbose stop`.
 
