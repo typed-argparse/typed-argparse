@@ -893,10 +893,14 @@ def test_formatter_class_support(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 @pre_python_10
-def test_supression_of_help_text(capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.parametrize("auto_default_help", (True, False))
+def test_supression_of_help_text(
+    capsys: pytest.CaptureFixture[str],
+    auto_default_help: bool,
+) -> None:
     class Args(TypedArgs):
         epsilon: float = arg(help="Some epsilon", default=0.1)
-        hidden: float = arg(help=SUPPRESS, default=0.2)
+        hidden: float = arg(help=SUPPRESS, default=0.2, auto_default_help=auto_default_help)
 
     parser = Parser(Args)
     with pytest.raises(SystemExit):

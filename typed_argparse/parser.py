@@ -477,7 +477,7 @@ def _build_add_argument_args(
 ) -> Tuple[List[str], Dict[str, Any]]:
 
     help = arg.help
-    if help is not None and not arg.auto_default_help:
+    if help is not None and help is not argparse.SUPPRESS and not arg.auto_default_help:
         help = DefaultHelpFormatter.Unformatted(help)
 
     kwargs: Dict[str, Any] = {
