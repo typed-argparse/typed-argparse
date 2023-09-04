@@ -7,7 +7,7 @@ from typing import List, Optional, Type, TypeVar
 import pytest
 from typing_extensions import Literal
 
-from typed_argparse import Parser, TypedArgs, arg
+from typed_argparse import SUPPRESS, Parser, TypedArgs, arg
 from typed_argparse.parser import Bindings
 
 from ._testing_utils import argparse_error, compare_verbose, pre_python_10
@@ -782,6 +782,27 @@ def test_defaults_in_help_text__on_by_default(capsys: pytest.CaptureFixture[str]
 
 
 @pre_python_10
+def test_defaults_in_help_text__requires_formatter(capsys: pytest.CaptureFixture[str]) -> None:
+    class Args(TypedArgs):
+        epsilon: float = arg(help="Some epsilon", default=0.1)
+
+    parser = Parser(Args, formatter_class=None)
+    with pytest.raises(SystemExit):
+        parser.parse_args(["-h"])
+
+    captured = capsys.readouterr()
+    assert captured.out == textwrap.dedent(
+        """\
+        usage: pytest [-h] [--epsilon EPSILON]
+
+        optional arguments:
+          -h, --help         show this help message and exit
+          --epsilon EPSILON  Some epsilon
+        """
+    )
+
+
+@pre_python_10
 def test_defaults_in_help_text__off_if_desired(capsys: pytest.CaptureFixture[str]) -> None:
     class Args(TypedArgs):
         epsilon: float = arg(help="Some epsilon", default=0.1, auto_default_help=False)
@@ -798,6 +819,31 @@ def test_defaults_in_help_text__off_if_desired(capsys: pytest.CaptureFixture[str
         optional arguments:
           -h, --help         show this help message and exit
           --epsilon EPSILON  Some epsilon
+        """
+    )
+
+
+@pre_python_10
+def test_defaults_in_help_text__off_for_booleans(capsys: pytest.CaptureFixture[str]) -> None:
+    class Args(TypedArgs):
+        implicit: bool = arg(help="Some implicit 'on' switch")
+        enable: bool = arg(help="Some 'on' switch", default=False)
+        disable: bool = arg(help="Some 'off' switch", default=True)
+
+    parser = Parser(Args)
+    with pytest.raises(SystemExit):
+        parser.parse_args(["-h"])
+
+    captured = capsys.readouterr()
+    assert captured.out == textwrap.dedent(
+        """\
+        usage: pytest [-h] [--implicit] [--enable] [--disable]
+
+        optional arguments:
+          -h, --help  show this help message and exit
+          --implicit  Some implicit 'on' switch
+          --enable    Some 'on' switch
+          --disable   Some 'off' switch
         """
     )
 
@@ -840,6 +886,35 @@ def test_formatter_class_support(capsys: pytest.CaptureFixture[str]) -> None:
             epilog line 3
             """
         ),
+    )
+
+
+# Supression of help text
+
+
+@pre_python_10
+@pytest.mark.parametrize("auto_default_help", (True, False))
+def test_supression_of_help_text(
+    capsys: pytest.CaptureFixture[str],
+    auto_default_help: bool,
+) -> None:
+    class Args(TypedArgs):
+        epsilon: float = arg(help="Some epsilon", default=0.1)
+        hidden: float = arg(help=SUPPRESS, default=0.2, auto_default_help=auto_default_help)
+
+    parser = Parser(Args)
+    with pytest.raises(SystemExit):
+        parser.parse_args(["-h"])
+
+    captured = capsys.readouterr()
+    assert captured.out == textwrap.dedent(
+        """\
+        usage: pytest [-h] [--epsilon EPSILON]
+
+        optional arguments:
+          -h, --help         show this help message and exit
+          --epsilon EPSILON  Some epsilon [default: 0.1]
+        """
     )
 
 

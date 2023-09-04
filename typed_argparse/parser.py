@@ -28,6 +28,7 @@ from .arg import Arg
 from .arg import arg as make_arg
 from .choices import Choices
 from .exceptions import SubParserConflict
+from .formatter import DefaultHelpFormatter
 from .type_utils import TypeAnnotation, collect_type_annotations
 from .typed_args import TypedArgs
 
@@ -132,7 +133,7 @@ class Parser:
         epilog: Optional[str] = None,
         add_help: bool = True,
         allow_abbrev: bool = True,
-        formatter_class: Optional[FormatterClass] = None,
+        formatter_class: Optional[FormatterClass] = DefaultHelpFormatter,
     ):
         """
         The parser constructor requires one positional argument, which is either
@@ -475,8 +476,12 @@ def _build_add_argument_args(
     arg: Arg,
 ) -> Tuple[List[str], Dict[str, Any]]:
 
+    help = arg.help
+    if help is not None and help is not argparse.SUPPRESS and not arg.auto_default_help:
+        help = DefaultHelpFormatter.Unformatted(help)
+
     kwargs: Dict[str, Any] = {
-        "help": _generate_help_text(arg),
+        "help": help,
     }
 
     # Unwrap optionals
@@ -592,20 +597,6 @@ def _build_add_argument_args(
         kwargs["dest"] = python_arg_name
 
     return name_or_flags, kwargs
-
-
-def _generate_help_text(arg: Arg) -> Optional[str]:
-    if arg.help is not None and arg.default is not None and arg.auto_default_help:
-
-        try:
-            from yachalk import chalk  # pyright: ignore
-
-            return f"{arg.help} {chalk.gray(f'[default: {arg.default}]')}"
-
-        except ImportError:
-            return f"{arg.help} [default: {arg.default}]"
-    else:
-        return arg.help
 
 
 def _to_string(args_or_group: ArgsOrGroup) -> str:
