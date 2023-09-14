@@ -528,6 +528,9 @@ def _build_add_argument_args(
         else:
             kwargs["action"] = "store_true"
 
+        if arg.metavar is not None:
+            raise RuntimeError("Cannot set metavar for boolean argument")
+
     else:
         # We must not declare 'type' for boolean switches, which have an action instead.
         if arg.type is not None:
@@ -557,6 +560,8 @@ def _build_add_argument_args(
 
         if arg.dynamic_choices is not None:
             kwargs["choices"] = Choices(*arg.dynamic_choices())
+
+        kwargs["metavar"] = arg.metavar
 
     # Nargs handling
     if is_collection:

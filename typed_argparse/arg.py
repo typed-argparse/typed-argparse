@@ -25,6 +25,7 @@ class Arg(NamedTuple):
     type: Optional[Callable[[str], object]]
     nargs: Optional[NArgs]
     help: Optional[str]
+    metavar: Optional[str]
     auto_default_help: bool
 
     def has_default(self) -> bool:
@@ -61,6 +62,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     default: T,
 ) -> T:
@@ -72,6 +74,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], T]],
 ) -> T:
@@ -83,6 +86,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
 ) -> T:
@@ -94,6 +98,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     type: Callable[[str], T],
 ) -> T:
@@ -108,6 +113,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     default: Sequence[T],
     nargs: NArgs,
@@ -120,6 +126,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], Sequence[T]]],
     nargs: NArgs,
@@ -132,6 +139,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     nargs: NArgs,
@@ -144,6 +152,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     type: Callable[[str], T],
     nargs: NArgs,
@@ -159,6 +168,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     default: T,
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
@@ -171,6 +181,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], T]],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
@@ -183,6 +194,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     default: T,
     type: Callable[[str], T],
@@ -195,6 +207,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], T]],
     type: Callable[[str], T],
@@ -207,6 +220,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     type: Callable[[str], T],
@@ -222,6 +236,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     default: Sequence[T],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
@@ -235,6 +250,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], Sequence[T]]],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
@@ -248,6 +264,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     default: Sequence[T],
     type: Callable[[str], T],
@@ -261,6 +278,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], Sequence[T]]],
     type: Callable[[str], T],
@@ -274,6 +292,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     type: Callable[[str], T],
@@ -290,6 +309,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     default: T,
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
@@ -303,6 +323,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], T]],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
@@ -319,6 +340,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     default: Sequence[T],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
@@ -333,6 +355,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], Sequence[T]]],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
@@ -350,6 +373,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
 ) -> Any:
     ...
@@ -360,6 +384,7 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
+    metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     nargs: NArgs,
 ) -> List[Any]:
@@ -373,6 +398,7 @@ def arg(
     *flags: str,
     positional: bool = False,
     help: Optional[str] = None,
+    metavar: Optional[str] = None,
     auto_default_help: bool = True,
     nargs: Optional[NArgs] = None,
     default: Optional[object] = None,
@@ -397,6 +423,7 @@ def arg(
         - type -- A type (= parser function) to convert from string to the target type.
         - nargs -- To specify the semantics of repeated arguments.
         - help -- The help text to show for the argument.
+        - metavar -- Display name for the argument placeholder in help text.
     """
     return Arg(
         flags=flags,
@@ -408,4 +435,5 @@ def arg(
         nargs=nargs,
         help=help,
         auto_default_help=auto_default_help,
+        metavar=metavar,
     )
