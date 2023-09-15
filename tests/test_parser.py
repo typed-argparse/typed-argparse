@@ -862,6 +862,39 @@ def test_formatter_class_support(capsys: pytest.CaptureFixture[str]) -> None:
     )
 
 
+# Custom names for meta vars
+
+
+@pre_python_10
+def test_metavars_in_help_text(capsys: pytest.CaptureFixture[str]) -> None:
+    class Args(TypedArgs):
+        epsilon: float = arg(help="Some epsilon", metavar="E", default=0.1)
+
+    parser = Parser(Args)
+    with pytest.raises(SystemExit):
+        parser.parse_args(["-h"])
+
+    captured = capsys.readouterr()
+    assert captured.out == textwrap.dedent(
+        """\
+        usage: pytest [-h] [--epsilon E]
+
+        optional arguments:
+          -h, --help   show this help message and exit
+          --epsilon E  Some epsilon [default: 0.1]
+        """
+    )
+
+
+@pre_python_10
+def test_metavars_in_help_text_not_allowed_for_bool(capsys: pytest.CaptureFixture[str]) -> None:
+    class Args(TypedArgs):
+        epsilon: bool = arg(metavar="X")
+
+    with pytest.raises(RuntimeError, match="Cannot set metavar for boolean argument"):
+        Parser(Args)
+
+
 # Misc
 
 
