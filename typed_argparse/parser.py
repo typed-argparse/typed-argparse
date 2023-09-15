@@ -528,6 +528,9 @@ def _build_add_argument_args(
         else:
             kwargs["action"] = "store_true"
 
+        if arg.positional:
+            raise RuntimeError("Positional bool argument not supported")
+
         if arg.metavar is not None:
             raise RuntimeError("Cannot set metavar for boolean argument")
 
@@ -544,11 +547,11 @@ def _build_add_argument_args(
             default_value = arg.resolve_default()
             kwargs["default"] = default_value
 
-            # Argparse requires positionals with defaults to have nargs="?"
-            # Note that for list-like (real nargs) arguments that happens to have a default
-            # (a list as well), the nargs value will be overwritten below.
-            if arg.positional:
-                kwargs["nargs"] = "?"
+        # Argparse requires positionals with defaults to have nargs="?"
+        # Note that for list-like (real nargs) arguments that happens to have a default
+        # (a list as well), the nargs value will be overwritten below.
+        if arg.positional and (arg.has_default() or is_optional):
+            kwargs["nargs"] = "?"
 
         allowed_values_if_literal = annotation.get_allowed_values_if_literal()
         if allowed_values_if_literal is not None:

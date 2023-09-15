@@ -196,6 +196,25 @@ def test_positional__sandwiched() -> None:
     assert args.single_after == "baz"
 
 
+def test_positional__optional_type() -> None:
+    class Args(TypedArgs):
+        value: Optional[int] = arg(positional=True)
+
+    args = parse(Args, ["123"])
+    assert args.value == 123
+
+    args = parse(Args, [])
+    assert args.value is None
+
+
+def test_positional__optional_bool_not_allowed() -> None:
+    class Args(TypedArgs):
+        value: Optional[bool] = arg(positional=True)
+
+    with pytest.raises(RuntimeError, match="Positional bool argument not supported"):
+        parse(Args, [])
+
+
 # Flags
 
 
