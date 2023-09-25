@@ -11,6 +11,7 @@
 - Fix handling of optional positional arguments.
 - Add support for metavar.
 - Fix type correctness of arguments with field annotations.
+- Added basic support for default handling in manual constructor call.
 
 ## 0.3.0
 

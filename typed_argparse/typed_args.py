@@ -1,4 +1,5 @@
 import argparse
+import copy
 from typing import TYPE_CHECKING, Dict, Generic, List, Type, TypeVar, cast
 
 from typing_extensions import dataclass_transform
@@ -23,11 +24,12 @@ class TypedArgs:
 
         def __init__(self, **kwargs: object):
             """
-            Constructs an instance of the TypedArgs class from a given kwargs object without
-            any validation, simply forwarding its contents. If the construction is done from
-            a typed-checked use-site we know that all fields must have proper types already.
+            Constructs an instance of the TypedArgs class from a given kwargs object.
+
+            Validation is minimal and largely tries to follow 'dataclass transform' semantics.
             """
-            for key, value in kwargs.items():
+            attributes = _kwargs_to_attributes(type(self), kwargs)
+            for key, value in attributes.items():
                 setattr(self, key, value)
 
     @classmethod
@@ -110,6 +112,25 @@ def _argparse_namespace_to_dict(
                 raise TypeError(f"Arguments object has unexpected extra arguments {extra_args}")
 
     return kwargs
+
+
+def _kwargs_to_attributes(cls: Type[C], kwargs: dict[str, object]) -> Dict[str, object]:
+
+    annotations = collect_type_annotations(cls, include_super_types=True)
+
+    attributes = {}
+
+    for arg_name in annotations.keys():
+        if arg_name in kwargs:
+            attributes[arg_name] = kwargs[arg_name]
+        elif hasattr(cls, arg_name):
+            class_attribute = getattr(cls, arg_name)
+            if isinstance(class_attribute, Arg):
+                attributes[arg_name] = copy.deepcopy(class_attribute.default)
+            else:
+                attributes[arg_name] = copy.deepcopy(class_attribute)
+
+    return attributes
 
 
 T = TypeVar("T")
