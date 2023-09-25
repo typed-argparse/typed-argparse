@@ -87,7 +87,7 @@ def test_type_annotation__literals__from_typing_extensions() -> None:
 
 def test_type_annotation__literals__from_typing() -> None:
     # Literal can behave differently whether it comes from typing or typing_extensions
-    from typing import Literal  # type: ignore
+    from typing import Literal
 
     t = TypeAnnotation(Literal[1, 2, 3])
 

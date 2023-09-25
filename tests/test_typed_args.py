@@ -1,6 +1,7 @@
 import argparse
 from typing import List, Optional, Type, TypeVar, overload
 
+import typed_argparse as tap
 from typed_argparse import TypedArgs
 
 # -----------------------------------------------------------------------------
@@ -80,12 +81,51 @@ def test_constructor__invalid_cases() -> None:
     )
 
 
+def test_constructor__invalid_cases__annotated() -> None:
+    class Args(TypedArgs):
+        a: int = tap.arg()
+        b: str = tap.arg()
+
+    Args(a=42)  # type: ignore[call-arg]
+    Args(b="s")  # type: ignore[call-arg]
+    Args(
+        a="s",  # type: ignore[arg-type]
+        b=42,  # type: ignore[arg-type]
+    )
+    Args(
+        a=42,
+        b="s",
+        additional=True,  # type: ignore[call-arg]
+    )
+
+
 def test_constructor__inheritance__invalid_cases() -> None:
     class BaseArgs(TypedArgs):
         a: int
 
     class Args(BaseArgs):
         b: str
+
+    Args()  # type: ignore[call-arg]
+    Args(a=42)  # type: ignore[call-arg]
+    Args(b="s")  # type: ignore[call-arg]
+    Args(
+        a="s",  # type: ignore[arg-type]
+        b=42,  # type: ignore[arg-type]
+    )
+    Args(
+        a=42,
+        b="s",
+        additional=True,  # type: ignore[call-arg]
+    )
+
+
+def test_constructor__inheritance__invalid_cases__annotated() -> None:
+    class BaseArgs(TypedArgs):
+        a: int = tap.arg()
+
+    class Args(BaseArgs):
+        b: str = tap.arg()
 
     Args()  # type: ignore[call-arg]
     Args(a=42)  # type: ignore[call-arg]

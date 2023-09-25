@@ -4,7 +4,7 @@ from .exceptions import SubParserConflict
 from .parser import Binding, Bindings, Parser, SubParser, SubParserGroup
 from .typed_args import TypedArgs, WithUnionType, validate_type_union
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 
 __all__ = [
     "arg",

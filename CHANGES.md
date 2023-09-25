@@ -1,9 +1,16 @@
 # Changelog
 
-## 0.3.1 WIP
+## 0.3.2 WIP
+
+...
+
+## 0.3.1
 
 - Added collision detection for sub parser with same name (including aliases).
 - Fix handling of sub parser aliases.
+- Fix handling of optional positional arguments.
+- Add support for metavar.
+- Fix type correctness of arguments with field annotations.
 
 ## 0.3.0
 
