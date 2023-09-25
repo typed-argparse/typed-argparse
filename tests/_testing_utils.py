@@ -5,12 +5,12 @@ from typing import Generator, Optional
 
 import pytest
 
-pre_python_10 = pytest.mark.skipif(
+pre_python_3_10 = pytest.mark.skipif(
     sys.version_info >= (3, 10),
     reason="Test is Python version specific, and currently skipped for Python 3.10+",
 )
 
-starting_with_python_10 = pytest.mark.skipif(
+starting_with_python_3_10 = pytest.mark.skipif(
     sys.version_info < (3, 10),
     reason="Test is Python version specific, requiring Python 3.10+",
 )
