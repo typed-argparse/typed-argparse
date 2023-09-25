@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from typed_argparse.type_utils import TypeAnnotation, collect_type_annotations
 
@@ -44,6 +44,32 @@ def test_type_annotation__optional() -> None:
 
     assert t.validate("foo") == ("foo", None)
     assert t.validate(None) == (None, None)
+
+    t = TypeAnnotation(str | None)
+    t_underlying = t.get_underlying_if_optional()
+    assert t_underlying is not None
+    assert t_underlying.raw_type is str
+
+    assert t.validate("foo") == ("foo", None)
+    assert t.validate(None) == (None, None)
+
+
+def test_type_annotation__union() -> None:
+    t = TypeAnnotation(Union[str, int])
+    t_underlyings = t.get_underlyings_if_union()
+    assert t_underlyings[0] is not None
+    assert t_underlyings[0].raw_type is str
+    assert t_underlyings[1] is not None
+    assert t_underlyings[1].raw_type is int
+
+    t = TypeAnnotation(str | int)
+    t_underlyings = t.get_underlyings_if_union()
+    assert t_underlyings[0] is not None
+    assert t_underlyings[0].raw_type is str
+    assert t_underlyings[1] is not None
+    assert t_underlyings[1].raw_type is int
+
+    # TODO: Check validation semantics
 
 
 def test_type_annotation__list() -> None:

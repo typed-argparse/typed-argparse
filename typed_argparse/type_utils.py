@@ -1,3 +1,4 @@
+import types
 from enum import Enum
 from typing import Callable, Dict, List
 from typing import Literal as LiteralFromTyping
@@ -101,10 +102,11 @@ class TypeAnnotation:
             return None
 
     def get_underlying_if_optional(self) -> Optional["TypeAnnotation"]:
-        if self.origin is Union and len(self.args) == 2 and _NoneType in self.args:
-            for t in self.args:
-                if t != _NoneType:
-                    return TypeAnnotation(t)
+        if self.origin is Union or isinstance(self.raw_type, types.UnionType):
+            if len(self.args) == 2 and _NoneType in self.args:
+                for t in self.args:
+                    if t != _NoneType:
+                        return TypeAnnotation(t)
         return None
 
     def get_underlying_if_list(self) -> Optional["TypeAnnotation"]:
@@ -120,7 +122,7 @@ class TypeAnnotation:
         return None
 
     def get_underlyings_if_union(self) -> List["TypeAnnotation"]:
-        if self.origin is Union:
+        if self.origin is Union or isinstance(self.raw_type, types.UnionType):
             return [TypeAnnotation(t) for t in self.args]
         else:
             return []

@@ -2,7 +2,7 @@ import argparse
 import textwrap
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Type, TypeVar
+from typing import List, Optional, Type, TypeVar, Union
 
 import pytest
 from typing_extensions import Literal
@@ -94,6 +94,43 @@ def test_path() -> None:
 
     args = parse(Args, ["--path", "/my/path"])
     assert args.path == Path("/my/path")
+
+
+def test_variations_of_optionality() -> None:
+    class Args(TypedArgs):
+        traditional: Optional[int]
+        as_union_a: Union[int, None]
+        as_union_b: Union[None, int]
+        as_union_modern_a: int | None
+        as_union_modern_b: None | int
+
+    args = parse(Args, [])
+    assert args.traditional is None
+    assert args.as_union_a is None
+    assert args.as_union_b is None
+    assert args.as_union_modern_a is None
+    assert args.as_union_modern_b is None
+
+    args = parse(
+        Args,
+        [
+            "--traditional",
+            "1",
+            "--as-union-a",
+            "2",
+            "--as-union-b",
+            "3",
+            "--as-union-modern-a",
+            "4",
+            "--as-union-modern-b",
+            "5",
+        ],
+    )
+    assert args.traditional == 1
+    assert args.as_union_a == 2
+    assert args.as_union_b == 3
+    assert args.as_union_modern_a == 4
+    assert args.as_union_modern_b == 5
 
 
 # Positional
