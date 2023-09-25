@@ -1,6 +1,7 @@
 import argparse
 from typing import List, Optional, Type, TypeVar, overload
 
+import typed_argparse as tap
 from typed_argparse import TypedArgs
 
 # -----------------------------------------------------------------------------
@@ -80,6 +81,24 @@ def test_constructor__invalid_cases() -> None:
     )
 
 
+def test_constructor__invalid_cases__annotated() -> None:
+    class Args(TypedArgs):
+        a: int = tap.arg()
+        b: str = tap.arg()
+
+    Args(a=42)  # type: ignore[call-arg]
+    Args(b="s")  # type: ignore[call-arg]
+    Args(
+        a="s",  # type: ignore[arg-type]
+        b=42,  # type: ignore[arg-type]
+    )
+    Args(
+        a=42,
+        b="s",
+        additional=True,  # type: ignore[call-arg]
+    )
+
+
 def test_constructor__inheritance__invalid_cases() -> None:
     class BaseArgs(TypedArgs):
         a: int
@@ -99,6 +118,151 @@ def test_constructor__inheritance__invalid_cases() -> None:
         b="s",
         additional=True,  # type: ignore[call-arg]
     )
+
+
+def test_constructor__inheritance__invalid_cases__annotated() -> None:
+    class BaseArgs(TypedArgs):
+        a: int = tap.arg()
+
+    class Args(BaseArgs):
+        b: str = tap.arg()
+
+    Args()  # type: ignore[call-arg]
+    Args(a=42)  # type: ignore[call-arg]
+    Args(b="s")  # type: ignore[call-arg]
+    Args(
+        a="s",  # type: ignore[arg-type]
+        b=42,  # type: ignore[arg-type]
+    )
+    Args(
+        a=42,
+        b="s",
+        additional=True,  # type: ignore[call-arg]
+    )
+
+
+# -----------------------------------------------------------------------------
+# Constructor defaults handling
+# -----------------------------------------------------------------------------
+
+
+def test_constructor__defaults__basic() -> None:
+    class Args(TypedArgs):
+        a: int = tap.arg(default=42)
+
+    instance = Args()
+    assert instance.a == 42
+
+    instance = Args(a=43)
+    assert instance.a == 43
+
+
+def test_constructor__defaults__inheritance() -> None:
+    class Parent(TypedArgs):
+        foo: str = tap.arg(default="foo")
+
+    class Child(Parent):
+        bar: str = tap.arg(default="bar")
+
+    instance = Child()
+    assert instance.foo == "foo"
+    assert instance.bar == "bar"
+
+    instance = Child(foo="foo_custom")
+    assert instance.foo == "foo_custom"
+    assert instance.bar == "bar"
+
+    instance = Child(bar="bar_custom")
+    assert instance.foo == "foo"
+    assert instance.bar == "bar_custom"
+
+    instance = Child(foo="foo_custom", bar="bar_custom")
+    assert instance.foo == "foo_custom"
+    assert instance.bar == "bar_custom"
+
+
+def test_constructor__defaults__plain_values() -> None:
+    class Args(TypedArgs):
+        a: int = 42
+
+    instance = Args()
+    assert instance.a == 42
+
+    instance = Args(a=43)
+    assert instance.a == 43
+
+
+def test_constructor__defaults__plain_values__deep_copy() -> None:
+    # This is a bit pathological. Should plain attributes get deep copied?
+
+    singleton = [1, 2, 3]
+
+    class Args(TypedArgs):
+        a: List[int] = singleton
+
+    instance = Args()
+    assert instance.a == singleton
+    assert instance.a is not singleton
+
+    instance = Args(a=[2, 3, 4])
+    assert instance.a == [2, 3, 4]
+
+
+def test_constructor__defaults__nargs__deep_copy() -> None:
+    singleton = [1, 2, 3]
+
+    class Args(TypedArgs):
+        a: List[int] = tap.arg(default=singleton)
+
+    instance = Args()
+    assert instance.a == singleton
+    assert instance.a is not singleton
+
+    instance = Args(a=[2, 3, 4])
+    assert instance.a == [2, 3, 4]
+
+
+def test_constructor__defaults__separated_argument_definition() -> None:
+    reusable_arg = tap.arg(default=42)
+
+    class Args(TypedArgs):
+        a: int = reusable_arg
+
+    instance = Args()
+    assert instance.a == 42
+
+    instance = Args(a=43)
+    assert instance.a == 43
+
+
+def test_constructor__defaults__optional() -> None:
+    # TODO: Here it would be nice if the either `default=None` or the entire `tap.arg` expression
+    # could be omitted.
+
+    class Args(TypedArgs):
+        a: Optional[int] = tap.arg(default=None)
+
+    instance = Args()
+    assert instance.a is None
+
+    instance = Args(a=43)
+    assert instance.a == 43
+
+
+def test_constructor__defaults__bool_switches() -> None:
+    # Similarly here, omitting the default values especially in the positive case would be nice.
+
+    class Args(TypedArgs):
+        positive: bool = tap.arg(default=True)
+        negative: bool = tap.arg(default=False)
+
+    instance = Args()
+    assert instance.positive
+    assert not instance.negative
+
+    instance = Args(positive=False, negative=True)
+    assert not instance.positive
+    assert instance.negative
 
 
 # -----------------------------------------------------------------------------

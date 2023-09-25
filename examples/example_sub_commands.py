@@ -2,8 +2,8 @@
 
 import argparse
 import sys
-
 from typing import List, Union
+
 from typing_extensions import Literal
 
 from typed_argparse import TypedArgs, WithUnionType
@@ -30,7 +30,7 @@ Args = Union[ArgsFoo, ArgsBar]
 def parse_args(args: List[str] = sys.argv[1:]) -> Args:
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", action="store_true", help="Verbose")
-    subparsers = parser.add_subparsers(  # type: ignore
+    subparsers = parser.add_subparsers(
         help="Available sub commands",
         dest="mode",
         required=True,
