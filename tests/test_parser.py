@@ -10,7 +10,12 @@ from typing_extensions import Literal
 from typed_argparse import Parser, TypedArgs, arg
 from typed_argparse.parser import Bindings
 
-from ._testing_utils import argparse_error, compare_verbose, pre_python_10
+from ._testing_utils import (
+    argparse_error,
+    compare_verbose,
+    pre_python_10,
+    starting_with_python_10,
+)
 
 T = TypeVar("T", bound=TypedArgs)
 
@@ -96,13 +101,14 @@ def test_path() -> None:
     assert args.path == Path("/my/path")
 
 
+@starting_with_python_10
 def test_variations_of_optionality() -> None:
     class Args(TypedArgs):
         traditional: Optional[int]
         as_union_a: Union[int, None]
         as_union_b: Union[None, int]
-        as_union_modern_a: int | None
-        as_union_modern_b: None | int
+        as_union_modern_a: int | None  # type: ignore[syntax, unused-ignore]
+        as_union_modern_b: None | int  # type: ignore[syntax, unused-ignore]
 
     args = parse(Args, [])
     assert args.traditional is None

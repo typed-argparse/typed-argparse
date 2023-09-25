@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 from typing import List, Optional, Union
 
 from typed_argparse.type_utils import TypeAnnotation, collect_type_annotations
+
+from ._testing_utils import starting_with_python_10
 
 # -----------------------------------------------------------------------------
 # TypeAnnotation
@@ -36,6 +40,7 @@ def test_type_annotation__user_class() -> None:
     assert t.validate(12345) == (12345, "value is of type 'int', expected 'MyClass'")
 
 
+@starting_with_python_10
 def test_type_annotation__optional() -> None:
     t = TypeAnnotation(Optional[str])
     t_underlying = t.get_underlying_if_optional()
@@ -45,7 +50,7 @@ def test_type_annotation__optional() -> None:
     assert t.validate("foo") == ("foo", None)
     assert t.validate(None) == (None, None)
 
-    t = TypeAnnotation(str | None)
+    t = TypeAnnotation(str | None)  # type: ignore[operator, unused-ignore]
     t_underlying = t.get_underlying_if_optional()
     assert t_underlying is not None
     assert t_underlying.raw_type is str
@@ -54,6 +59,7 @@ def test_type_annotation__optional() -> None:
     assert t.validate(None) == (None, None)
 
 
+@starting_with_python_10
 def test_type_annotation__union() -> None:
     t = TypeAnnotation(Union[str, int])
     t_underlyings = t.get_underlyings_if_union()
@@ -62,7 +68,7 @@ def test_type_annotation__union() -> None:
     assert t_underlyings[1] is not None
     assert t_underlyings[1].raw_type is int
 
-    t = TypeAnnotation(str | int)
+    t = TypeAnnotation(str | int)  # type: ignore[operator, unused-ignore]
     t_underlyings = t.get_underlyings_if_union()
     assert t_underlyings[0] is not None
     assert t_underlyings[0].raw_type is str

@@ -114,7 +114,7 @@ def _argparse_namespace_to_dict(
     return kwargs
 
 
-def _kwargs_to_attributes(cls: Type[C], kwargs: dict[str, object]) -> Dict[str, object]:
+def _kwargs_to_attributes(cls: Type[C], kwargs: Dict[str, object]) -> Dict[str, object]:
 
     annotations = collect_type_annotations(cls, include_super_types=True)
 

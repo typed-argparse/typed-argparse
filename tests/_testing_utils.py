@@ -10,6 +10,11 @@ pre_python_10 = pytest.mark.skipif(
     reason="Test is Python version specific, and currently skipped for Python 3.10+",
 )
 
+starting_with_python_10 = pytest.mark.skipif(
+    sys.version_info < (3, 10),
+    reason="Test is Python version specific, requiring Python 3.10+",
+)
+
 
 def compare_verbose(actual: str, expected: str) -> None:
 
