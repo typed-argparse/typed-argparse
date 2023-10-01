@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import textwrap
 from enum import Enum
@@ -13,18 +15,10 @@ from typed_argparse.parser import Bindings
 from ._testing_utils import (
     argparse_error,
     compare_verbose,
+    parse,
     pre_python_3_10,
     starting_with_python_3_10,
 )
-
-T = TypeVar("T", bound=TypedArgs)
-
-
-def parse(arg_type: Type[T], raw_args: List[str]) -> T:
-    args = Parser(arg_type).parse_args(raw_args)
-    assert isinstance(args, arg_type)
-    return args
-
 
 # Boolean
 

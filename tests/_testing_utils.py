@@ -1,9 +1,11 @@
 import argparse
 import sys
 from contextlib import contextmanager
-from typing import Generator, Optional
+from typing import Generator, List, Optional, Type, TypeVar
 
 import pytest
+
+from typed_argparse import Parser, TypedArgs
 
 pre_python_3_10 = pytest.mark.skipif(
     sys.version_info >= (3, 10),
@@ -49,3 +51,12 @@ def argparse_error() -> Generator[ArgparseErrorWrapper, None, None]:
 
     assert isinstance(e.value.__context__, argparse.ArgumentError)
     wrapper.error = e.value.__context__
+
+
+T = TypeVar("T", bound=TypedArgs)
+
+
+def parse(arg_type: Type[T], raw_args: List[str]) -> T:
+    args = Parser(arg_type).parse_args(raw_args)
+    assert isinstance(args, arg_type)
+    return args

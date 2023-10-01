@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import inspect
 import sys
 from argparse import ArgumentParser as ArgparseParser
 from typing import (
@@ -49,7 +50,15 @@ class Binding:
         if not hasattr(func, "__annotations__"):
             raise ValueError(f"Function {func.__name__} misses type annotations.")
 
-        annotations = get_type_hints(func)
+        # https://docs.python.org/3/library/inspect.html#inspect.currentframe
+        frame = inspect.currentframe()
+        try:
+            if frame is not None and frame.f_back is not None:
+                annotations = get_type_hints(func, localns=frame.f_back.f_locals)
+            else:
+                annotations = get_type_hints(func)
+        finally:
+            del frame
 
         if len(annotations) == 0:
             raise ValueError(f"Type annotations of {func.__name__} are empty.")
