@@ -6,6 +6,7 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
+    Tuple,
     TypeVar,
     Union,
     overload,
@@ -25,7 +26,7 @@ class Arg(NamedTuple):
     type: Optional[Callable[[str], object]]
     nargs: Optional[NArgs]
     help: Optional[str]
-    metavar: Optional[str]
+    metavar: Optional[Union[str, Tuple[str, ...]]]
     auto_default_help: bool
 
     def has_default(self) -> bool:
@@ -65,8 +66,7 @@ def arg(
     metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     default: T,
-) -> T:
-    ...
+) -> T: ...
 
 
 @overload
@@ -77,8 +77,7 @@ def arg(
     metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], T]],
-) -> T:
-    ...
+) -> T: ...
 
 
 @overload
@@ -89,8 +88,7 @@ def arg(
     metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
-) -> T:
-    ...
+) -> T: ...
 
 
 @overload
@@ -101,8 +99,7 @@ def arg(
     metavar: Optional[str] = ...,
     auto_default_help: bool = ...,
     type: Callable[[str], T],
-) -> T:
-    ...
+) -> T: ...
 
 
 # Same for nargs
@@ -113,12 +110,11 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
-    metavar: Optional[str] = ...,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = ...,
     auto_default_help: bool = ...,
     default: Sequence[T],
     nargs: NArgs,
-) -> List[T]:
-    ...
+) -> List[T]: ...
 
 
 @overload
@@ -126,12 +122,11 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
-    metavar: Optional[str] = ...,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = ...,
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], Sequence[T]]],
     nargs: NArgs,
-) -> List[T]:
-    ...
+) -> List[T]: ...
 
 
 @overload
@@ -139,12 +134,11 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
-    metavar: Optional[str] = ...,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = ...,
     auto_default_help: bool = ...,
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     nargs: NArgs,
-) -> List[T]:
-    ...
+) -> List[T]: ...
 
 
 @overload
@@ -152,12 +146,11 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
-    metavar: Optional[str] = ...,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = ...,
     auto_default_help: bool = ...,
     type: Callable[[str], T],
     nargs: NArgs,
-) -> List[T]:
-    ...
+) -> List[T]: ...
 
 
 # Overloads for cases with two 'type revealing' field set
@@ -172,8 +165,7 @@ def arg(
     auto_default_help: bool = ...,
     default: T,
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
-) -> T:
-    ...
+) -> T: ...
 
 
 @overload
@@ -185,8 +177,7 @@ def arg(
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], T]],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
-) -> T:
-    ...
+) -> T: ...
 
 
 @overload
@@ -198,8 +189,7 @@ def arg(
     auto_default_help: bool = ...,
     default: T,
     type: Callable[[str], T],
-) -> T:
-    ...
+) -> T: ...
 
 
 @overload
@@ -211,8 +201,7 @@ def arg(
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], T]],
     type: Callable[[str], T],
-) -> T:
-    ...
+) -> T: ...
 
 
 @overload
@@ -224,8 +213,7 @@ def arg(
     auto_default_help: bool = ...,
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     type: Callable[[str], T],
-) -> T:
-    ...
+) -> T: ...
 
 
 # Same for nargs
@@ -236,13 +224,12 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
-    metavar: Optional[str] = ...,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = ...,
     auto_default_help: bool = ...,
     default: Sequence[T],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     nargs: NArgs,
-) -> List[T]:
-    ...
+) -> List[T]: ...
 
 
 @overload
@@ -250,13 +237,12 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
-    metavar: Optional[str] = ...,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = ...,
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], Sequence[T]]],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     nargs: NArgs,
-) -> List[T]:
-    ...
+) -> List[T]: ...
 
 
 @overload
@@ -264,13 +250,12 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
-    metavar: Optional[str] = ...,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = ...,
     auto_default_help: bool = ...,
     default: Sequence[T],
     type: Callable[[str], T],
     nargs: NArgs,
-) -> List[T]:
-    ...
+) -> List[T]: ...
 
 
 @overload
@@ -278,13 +263,12 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
-    metavar: Optional[str] = ...,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = ...,
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], Sequence[T]]],
     type: Callable[[str], T],
     nargs: NArgs,
-) -> List[T]:
-    ...
+) -> List[T]: ...
 
 
 @overload
@@ -292,13 +276,12 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
-    metavar: Optional[str] = ...,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = ...,
     auto_default_help: bool = ...,
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     type: Callable[[str], T],
     nargs: NArgs,
-) -> List[T]:
-    ...
+) -> List[T]: ...
 
 
 # Overloads for cases with three 'type revealing' field set
@@ -314,8 +297,7 @@ def arg(
     default: T,
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     type: Callable[[str], T],
-) -> T:
-    ...
+) -> T: ...
 
 
 @overload
@@ -328,8 +310,7 @@ def arg(
     dynamic_default: Optional[Callable[[], T]],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     type: Callable[[str], T],
-) -> T:
-    ...
+) -> T: ...
 
 
 # Same for nargs
@@ -340,14 +321,13 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
-    metavar: Optional[str] = ...,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = ...,
     auto_default_help: bool = ...,
     default: Sequence[T],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     type: Callable[[str], T],
     nargs: NArgs,
-) -> List[T]:
-    ...
+) -> List[T]: ...
 
 
 @overload
@@ -355,14 +335,13 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
-    metavar: Optional[str] = ...,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = ...,
     auto_default_help: bool = ...,
     dynamic_default: Optional[Callable[[], Sequence[T]]],
     dynamic_choices: Optional[Callable[[], Sequence[T]]],
     type: Callable[[str], T],
     nargs: NArgs,
-) -> List[T]:
-    ...
+) -> List[T]: ...
 
 
 # Any fallback
@@ -373,10 +352,9 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
-    metavar: Optional[str] = ...,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = ...,
     auto_default_help: bool = ...,
-) -> Any:
-    ...
+) -> Any: ...
 
 
 @overload
@@ -384,11 +362,10 @@ def arg(
     *flags: str,
     positional: bool = ...,
     help: Optional[str] = ...,
-    metavar: Optional[str] = ...,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = ...,
     auto_default_help: bool = ...,
     nargs: NArgs,
-) -> List[Any]:
-    ...
+) -> List[Any]: ...
 
 
 # Impl
@@ -398,7 +375,7 @@ def arg(
     *flags: str,
     positional: bool = False,
     help: Optional[str] = None,
-    metavar: Optional[str] = None,
+    metavar: Optional[Union[str, Tuple[str, ...]]] = None,
     auto_default_help: bool = True,
     nargs: Optional[NArgs] = None,
     default: Optional[object] = None,
