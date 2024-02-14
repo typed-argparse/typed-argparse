@@ -24,6 +24,7 @@ from ._argparse_abstractions import (
     FormatterClass,
     create_argparse_parser,
 )
+from .actions import NamedTupleAction
 from .arg import Arg
 from .arg import arg as make_arg
 from .choices import Choices
@@ -533,7 +534,25 @@ def _build_add_argument_args(
 
         if arg.metavar is not None:
             raise RuntimeError("Cannot set metavar for boolean argument")
+    elif annotation.is_namedtuple:
+        kwargs["action"] = NamedTupleAction
 
+        if arg.type is not None:
+            kwargs["type"] = arg.type
+        else:
+            type_converter = annotation.get_underlying_type_converter()
+            if type_converter is not None:
+                kwargs["type"] = type_converter
+
+        if arg.has_default():
+            default_value = arg.resolve_default()
+            kwargs["default"] = default_value
+
+        if arg.positional:
+            raise RuntimeError("Positional nameduple argument not supported")
+
+        if arg.metavar is not None:
+            raise RuntimeError("Cannot set metavar for namedtuple argument")
     else:
         # We must not declare 'type' for boolean switches, which have an action instead.
         if arg.type is not None:
