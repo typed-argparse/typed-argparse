@@ -14,6 +14,7 @@ from ._testing_utils import (
     argparse_error,
     compare_verbose,
     pre_python_3_10,
+    remove_ansii_escape_sequences,
     starting_with_python_3_10,
 )
 
@@ -831,8 +832,8 @@ def test_defaults_in_help_text__on_by_default(capsys: pytest.CaptureFixture[str]
     with pytest.raises(SystemExit):
         parser.parse_args(["-h"])
 
-    captured = capsys.readouterr()
-    assert captured.out == textwrap.dedent(
+    captured_help = remove_ansii_escape_sequences(capsys.readouterr().out)
+    assert captured_help == textwrap.dedent(
         """\
         usage: pytest [-h] [--epsilon EPSILON]
 
@@ -852,8 +853,8 @@ def test_defaults_in_help_text__off_if_desired(capsys: pytest.CaptureFixture[str
     with pytest.raises(SystemExit):
         parser.parse_args(["-h"])
 
-    captured = capsys.readouterr()
-    assert captured.out == textwrap.dedent(
+    captured = remove_ansii_escape_sequences(capsys.readouterr().out)
+    assert captured == textwrap.dedent(
         """\
         usage: pytest [-h] [--epsilon EPSILON]
 
@@ -881,9 +882,9 @@ def test_formatter_class_support(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit):
         parser.parse_args(["-h"])
 
-    captured = capsys.readouterr()
+    captured = remove_ansii_escape_sequences(capsys.readouterr().out)
     compare_verbose(
-        captured.out,
+        captured,
         textwrap.dedent(
             """\
             usage: pytest [-h] --foo FOO
@@ -917,8 +918,8 @@ def test_metavars_in_help_text(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit):
         parser.parse_args(["-h"])
 
-    captured = capsys.readouterr()
-    assert captured.out == textwrap.dedent(
+    captured_help = remove_ansii_escape_sequences(capsys.readouterr().out)
+    assert captured_help == textwrap.dedent(
         """\
         usage: pytest [-h] [--epsilon E]
 
@@ -956,8 +957,8 @@ def test_forwarding_of_argparse_kwargs(capsys: pytest.CaptureFixture[str]) -> No
     with pytest.raises(SystemExit):
         parser.parse_args(["-h"])
 
-    captured = capsys.readouterr()
-    assert captured.out == textwrap.dedent(
+    captured = remove_ansii_escape_sequences(capsys.readouterr().out)
+    assert captured == textwrap.dedent(
         """\
         usage: my_usage
 
