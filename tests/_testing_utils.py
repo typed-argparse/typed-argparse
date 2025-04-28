@@ -1,4 +1,5 @@
 import argparse
+import re
 import sys
 from contextlib import contextmanager
 from typing import Generator, Optional
@@ -49,3 +50,14 @@ def argparse_error() -> Generator[ArgparseErrorWrapper, None, None]:
 
     assert isinstance(e.value.__context__, argparse.ArgumentError)
     wrapper.error = e.value.__context__
+
+
+def remove_ansii_escape_sequences(s: str) -> str:
+    """Return the string with all ANSI escape sequences removed."""
+
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    #                          ^^A^   ^^^^B^^^^ ^^^^C^^^^^^^^^^^^^^
+    # A: ESC character which starts ANSI sequences
+    # B: single character command, like ESC E (next line)
+    # C: control sequence command, starts with ESC [, like \x1b[31m for red
+    return ansi_escape.sub("", s)

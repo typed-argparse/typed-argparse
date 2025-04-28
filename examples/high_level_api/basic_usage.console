@@ -6,7 +6,7 @@ usage: basic_usage.py [-h] --my-arg MY_ARG [--number-a NUMBER_A]
 optional arguments:
   -h, --help            show this help message and exit
   --my-arg MY_ARG       some help
-  --number-a NUMBER_A   some help [default: 42]
+  --number-a NUMBER_A   some help [90m[default: 42][39m
   --number-b NUMBER_B   some help
   --verbose             some help
   --names [NAMES [NAMES ...]]

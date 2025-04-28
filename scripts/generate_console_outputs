@@ -2,7 +2,9 @@
 
 cd $(dirname $0)/..
 
-python examples/generate_console_outputs.py
+script=examples/generate_console_outputs.py
+
+python $script
 
 git_status=$(git status --porcelain)
 
@@ -10,7 +12,7 @@ if [ -z "$git_status" ]; then
   echo -e "\nGit status: clean"
   exit 0
 else
-  echo -e "\nGit status: dirty"
+  echo -e "\nGit status: dirty -- execution of $script differs from what was expected, see following diff"
   git status || true
   git diff || true
   exit 1
