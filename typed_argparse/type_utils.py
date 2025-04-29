@@ -1,7 +1,7 @@
 import sys
 import types
 from enum import Enum
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, NamedTuple
 from typing import Literal as LiteralFromTyping
 from typing import Optional, Tuple, Type, TypeVar, Union, cast, get_type_hints
 
@@ -82,6 +82,14 @@ class TypeAnnotation:
     @property
     def is_bool(self) -> bool:
         return self.raw_type is bool
+
+    @property
+    def is_namedtuple(self) -> bool:
+        orig_bases = getattr(self.raw_type, '__orig_bases__', None)
+        if orig_bases:
+            return NamedTuple in orig_bases
+        else:
+            return False
 
     def get_underlying_type_converter(self) -> Optional[Union[type, Callable[[str], object]]]:
         if isinstance(self.raw_type, type) and not issubclass(self.raw_type, Enum):
