@@ -429,11 +429,17 @@ def test_enum__basics(use_literal_enum: bool) -> None:
             def __repr__(self) -> str:
                 return self.name
 
+            def __str__(self) -> str:
+                return self.name
+
         class IntEnum(Enum):  # pyright: ignore
             a = 1
             b = 2
 
             def __repr__(self) -> str:
+                return self.name
+
+            def __str__(self) -> str:
                 return self.name
 
     else:
@@ -445,11 +451,17 @@ def test_enum__basics(use_literal_enum: bool) -> None:
             def __repr__(self) -> str:
                 return self.name
 
+            def __str__(self) -> str:
+                return self.name
+
         class IntEnum(int, Enum):  # type: ignore
             a = 1
             b = 2
 
             def __repr__(self) -> str:
+                return self.name
+
+            def __str__(self) -> str:
                 return self.name
 
     class Args(TypedArgs):
