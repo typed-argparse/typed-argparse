@@ -1,4 +1,5 @@
 import argparse
+import sys
 from typing import List, Optional, Type, TypeVar, overload
 
 import typed_argparse as tap
@@ -332,6 +333,16 @@ def test_eq__well_behaved() -> None:
 
 def test_check_reserved_names() -> None:
     fields_class = set(TypedArgs.__dict__)
+    assert sys.version_info.major == 3
+    version_dependent_data_model_fields = []
+    if sys.version_info.minor >= 13:
+        version_dependent_data_model_fields.extend(
+            [
+                "__static_attributes__",
+                "__firstlineno__",
+            ]
+        )
+
     assert fields_class == {
         "__dataclass_transform__",
         "__dict__",
@@ -346,4 +357,5 @@ def test_check_reserved_names() -> None:
         "__weakref__",
         "from_argparse",
         "get_choices_from",
+        *version_dependent_data_model_fields,
     }
