@@ -68,7 +68,9 @@ jobs:
         # https://github.com/codecov/codecov-action
         uses: codecov/codecov-action@v3
         with:
-          fail_ci_if_error: true
+          # TODO: configure codecov appropriately or provide token here, then set
+          #fail_ci_if_error: true
+          fail_ci_if_error: false
 
 
   deploy-pypi:
