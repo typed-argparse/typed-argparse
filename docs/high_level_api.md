@@ -175,6 +175,9 @@ If the default `__str__` method of the enum is used, the help output will not di
 A simple solution is hence to overwrite `__str__` so that the value is printed.
 (Note: From Python 3.11 onwards, the `StrEnum` class does that automatically.)
 
+For Python versions *prior to 3.12* it also makes sense to overwrite `__repr__` to
+print the value, as `repr` is used to generate the error output.
+
 
 ```python title="enum_arguments.py"
 --8<-- "examples/high_level_api/enum_arguments.py"
