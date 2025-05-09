@@ -39,13 +39,17 @@ def test_traverse_get_type_mapping__basic() -> None:
 
 
 def test_traverse_get_type_mapping__nested() -> None:
-    class FooXA(TypedArgs): ...
+    class FooXA(TypedArgs):
+        ...
 
-    class FooXB(TypedArgs): ...
+    class FooXB(TypedArgs):
+        ...
 
-    class FooY(TypedArgs): ...
+    class FooY(TypedArgs):
+        ...
 
-    class Bar(TypedArgs): ...
+    class Bar(TypedArgs):
+        ...
 
     group = SubParserGroup(
         SubParser(
@@ -121,13 +125,17 @@ def test_subparser__basic() -> None:
 
 
 def test_subparser__nested() -> None:
-    class FooXA(TypedArgs): ...
+    class FooXA(TypedArgs):
+        ...
 
-    class FooXB(TypedArgs): ...
+    class FooXB(TypedArgs):
+        ...
 
-    class FooY(TypedArgs): ...
+    class FooY(TypedArgs):
+        ...
 
-    class Bar(TypedArgs): ...
+    class Bar(TypedArgs):
+        ...
 
     parser = Parser(
         SubParserGroup(
@@ -391,9 +399,11 @@ def test_subparsers_common_args__subparser_after_positional() -> None:
     class CommonArgs(TypedArgs):
         service: Literal["foo", "bar"] = arg(positional=True)
 
-    class StartArgs(CommonArgs): ...
+    class StartArgs(CommonArgs):
+        ...
 
-    class StopArgs(CommonArgs): ...
+    class StopArgs(CommonArgs):
+        ...
 
     parser = Parser(
         SubParserGroup(
@@ -425,16 +435,22 @@ def test_subparsers_common_args__subparser_after_positional() -> None:
         # python 3.12 onwards changed the formatting output, see https://github.com/python/cpython/issues/86357
         expected_error_start = "argument service: invalid choice: 'start' (choose from foo, bar)"
     else:
-        expected_error_start = "argument service: invalid choice: 'start' (choose from 'foo', 'bar')"
+        expected_error_start = (
+            "argument service: invalid choice: 'start' (choose from 'foo', 'bar')"
+        )
     assert expected_error_start in str(e.error)
 
     with argparse_error() as e:
         parser.parse_args(["invalid", "start"])
 
     if sys.version_info >= (3, 12):
-        expected_error_invalid = "argument service: invalid choice: 'invalid' (choose from foo, bar)"
+        expected_error_invalid = (
+            "argument service: invalid choice: 'invalid' (choose from foo, bar)"
+        )
     else:
-        expected_error_invalid = "argument service: invalid choice: 'invalid' (choose from 'foo', 'bar')"
+        expected_error_invalid = (
+            "argument service: invalid choice: 'invalid' (choose from 'foo', 'bar')"
+        )
     assert expected_error_invalid in str(e.error)
 
 
@@ -442,11 +458,14 @@ def test_subparsers_common_args__subparser_after_positional() -> None:
 
 
 def test_subparsers_executable_mapping_behavior() -> None:
-    class CommonArgs(TypedArgs): ...
+    class CommonArgs(TypedArgs):
+        ...
 
-    class FooArgs(CommonArgs): ...
+    class FooArgs(CommonArgs):
+        ...
 
-    class BarArgs(CommonArgs): ...
+    class BarArgs(CommonArgs):
+        ...
 
     num_run_common = 0
     num_run_foo = 0
@@ -529,9 +548,11 @@ def test_bindings_check() -> None:
         )
     )
 
-    def foo(foo_args: FooArgs) -> None: ...
+    def foo(foo_args: FooArgs) -> None:
+        ...
 
-    def bar(bar_args: BarArgs) -> None: ...
+    def bar(bar_args: BarArgs) -> None:
+        ...
 
     parser.bind(Binding(FooArgs, foo), Binding(BarArgs, bar))
     parser.bind(foo, bar)
@@ -574,7 +595,8 @@ def test_bindings_check() -> None:
     with pytest.raises(ValueError) as e:
         parser.bind(func_with_wrong_first_arg_2)
     assert (
-        "Expected first argument of func_with_wrong_first_arg_2 to be of type 'type' " "but got typing.Union[str, int]."
+        "Expected first argument of func_with_wrong_first_arg_2 to be of type 'type' "
+        "but got typing.Union[str, int]."
     ) == str(e.value)
 
 

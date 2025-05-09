@@ -347,7 +347,9 @@ def test_dynamic_defaults__mutual_exclusiveness_check() -> None:
 
     with pytest.raises(AssertionError) as e:
         parse(Args, [])
-    assert str(e.value) == "default and dynamic_default are mutually exclusive. Please specify either."
+    assert (
+        str(e.value) == "default and dynamic_default are mutually exclusive. Please specify either."
+    )
 
 
 # Dynamic choices
