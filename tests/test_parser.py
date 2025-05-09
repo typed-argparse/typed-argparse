@@ -1,4 +1,5 @@
 import argparse
+import sys
 import textwrap
 from enum import Enum
 from pathlib import Path
@@ -346,9 +347,7 @@ def test_dynamic_defaults__mutual_exclusiveness_check() -> None:
 
     with pytest.raises(AssertionError) as e:
         parse(Args, [])
-    assert (
-        str(e.value) == "default and dynamic_default are mutually exclusive. Please specify either."
-    )
+    assert str(e.value) == "default and dynamic_default are mutually exclusive. Please specify either."
 
 
 # Dynamic choices
@@ -365,7 +364,12 @@ def test_dynamic_choices() -> None:
 
     with argparse_error() as e:
         parse(Args, ["--foo", "x"])
-    assert "argument --foo: invalid choice: 'x' (choose from 'a', 'b')" == str(e.error)
+    if sys.version_info >= (3, 12):
+        # python 3.12 onwards changed the formatting output, see https://github.com/python/cpython/issues/86357
+        expected_error = "argument --foo: invalid choice: 'x' (choose from a, b)"
+    else:
+        expected_error = "argument --foo: invalid choice: 'x' (choose from 'a', 'b')"
+    assert expected_error == str(e.error)
 
 
 # Literals
@@ -382,7 +386,12 @@ def test_literal__basics() -> None:
 
     with argparse_error() as e:
         parse(Args, ["--literal-string", "c", "--literal-int", "1"])
-    assert "argument --literal-string: invalid choice: 'c' (choose from 'a', 'b')" == str(e.error)
+    if sys.version_info >= (3, 12):
+        # python 3.12 onwards changed the formatting output, see https://github.com/python/cpython/issues/86357
+        expected_error = "argument --literal-string: invalid choice: 'c' (choose from a, b)"
+    else:
+        expected_error = "argument --literal-string: invalid choice: 'c' (choose from 'a', 'b')"
+    assert expected_error == str(e.error)
 
     with argparse_error() as e:
         parse(Args, ["--literal-string", "a", "--literal-int", "3"])
@@ -420,49 +429,75 @@ def test_literal__fuzzy_matching() -> None:
 
 @pytest.mark.parametrize("use_literal_enum", [False, True])
 def test_enum__basics(use_literal_enum: bool) -> None:
-    if not use_literal_enum:
+    if sys.version_info >= (3, 12):
+        # python 3.12 and higher uses str to format enum choices if the wrong argument is supplied
 
-        class StrEnum(Enum):  # pyright: ignore
-            a = "a-value"
-            b = "b-value"
+        if not use_literal_enum:
 
-            def __repr__(self) -> str:
-                return self.name
+            class StrEnum(Enum):  # pyright: ignore
+                a = "a-value"
+                b = "b-value"
 
-            def __str__(self) -> str:
-                return self.name
+                def __str__(self) -> str:
+                    return self.name
 
-        class IntEnum(Enum):  # pyright: ignore
-            a = 1
-            b = 2
+            class IntEnum(Enum):  # pyright: ignore
+                a = 1
+                b = 2
 
-            def __repr__(self) -> str:
-                return self.name
+                def __str__(self) -> str:
+                    return self.name
 
-            def __str__(self) -> str:
-                return self.name
+        else:
+
+            class StrEnum(str, Enum):  # type: ignore
+                a = "a-value"
+                b = "b-value"
+
+                def __str__(self) -> str:
+                    return self.name
+
+            class IntEnum(int, Enum):  # type: ignore
+                a = 1
+                b = 2
+
+                def __str__(self) -> str:
+                    return self.name
 
     else:
+        # python 3.11 and lower uses repr to format enum choices if the wrong argument is supplied
 
-        class StrEnum(str, Enum):  # type: ignore
-            a = "a-value"
-            b = "b-value"
+        if not use_literal_enum:
 
-            def __repr__(self) -> str:
-                return self.name
+            class StrEnum(Enum):  # pyright: ignore
+                a = "a-value"
+                b = "b-value"
 
-            def __str__(self) -> str:
-                return self.name
+                def __repr__(self) -> str:
+                    return self.name
 
-        class IntEnum(int, Enum):  # type: ignore
-            a = 1
-            b = 2
+            class IntEnum(Enum):  # pyright: ignore
+                a = 1
+                b = 2
 
-            def __repr__(self) -> str:
-                return self.name
+                def __repr__(self) -> str:
+                    return self.name
 
-            def __str__(self) -> str:
-                return self.name
+        else:
+
+            class StrEnum(str, Enum):  # type: ignore
+                a = "a-value"
+                b = "b-value"
+
+                def __repr__(self) -> str:
+                    return self.name
+
+            class IntEnum(int, Enum):  # type: ignore
+                a = 1
+                b = 2
+
+                def __repr__(self) -> str:
+                    return self.name
 
     class Args(TypedArgs):
         enum_string: StrEnum
