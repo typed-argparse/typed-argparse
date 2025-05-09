@@ -1,3 +1,4 @@
+import sys
 from typing import Union
 
 import pytest
@@ -430,11 +431,27 @@ def test_subparsers_common_args__subparser_after_positional() -> None:
 
     with argparse_error() as e:
         parser.parse_args(["start"])
-    assert "argument service: invalid choice: 'start' (choose from 'foo', 'bar')" in str(e.error)
+    if sys.version_info >= (3, 12):
+        # python 3.12 onwards changed the formatting output, see https://github.com/python/cpython/issues/86357
+        expected_error_start = "argument service: invalid choice: 'start' (choose from foo, bar)"
+    else:
+        expected_error_start = (
+            "argument service: invalid choice: 'start' (choose from 'foo', 'bar')"
+        )
+    assert expected_error_start in str(e.error)
 
     with argparse_error() as e:
         parser.parse_args(["invalid", "start"])
-    assert "argument service: invalid choice: 'invalid' (choose from 'foo', 'bar')" in str(e.error)
+
+    if sys.version_info >= (3, 12):
+        expected_error_invalid = (
+            "argument service: invalid choice: 'invalid' (choose from foo, bar)"
+        )
+    else:
+        expected_error_invalid = (
+            "argument service: invalid choice: 'invalid' (choose from 'foo', 'bar')"
+        )
+    assert expected_error_invalid in str(e.error)
 
 
 # Subparsers executable mapping behavior
