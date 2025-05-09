@@ -518,7 +518,7 @@ def test_subparsers_executable_mapping_behavior() -> None:
     assert "Incomplete bindings: There is no binding for type 'CommonArgs'." == str(e.value)
 
     with pytest.raises(ValueError) as e:
-        parser.bind_lazy(lambda: [run_foo, run_bar]).run([])
+        parser.bind_lazy(lambda: [run_foo, run_bar]).run([])  # type: ignore[arg-type, return-value]
     assert "Incomplete bindings: There is no binding for type 'CommonArgs'." == str(e.value)
 
     parser.bind(run_common, run_foo, run_bar).run([])
