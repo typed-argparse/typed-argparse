@@ -40,12 +40,12 @@ T = TypeVar("T", bound=TypedArgs)
 # mismatch. Also, annotating the generics below in the usages felt awkward. This is probably a
 # case where we want type erasure.
 class Binding:
-    def __init__(self, arg_type: Type[T], func: Callable[[T], None]):
+    def __init__(self, arg_type: Type[T], func: Callable[[T], Any]):
         self.arg_type: Type[TypedArgs] = arg_type
-        self.func: Callable[[Any], None] = func
+        self.func: Callable[[Any], Any] = func
 
     @staticmethod
-    def from_func(func: Callable[[Any], None]) -> Binding:
+    def from_func(func: Callable[[Any], Any]) -> Binding:
         if not hasattr(func, "__annotations__"):
             raise ValueError(f"Function {func.__name__} misses type annotations.")
 
@@ -278,7 +278,7 @@ class App:
 
 ArgsOrGroup = Union[Type[TypedArgs], SubParserGroup]
 
-AnyBinding = Union[Binding, Callable[[Any], None]]
+AnyBinding = Union[Binding, Callable[[Any], Any]]
 Bindings = List[AnyBinding]
 LazyBindings = Callable[[], Bindings]
 EagerOrLazyBindings = Union[Bindings, LazyBindings]
