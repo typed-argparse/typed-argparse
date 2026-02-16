@@ -1,7 +1,7 @@
 import argparse
 import re
 import sys
-from contextlib import contextmanager
+from contextlib import contextmanager, AbstractContextManager
 from typing import Generator, Optional
 
 import pytest
@@ -65,6 +65,18 @@ def argparse_error() -> Generator[ArgparseErrorWrapper, None, None]:
 
     assert isinstance(e.value.__context__, argparse.ArgumentError)
     wrapper.error = e.value.__context__
+
+
+def argparse_illegal_default() -> AbstractContextManager[object]:
+    # argparse >= python3.14 no longer checks `default` against `choices`
+    # see https://github.com/python/cpython/commit/dac4ec52866e4068f3ac33b4da1e1a1fe6fc2cba
+    err_kind: type[BaseException]
+    if sys.version_info.minor >= 14:
+        err_kind = TypeError
+    else:
+        err_kind = SystemExit
+
+    return pytest.raises(err_kind)
 
 
 def remove_ansii_escape_sequences(s: str) -> str:

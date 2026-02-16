@@ -14,6 +14,7 @@ from ._testing_utils import (
     ARGPARSE_CHOICES_UNQUOTED,
     ARGPARSE_QUOTES_ALL_CHOICES,
     argparse_error,
+    argparse_illegal_default,
     compare_verbose,
     pre_python_3_10,
     remove_ansii_escape_sequences,
@@ -789,7 +790,7 @@ def test_nargs_with_choices__literal_illegal_default() -> None:
     class Args(TypedArgs):
         actions: List[Actions] = arg(positional=True, default=["a", "b", "c"])  # type: ignore
 
-    with argparse_error():
+    with argparse_illegal_default():
         parse(Args, [])
 
 
@@ -822,7 +823,7 @@ def test_nargs_with_choices__enum_illegal_default() -> None:
             default=[Actions.a, Actions.b, "c"],  # type: ignore
         )
 
-    with argparse_error():
+    with argparse_illegal_default():
         parse(Args, [])
 
 

@@ -342,6 +342,13 @@ def test_check_reserved_names() -> None:
                 "__firstlineno__",
             ]
         )
+    if sys.version_info.minor >= 14:
+        version_dependent_data_model_fields.extend(
+            [
+                "__annotate_func__",
+                "__annotations_cache__",
+            ]
+        )
 
     assert fields_class == {
         "__dataclass_transform__",

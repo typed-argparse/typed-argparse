@@ -3,7 +3,7 @@ import types
 from enum import Enum
 from typing import Callable, Dict, List
 from typing import Literal as LiteralFromTyping
-from typing import Optional, Tuple, Type, TypeVar, Union, cast, get_type_hints
+from typing import Optional, Tuple, TypeVar, Union, cast, get_type_hints
 
 from typing_extensions import Literal
 
@@ -97,7 +97,7 @@ class TypeAnnotation:
             allowed_values_if_literal = self.get_allowed_values_if_literal()
             if allowed_values_if_literal is not None:
                 allowed_values = allowed_values_if_literal
-                return _create_literal_type_converter(allowed_values)
+                return _create_choices_type_converter(allowed_values)
 
             allowed_values_if_enum = self.get_allowed_values_if_enum()
             if (
@@ -106,8 +106,7 @@ class TypeAnnotation:
                 and issubclass(self.raw_type, Enum)
             ):
                 allowed_values = allowed_values_if_enum
-                enum_type: Type[Enum] = self.raw_type
-                return _create_enum_type_converter(allowed_values, enum_type)
+                return _create_choices_type_converter(allowed_values)
 
             return None
 
@@ -261,7 +260,7 @@ def assert_not_none(x: Optional[T]) -> T:
     return x
 
 
-def _create_literal_type_converter(allowed_values: Tuple[object, ...]) -> Callable[[str], object]:
+def _create_choices_type_converter(allowed_values: Tuple[object, ...]) -> Callable[[str], object]:
     def converter(x: str) -> object:
 
         for allowed_value in allowed_values:
@@ -277,40 +276,24 @@ def _create_literal_type_converter(allowed_values: Tuple[object, ...]) -> Callab
 
         # Here we could raise a TypeError or ValueError, but it looks like relying
         # on `choices` instead actually produces a better error message.
-        return x
-
-    return converter
-
-
-def _create_enum_type_converter(
-    allowed_values: Tuple[Enum, ...], enum_type: Type[Enum]
-) -> Callable[[str], object]:
-    def converter(x: str) -> object:
-
-        for allowed_value in allowed_values:
-            assert isinstance(allowed_value, Enum)
-            if _fuzzy_compare(x, allowed_value.name):
-                return allowed_value
-            else:
-                if _fuzzy_compare(x, allowed_value.value):
-                    return allowed_value
-                else:
-                    try:
-                        x_converted = type(allowed_value.value)(x)
-                        if _fuzzy_compare(x_converted, allowed_value.value):
-                            return allowed_value
-                    except (ValueError, TypeError):
-                        pass
-
-        # Here we could raise a TypeError or ValueError, but it looks like relying
-        # on `choices` instead actually produces a better error message.
+        #
+        # XXX: no longer true for default values since 3.14
+        # see https://github.com/python/cpython/commit/dac4ec52866e4068f3ac33b4da1e1a1fe6fc2cba
         return x
 
     return converter
 
 
 def _fuzzy_compare(a: object, b: object) -> bool:
+    if isinstance(b, Enum):
+        return a == b or _fuzzy_compare(a, b.name) or _fuzzy_compare(a, b.value)
+
+    if isinstance(a, int):
+        a = str(a)
+    if isinstance(b, int):
+        b = str(b)
+
     if isinstance(a, str) and isinstance(b, str):
         return a.lower().replace("-", "_") == b.lower().replace("-", "_")
-    else:
-        return a == b
+
+    return a == b
