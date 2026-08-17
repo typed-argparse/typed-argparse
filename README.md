@@ -77,3 +77,7 @@ See [change log](CHANGES.md).
 ## License
 
 This project is licensed under the terms of the [MIT license](LICENSE).
+
+## Develop
+
+Project uses [uv](https://github.com/astral-sh/uv) for dependency management, to install development environment simply run `uv sync`. `uv run $SCRIPT` will also automatically sync dependencies based on current pyproject.toml/uv.lock.
