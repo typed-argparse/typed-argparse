@@ -1,3 +1,3 @@
 #!/bin/bash -eux
 
-black --check .
+uv run black --check .

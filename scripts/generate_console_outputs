@@ -4,7 +4,7 @@ cd $(dirname $0)/..
 
 script=examples/generate_console_outputs.py
 
-python $script
+uv run $script
 
 git_status=$(git status --porcelain)
 

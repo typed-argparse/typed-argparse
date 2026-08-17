@@ -1,7 +1,0 @@
-black<23 # waiting for https://github.com/psf/black/issues/3551
-flake8
-mypy
-pytest
-pytest-cov
-types-PyYAML
-pyyaml

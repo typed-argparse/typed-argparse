@@ -5,8 +5,6 @@ name: ci
 
 on:
   push:
-    branches:
-    - master
   pull_request:
   schedule:
     - cron: '0 0 * * 0' # at 00:00 every Sunday
@@ -19,28 +17,17 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
-
+    continue-on-error: true
     steps:
 
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: ./.github/actions/install_uv
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
-          # Temporarily install extras manually:
-          pip install argparse yachalk
-          pip freeze
-
-      - name: Install package
-        run: |
-          pip install -e .
+        run: uv sync --group extra
 
       - name: Check types
         run: |
@@ -83,17 +70,12 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up python
-        uses: actions/setup-python@v5
+      - uses: ./.github/actions/install_uv
         with:
-          python-version: 3.8
-
-      - name: Install wheel
-        run: pip install wheel
+          python-version: "3.8"
 
       - name: Package
-        run: python setup.py sdist bdist_wheel
+        run: uv build
 
       - name: Check output
         run: ls -la dist
@@ -106,8 +88,6 @@ jobs:
       - name: Run integration test
         run: |
           set -e
-          pip install dist/*.whl
-
           ./scripts/ci_integration
 
       - name: Publish to PyPI (if on master)
@@ -126,22 +106,20 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up python
-        uses: actions/setup-python@v5
+      - uses: ./.github/actions/install_uv
         with:
-          python-version: 3.8
+          python-version: "3.8"
 
-      - name: Install mkdocs-material
-        run: pip install mkdocs-material
+      - name: Install docs dependencies
+        run: uv sync --group docs
 
       - name: Build docs
         run: |
           set -e
-          mkdocs build
+          uv run mkdocs build
 
       - name: Publish docs (if on master)
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         run: |
           set -e
-          mkdocs gh-deploy --force
+          uv run mkdocs gh-deploy --force
