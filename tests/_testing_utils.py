@@ -16,6 +16,21 @@ starting_with_python_3_10 = pytest.mark.skipif(
     reason="Test is Python version specific, requiring Python 3.10+",
 )
 
+# gh-117766 removed choice quoting; gh-130750 later restored it in maintained branches.
+# Initial issue: https://github.com/python/cpython/issues/86357
+# Issue on reverting: https://github.com/python/cpython/pull/149386
+_python_version = sys.version_info[:3]
+ARGPARSE_CHOICES_UNQUOTED = (
+    (3, 12, 8) <= _python_version < (3, 13)
+    or (3, 13, 1) <= _python_version < (3, 13, 14)
+    or (3, 14) <= _python_version < (3, 14, 5)
+)
+ARGPARSE_QUOTES_ALL_CHOICES = (3, 13, 14) <= _python_version < (3, 14) or _python_version >= (
+    3,
+    14,
+    5,
+)
+
 
 def compare_verbose(actual: str, expected: str) -> None:
 

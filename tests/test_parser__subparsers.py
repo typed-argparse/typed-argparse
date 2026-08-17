@@ -1,4 +1,3 @@
-import sys
 from typing import Union
 
 import pytest
@@ -15,7 +14,7 @@ from typed_argparse import (
 )
 from typed_argparse.parser import _traverse_get_type_mapping
 
-from ._testing_utils import argparse_error
+from ._testing_utils import ARGPARSE_CHOICES_UNQUOTED, argparse_error
 
 # Direct tests of _traverse_get_type_mapping
 
@@ -431,8 +430,7 @@ def test_subparsers_common_args__subparser_after_positional() -> None:
 
     with argparse_error() as e:
         parser.parse_args(["start"])
-    if sys.version_info >= (3, 12):
-        # python 3.12 onwards changed the formatting output, see https://github.com/python/cpython/issues/86357
+    if ARGPARSE_CHOICES_UNQUOTED:
         expected_error_start = "argument service: invalid choice: 'start' (choose from foo, bar)"
     else:
         expected_error_start = (
@@ -443,7 +441,7 @@ def test_subparsers_common_args__subparser_after_positional() -> None:
     with argparse_error() as e:
         parser.parse_args(["invalid", "start"])
 
-    if sys.version_info >= (3, 12):
+    if ARGPARSE_CHOICES_UNQUOTED:
         expected_error_invalid = (
             "argument service: invalid choice: 'invalid' (choose from foo, bar)"
         )

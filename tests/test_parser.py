@@ -1,5 +1,4 @@
 import argparse
-import sys
 import textwrap
 from enum import Enum
 from pathlib import Path
@@ -12,6 +11,8 @@ from typed_argparse import Parser, TypedArgs, arg
 from typed_argparse.parser import Bindings
 
 from ._testing_utils import (
+    ARGPARSE_CHOICES_UNQUOTED,
+    ARGPARSE_QUOTES_ALL_CHOICES,
     argparse_error,
     compare_verbose,
     pre_python_3_10,
@@ -366,8 +367,7 @@ def test_dynamic_choices() -> None:
 
     with argparse_error() as e:
         parse(Args, ["--foo", "x"])
-    if sys.version_info >= (3, 12):
-        # python 3.12 onwards changed the formatting output, see https://github.com/python/cpython/issues/86357
+    if ARGPARSE_CHOICES_UNQUOTED:
         expected_error = "argument --foo: invalid choice: 'x' (choose from a, b)"
     else:
         expected_error = "argument --foo: invalid choice: 'x' (choose from 'a', 'b')"
@@ -388,8 +388,7 @@ def test_literal__basics() -> None:
 
     with argparse_error() as e:
         parse(Args, ["--literal-string", "c", "--literal-int", "1"])
-    if sys.version_info >= (3, 12):
-        # python 3.12 onwards changed the formatting output, see https://github.com/python/cpython/issues/86357
+    if ARGPARSE_CHOICES_UNQUOTED:
         expected_error = "argument --literal-string: invalid choice: 'c' (choose from a, b)"
     else:
         expected_error = "argument --literal-string: invalid choice: 'c' (choose from 'a', 'b')"
@@ -397,7 +396,11 @@ def test_literal__basics() -> None:
 
     with argparse_error() as e:
         parse(Args, ["--literal-string", "a", "--literal-int", "3"])
-    assert "argument --literal-int: invalid choice: '3' (choose from 1, 2)" == str(e.error)
+    if ARGPARSE_QUOTES_ALL_CHOICES:
+        expected_error = "argument --literal-int: invalid choice: '3' (choose from '1', '2')"
+    else:
+        expected_error = "argument --literal-int: invalid choice: '3' (choose from 1, 2)"
+    assert expected_error == str(e.error)
 
 
 def test_literal__fuzzy_matching() -> None:
@@ -431,8 +434,7 @@ def test_literal__fuzzy_matching() -> None:
 
 @pytest.mark.parametrize("use_literal_enum", [False, True])
 def test_enum__basics(use_literal_enum: bool) -> None:
-    if sys.version_info >= (3, 12):
-        # python 3.12 and higher uses str to format enum choices if the wrong argument is supplied
+    if ARGPARSE_CHOICES_UNQUOTED:
 
         if not use_literal_enum:
 
@@ -471,14 +473,14 @@ def test_enum__basics(use_literal_enum: bool) -> None:
 
         if not use_literal_enum:
 
-            class StrEnum(Enum):  # pyright: ignore
+            class StrEnum(Enum):  # type: ignore[no-redef]  # pyright: ignore
                 a = "a-value"
                 b = "b-value"
 
                 def __repr__(self) -> str:
                     return self.name
 
-            class IntEnum(Enum):  # pyright: ignore
+            class IntEnum(Enum):  # type: ignore[no-redef]  # pyright: ignore
                 a = 1
                 b = 2
 
@@ -517,11 +519,23 @@ def test_enum__basics(use_literal_enum: bool) -> None:
 
     with argparse_error() as e:
         parse(Args, ["--enum-string", "c", "--enum-int", "a"])
-    assert "argument --enum-string: invalid choice: 'c' (choose from a, b)" == str(e.error)  # noqa
+    if ARGPARSE_QUOTES_ALL_CHOICES:
+        expected_error = (
+            "argument --enum-string: invalid choice: 'c' (choose from 'StrEnum.a', 'StrEnum.b')"
+        )
+    else:
+        expected_error = "argument --enum-string: invalid choice: 'c' (choose from a, b)"
+    assert expected_error == str(e.error)  # noqa
 
     with argparse_error() as e:
         parse(Args, ["--enum-string", "a", "--enum-int", "c"])
-    assert "argument --enum-int: invalid choice: 'c' (choose from a, b)" == str(e.error)
+    if ARGPARSE_QUOTES_ALL_CHOICES:
+        expected_error = (
+            "argument --enum-int: invalid choice: 'c' (choose from 'IntEnum.a', 'IntEnum.b')"
+        )
+    else:
+        expected_error = "argument --enum-int: invalid choice: 'c' (choose from a, b)"
+    assert expected_error == str(e.error)
 
 
 @pre_python_3_10
