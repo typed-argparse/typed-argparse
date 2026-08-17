@@ -1,3 +1,5 @@
+exclude-newer = "7 days"
+
 [project]
 name = "typed-argparse"
 description = "Write type-safe and elegant CLIs with a clear separation of concerns."
