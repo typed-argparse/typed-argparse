@@ -1,4 +1,3 @@
-import sys
 import types
 from enum import Enum
 from typing import Callable, Dict, List
@@ -65,12 +64,7 @@ def _get_args(t: RawTypeAnnotation) -> Tuple[RawTypeAnnotation, ...]:
 
 
 def _is_union_type(t: RawTypeAnnotation) -> bool:
-    # types.UnionType only exists in Python 3.10+.
-    # https://docs.python.org/3/library/stdtypes.html#types-union
-    if sys.version_info >= (3, 10):
-        return isinstance(t, types.UnionType)
-    else:
-        return False
+    return isinstance(t, types.UnionType)
 
 
 class TypeAnnotation:
@@ -119,7 +113,6 @@ class TypeAnnotation:
         return None
 
     def get_underlying_if_list(self) -> Optional["TypeAnnotation"]:
-        # In Python 3.6 __origin__ was List; in Python 3.7+ __origin__ is list
         if self.origin is list and len(self.args) >= 1:
             return TypeAnnotation(self.args[0])
         return None

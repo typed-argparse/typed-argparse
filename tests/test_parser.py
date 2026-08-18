@@ -1,5 +1,3 @@
-import argparse
-import textwrap
 from enum import Enum
 from pathlib import Path
 from typing import List, Optional, Type, TypeVar, Union
@@ -15,10 +13,6 @@ from ._testing_utils import (
     ARGPARSE_QUOTES_ALL_CHOICES,
     argparse_error,
     argparse_illegal_default,
-    compare_verbose,
-    pre_python_3_10,
-    remove_ansii_escape_sequences,
-    starting_with_python_3_10,
 )
 
 T = TypeVar("T", bound=TypedArgs)
@@ -105,7 +99,6 @@ def test_path() -> None:
     assert args.path == Path("/my/path")
 
 
-@starting_with_python_3_10
 def test_variations_of_optionality() -> None:
     class Args(TypedArgs):
         traditional: Optional[int]
@@ -539,42 +532,6 @@ def test_enum__basics(use_literal_enum: bool) -> None:
     assert expected_error == str(e.error)
 
 
-@pre_python_3_10
-def test_enum__help_text(capsys: pytest.CaptureFixture[str]) -> None:
-    class StrEnum(Enum):
-        a = "a-value"
-        b = "b-value"
-
-        def __str__(self) -> str:
-            return self.name
-
-    class IntEnum(Enum):
-        a = 1
-        b = 2
-
-        def __str__(self) -> str:
-            return self.name
-
-    class Args(TypedArgs):
-        enum_string: StrEnum
-        enum_int: IntEnum
-
-    with pytest.raises(SystemExit):
-        Parser(Args).parse_args(["-h"])
-
-    captured = capsys.readouterr()
-    assert captured.out == textwrap.dedent(
-        """\
-        usage: pytest [-h] --enum-string {a,b} --enum-int {a,b}
-
-        optional arguments:
-          -h, --help           show this help message and exit
-          --enum-string {a,b}
-          --enum-int {a,b}
-        """
-    )
-
-
 @pytest.mark.parametrize("use_literal_enum", [False, True])
 def test_enum__fuzzy_matching(use_literal_enum: bool) -> None:
     if not use_literal_enum:
@@ -882,159 +839,6 @@ def test_parser_run__typical_lazy_syntax() -> None:
     Parser(Args).bind_lazy(make_bindings).run(["--verbose"])
 
     assert was_executed
-
-
-# Defaults in help text
-
-
-@pre_python_3_10
-def test_defaults_in_help_text__on_by_default(capsys: pytest.CaptureFixture[str]) -> None:
-    class Args(TypedArgs):
-        epsilon: float = arg(help="Some epsilon", default=0.1)
-
-    parser = Parser(Args)
-    with pytest.raises(SystemExit):
-        parser.parse_args(["-h"])
-
-    captured_help = remove_ansii_escape_sequences(capsys.readouterr().out)
-    assert captured_help == textwrap.dedent(
-        """\
-        usage: pytest [-h] [--epsilon EPSILON]
-
-        optional arguments:
-          -h, --help         show this help message and exit
-          --epsilon EPSILON  Some epsilon [default: 0.1]
-        """
-    )
-
-
-@pre_python_3_10
-def test_defaults_in_help_text__off_if_desired(capsys: pytest.CaptureFixture[str]) -> None:
-    class Args(TypedArgs):
-        epsilon: float = arg(help="Some epsilon", default=0.1, auto_default_help=False)
-
-    parser = Parser(Args)
-    with pytest.raises(SystemExit):
-        parser.parse_args(["-h"])
-
-    captured = remove_ansii_escape_sequences(capsys.readouterr().out)
-    assert captured == textwrap.dedent(
-        """\
-        usage: pytest [-h] [--epsilon EPSILON]
-
-        optional arguments:
-          -h, --help         show this help message and exit
-          --epsilon EPSILON  Some epsilon
-        """
-    )
-
-
-# Support of formatter class in help texts
-
-
-@pre_python_3_10
-def test_formatter_class_support(capsys: pytest.CaptureFixture[str]) -> None:
-    class Args(TypedArgs):
-        foo: int = arg(help="arg line1\narg line2")
-
-    parser = Parser(
-        Args,
-        description="description line 1\ndescription line 2\ndescription line 3",
-        epilog="epilog line 1\nepilog line 2\nepilog line 3",
-        formatter_class=argparse.RawTextHelpFormatter,
-    )
-    with pytest.raises(SystemExit):
-        parser.parse_args(["-h"])
-
-    captured = remove_ansii_escape_sequences(capsys.readouterr().out)
-    compare_verbose(
-        captured,
-        textwrap.dedent(
-            """\
-            usage: pytest [-h] --foo FOO
-
-            description line 1
-            description line 2
-            description line 3
-
-            optional arguments:
-              -h, --help  show this help message and exit
-              --foo FOO   arg line1
-                          arg line2
-
-            epilog line 1
-            epilog line 2
-            epilog line 3
-            """
-        ),
-    )
-
-
-# Custom names for meta vars
-
-
-@pre_python_3_10
-def test_metavars_in_help_text(capsys: pytest.CaptureFixture[str]) -> None:
-    class Args(TypedArgs):
-        epsilon: float = arg(help="Some epsilon", metavar="E", default=0.1)
-
-    parser = Parser(Args)
-    with pytest.raises(SystemExit):
-        parser.parse_args(["-h"])
-
-    captured_help = remove_ansii_escape_sequences(capsys.readouterr().out)
-    assert captured_help == textwrap.dedent(
-        """\
-        usage: pytest [-h] [--epsilon E]
-
-        optional arguments:
-          -h, --help   show this help message and exit
-          --epsilon E  Some epsilon [default: 0.1]
-        """
-    )
-
-
-@pre_python_3_10
-def test_metavars_in_help_text_not_allowed_for_bool(capsys: pytest.CaptureFixture[str]) -> None:
-    class Args(TypedArgs):
-        epsilon: bool = arg(metavar="X")
-
-    with pytest.raises(RuntimeError, match="Cannot set metavar for boolean argument"):
-        Parser(Args)
-
-
-# Misc
-
-
-@pre_python_3_10
-def test_forwarding_of_argparse_kwargs(capsys: pytest.CaptureFixture[str]) -> None:
-    class Args(TypedArgs):
-        verbose: bool
-
-    parser = Parser(
-        Args,
-        prog="my_prog",
-        usage="my_usage",
-        description="my description",
-        epilog="my epilog",
-    )
-    with pytest.raises(SystemExit):
-        parser.parse_args(["-h"])
-
-    captured = remove_ansii_escape_sequences(capsys.readouterr().out)
-    assert captured == textwrap.dedent(
-        """\
-        usage: my_usage
-
-        my description
-
-        optional arguments:
-          -h, --help  show this help message and exit
-          --verbose
-
-        my epilog
-        """
-    )
 
 
 def test_illegal_param_type() -> None:

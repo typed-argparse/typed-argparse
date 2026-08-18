@@ -6,16 +6,6 @@ from typing import Generator, Optional
 
 import pytest
 
-pre_python_3_10 = pytest.mark.skipif(
-    sys.version_info >= (3, 10),
-    reason="Test is Python version specific, and currently skipped for Python 3.10+",
-)
-
-starting_with_python_3_10 = pytest.mark.skipif(
-    sys.version_info < (3, 10),
-    reason="Test is Python version specific, requiring Python 3.10+",
-)
-
 # gh-117766 removed choice quoting; gh-130750 later restored it in maintained branches.
 # Initial issue: https://github.com/python/cpython/issues/86357
 # Issue on reverting: https://github.com/python/cpython/pull/149386
@@ -30,13 +20,6 @@ ARGPARSE_QUOTES_ALL_CHOICES = (3, 13, 14) <= _python_version < (3, 14) or _pytho
     14,
     5,
 )
-
-
-def compare_verbose(actual: str, expected: str) -> None:
-
-    print(f'EXPECTED:\n"""\\\n{expected}"""\n\nACTUAL:\n"""\\\n{actual}"""\n\n')
-
-    assert actual == expected
 
 
 class ArgparseErrorWrapper:
