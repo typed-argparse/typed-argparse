@@ -17,7 +17,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
 
       - name: Checkout
@@ -46,12 +46,12 @@ jobs:
           ./scripts/test
 
       - name: Check example outputs
-        if: matrix.python-version == '3.8'
+        if: matrix.python-version == '3.10'
         run: |
           ./scripts/generate_console_outputs
 
       - name: Upload to codecov.io
-        if: matrix.python-version == '3.8'
+        if: matrix.python-version == '3.10'
         # https://github.com/codecov/codecov-action
         uses: codecov/codecov-action@v3
         with:
@@ -72,7 +72,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: ./.github/actions/install_uv
         with:
-          python-version: "3.8"
+          python-version: "3.10"
 
       - name: Package
         run: uv build
@@ -108,7 +108,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: ./.github/actions/install_uv
         with:
-          python-version: "3.8"
+          python-version: "3.10"
 
       - name: Install docs dependencies
         run: uv sync --group docs
