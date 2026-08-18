@@ -26,6 +26,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # Optional: uv installs dependencies automatically when needed
+      # Kept to measure dependency installation time in workflow logs.
       - name: Install dependencies
         run: uv sync --group extra
 
