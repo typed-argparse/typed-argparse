@@ -261,7 +261,10 @@ def _create_choices_type_converter(allowed_values: Tuple[object, ...]) -> Callab
                 return allowed_value
             else:
                 try:
-                    x_converted = type(allowed_value)(x)  # type: ignore
+                    conversion_value = (
+                        allowed_value.value if isinstance(allowed_value, Enum) else allowed_value
+                    )
+                    x_converted = type(conversion_value)(x)  # type: ignore[call-arg]
                     if _fuzzy_compare(x_converted, allowed_value):
                         return allowed_value
                 except (ValueError, TypeError):

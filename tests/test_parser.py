@@ -585,6 +585,17 @@ def test_enum__fuzzy_matching(use_literal_enum: bool) -> None:
         parse(Args, ["--enum-string", "somefoo"])
 
 
+def test_enum__float_value() -> None:
+    class FloatEnum(Enum):
+        one_and_a_half = 1.5
+
+    class Args(TypedArgs):
+        enum_float: FloatEnum
+
+    args = parse(Args, ["--enum-float", "1.5"])
+    assert args.enum_float is FloatEnum.one_and_a_half
+
+
 # Nargs
 
 
