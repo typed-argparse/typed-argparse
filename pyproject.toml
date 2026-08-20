@@ -7,18 +7,17 @@ readme = "README.md"
 license = 'MIT'
 license-files = ['LICENSE']
 authors = [{ name = "Fabian Keller" }]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 keywords = ["types"]
 classifiers = [
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dynamic = ['version']
 dependencies = ["typing-extensions"]
@@ -28,7 +27,7 @@ Homepage = "https://typed-argparse.github.io/typed-argparse/"
 Source = "https://github.com/typed-argparse/typed-argparse"
 
 [build-system]
-requires = ['hatchling==1.27.0']  # last version to support python 3.8
+requires = ['hatchling==1.32.0']
 build-backend = 'hatchling.build'
 
 [tool.hatch.build.targets.wheel]

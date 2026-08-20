@@ -1,3 +1,4 @@
+import os
 import subprocess
 from pathlib import Path
 from typing import Dict, List
@@ -24,7 +25,11 @@ def main() -> None:
             pseudo_cmd = f"$ python {script_path.name} {call_args}"
             print(pseudo_cmd)
 
-            output = subprocess.check_output(actual_cmd, cwd=_PROJECT_ROOT, shell=True).decode()
+            env = os.environ.copy()
+            env["FORCE_COLOR"] = "1"
+            output = subprocess.check_output(
+                actual_cmd, cwd=_PROJECT_ROOT, shell=True, env=env
+            ).decode()
             print(output)
 
             console_file_contents.append(pseudo_cmd)

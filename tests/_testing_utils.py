@@ -1,20 +1,10 @@
 import argparse
 import re
 import sys
-from contextlib import contextmanager
+from contextlib import contextmanager, AbstractContextManager
 from typing import Generator, Optional
 
 import pytest
-
-pre_python_3_10 = pytest.mark.skipif(
-    sys.version_info >= (3, 10),
-    reason="Test is Python version specific, and currently skipped for Python 3.10+",
-)
-
-starting_with_python_3_10 = pytest.mark.skipif(
-    sys.version_info < (3, 10),
-    reason="Test is Python version specific, requiring Python 3.10+",
-)
 
 # gh-117766 removed choice quoting; gh-130750 later restored it in maintained branches.
 # Initial issue: https://github.com/python/cpython/issues/86357
@@ -30,13 +20,6 @@ ARGPARSE_QUOTES_ALL_CHOICES = (3, 13, 14) <= _python_version < (3, 14) or _pytho
     14,
     5,
 )
-
-
-def compare_verbose(actual: str, expected: str) -> None:
-
-    print(f'EXPECTED:\n"""\\\n{expected}"""\n\nACTUAL:\n"""\\\n{actual}"""\n\n')
-
-    assert actual == expected
 
 
 class ArgparseErrorWrapper:
@@ -65,6 +48,18 @@ def argparse_error() -> Generator[ArgparseErrorWrapper, None, None]:
 
     assert isinstance(e.value.__context__, argparse.ArgumentError)
     wrapper.error = e.value.__context__
+
+
+def argparse_illegal_default() -> AbstractContextManager[object]:
+    # argparse >= python3.14 no longer checks `default` against `choices`
+    # see https://github.com/python/cpython/commit/dac4ec52866e4068f3ac33b4da1e1a1fe6fc2cba
+    err_kind: type[BaseException]
+    if sys.version_info.minor >= 14:
+        err_kind = TypeError
+    else:
+        err_kind = SystemExit
+
+    return pytest.raises(err_kind)
 
 
 def remove_ansii_escape_sequences(s: str) -> str:

@@ -4,8 +4,6 @@ from typing import List, Optional, Union
 
 from typed_argparse.type_utils import TypeAnnotation, collect_type_annotations
 
-from ._testing_utils import starting_with_python_3_10
-
 # -----------------------------------------------------------------------------
 # TypeAnnotation
 # -----------------------------------------------------------------------------
@@ -40,7 +38,6 @@ def test_type_annotation__user_class() -> None:
     assert t.validate(12345) == (12345, "value is of type 'int', expected 'MyClass'")
 
 
-@starting_with_python_3_10
 def test_type_annotation__optional() -> None:
     t = TypeAnnotation(Optional[str])
     t_underlying = t.get_underlying_if_optional()
@@ -59,7 +56,6 @@ def test_type_annotation__optional() -> None:
     assert t.validate(None) == (None, None)
 
 
-@starting_with_python_3_10
 def test_type_annotation__union() -> None:
     t = TypeAnnotation(Union[str, int])
     t_underlyings = t.get_underlyings_if_union()

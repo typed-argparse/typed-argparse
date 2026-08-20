@@ -594,7 +594,7 @@ def test_bindings_check() -> None:
         parser.bind(func_with_wrong_first_arg_2)
     assert (
         "Expected first argument of func_with_wrong_first_arg_2 to be of type 'type' "
-        "but got typing.Union[str, int]."
+        f"but got {Union[str, int]}."
     ) == str(e.value)
 
 
