@@ -1,5 +1,3 @@
-exclude-newer = "7 days"
-
 [project]
 name = "typed-argparse"
 description = "Write type-safe and elegant CLIs with a clear separation of concerns."
@@ -21,6 +19,9 @@ classifiers = [
 ]
 dynamic = ['version']
 dependencies = ["typing-extensions"]
+
+[tool.uv]
+exclude-newer = "7 days"
 
 [project.urls]
 Homepage = "https://typed-argparse.github.io/typed-argparse/"
