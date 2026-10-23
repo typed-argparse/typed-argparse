@@ -7,6 +7,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generic,
     List,
     Optional,
     Set,
@@ -32,6 +33,7 @@ from .type_utils import TypeAnnotation, collect_type_annotations
 from .typed_args import TypedArgs
 
 T = TypeVar("T", bound=TypedArgs)
+R = TypeVar("R")
 
 
 # Initially I considered making the bindings generic, but I don't think there is a significant
@@ -39,13 +41,13 @@ T = TypeVar("T", bound=TypedArgs)
 # the implicitly inferred generic arg seems to be Binding[TypedArg], which then leads to a type
 # mismatch. Also, annotating the generics below in the usages felt awkward. This is probably a
 # case where we want type erasure.
-class Binding:
-    def __init__(self, arg_type: Type[T], func: Callable[[T], None]):
+class Binding(Generic[R]):
+    def __init__(self, arg_type: Type[T], func: Callable[[T], R]):
         self.arg_type: Type[TypedArgs] = arg_type
-        self.func: Callable[[Any], None] = func
+        self.func: Callable[[Any], R] = func
 
     @staticmethod
-    def from_func(func: Callable[[Any], None]) -> Binding:
+    def from_func(func: Callable[[Any], R]) -> Binding[R]:
         if not hasattr(func, "__annotations__"):
             raise ValueError(f"Function {func.__name__} misses type annotations.")
 
@@ -71,9 +73,15 @@ class Binding:
                 return Binding(first_type, func)
 
 
-def _homogenize_bindings(bindings: "Bindings") -> List[Binding]:
+AnyBinding = Union[Binding[R], Callable[[Any], R]]
+Bindings = List[AnyBinding[R]]
+LazyBindings = Callable[[], Bindings[R]]
+EagerOrLazyBindings = Union[Bindings[R], LazyBindings[R]]
+
+
+def _homogenize_bindings(bindings: Bindings[R]) -> List[Binding[R]]:
     return [
-        binding if isinstance(binding, Binding) else Binding.from_func(binding)
+        binding if isinstance(binding, Binding) else Binding[R].from_func(binding)  # type: ignore[misc]
         for binding in bindings
     ]
 
@@ -201,7 +209,7 @@ class Parser:
         else:
             return arg_type.from_argparse(argparse_namespace)
 
-    def verify(self, bindings: "Bindings") -> None:
+    def verify(self, bindings: Bindings[R]) -> None:
         """
         Verifies the completeness of a given list of bindings w.r.t. this parser structure.
 
@@ -215,7 +223,7 @@ class Parser:
                     f"Incomplete bindings: There is no binding for type '{arg_type.__name__}'."
                 )
 
-    def bind(self, *binding: AnyBinding) -> "App":
+    def bind(self, *binding: AnyBinding[R]) -> App[R]:
         """
         Turn the parser into an executable app (with eager bindings).
 
@@ -225,7 +233,7 @@ class Parser:
         self.verify(bindings)
         return App(self, bindings)
 
-    def bind_lazy(self, lazy_bindings: LazyBindings) -> "App":
+    def bind_lazy(self, lazy_bindings: LazyBindings[R]) -> App[R]:
         """
         Turn the parser into an executable app (with lazy bindings).
 
@@ -240,12 +248,12 @@ class Parser:
         return str(self)
 
 
-class App:
-    def __init__(self, parser: Parser, bindings: EagerOrLazyBindings):
+class App(Generic[R]):
+    def __init__(self, parser: Parser, bindings: EagerOrLazyBindings[R]):
         self._parser = parser
         self._bindings = bindings
 
-    def run(self, raw_args: List[str] = sys.argv[1:]) -> None:
+    def run(self, raw_args: List[str] = sys.argv[1:]) -> R:
         """
         Parse arguments, verify the (possibly lazy) bindings, and execute them.
         """
@@ -267,8 +275,7 @@ class App:
             # Note that we don't want `isinstance` but rather exact type equality here,
             # so that we don't accidentally execute a base function.
             if type(typed_args) is binding.arg_type:
-                binding.func(typed_args)
-                return
+                return binding.func(typed_args)
 
         # Should be impossible due to correctness check
         raise AssertionError(
@@ -277,12 +284,6 @@ class App:
 
 
 ArgsOrGroup = Union[Type[TypedArgs], SubParserGroup]
-
-AnyBinding = Union[Binding, Callable[[Any], None]]
-Bindings = List[AnyBinding]
-LazyBindings = Callable[[], Bindings]
-EagerOrLazyBindings = Union[Bindings, LazyBindings]
-
 
 DestPath = Tuple[str, ...]
 
