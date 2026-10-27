@@ -172,7 +172,7 @@ class TypeAnnotation:
             if value is None:
                 # Coerce empty list.
                 return [], None
-            elif not isinstance(value, list):
+            elif not isinstance(value, (list, tuple)):
                 # allowing isinstance(value, Iterable) seems too lose, because it would allow
                 # to coerce a list from string, which is not desirable.
                 return value, f"value is of type {typename_of(value)}, expected 'list'"

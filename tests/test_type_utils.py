@@ -84,6 +84,17 @@ def test_type_annotation__list() -> None:
     assert t.validate("foo") == ("foo", "value is of type 'str', expected 'list'")
 
 
+def test_type_annotation__list_tuple_values() -> None:
+    t = TypeAnnotation(List[str])
+
+    assert t.validate(("a", "b")) == (["a", "b"], None)
+    assert t.validate(()) == ([], None)
+    assert t.validate(("a", 1)) == (
+        ("a", 1),
+        "not all elements of the list have proper type (value is of type 'int', expected 'str')",
+    )
+
+
 def test_type_annotation__mixed_list_optional() -> None:
     t = TypeAnnotation(Optional[List[str]]).get_underlying_if_optional()
     assert t is not None
