@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Type, TypeVar, Union
+from typing import List, Optional, Type, TypeVar, Union, get_args
 
 import pytest
 from typing_extensions import Literal
@@ -638,6 +638,21 @@ def test_nargs__with_default__non_empty() -> None:
 
     args = parse(Args, ["--actions"])
     assert args.actions == []
+
+
+def test_nargs__with_tuple_default() -> None:
+    Actions = Literal["foo", "bar"]
+
+    class Args(TypedArgs):
+        actions: List[Actions] = arg(nargs="+", default=get_args(Actions))
+
+    args = parse(Args, [])
+    assert args.actions == ["foo", "bar"]
+    assert isinstance(args.actions, list)
+
+    args.actions.append("foo")
+    assert parse(Args, []).actions == ["foo", "bar"]
+    assert parse(Args, ["--actions", "bar"]).actions == ["bar"]
 
 
 def test_nargs__with_default__positional() -> None:
