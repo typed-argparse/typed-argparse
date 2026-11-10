@@ -655,6 +655,17 @@ def test_nargs__with_tuple_default() -> None:
     assert parse(Args, ["--actions", "bar"]).actions == ["bar"]
 
 
+def test_nargs__with_bare_list_annotation() -> None:
+    # A bare `list` annotation behaves like `List[str]`: an explicitly passed
+    # `nargs` used to be silently dropped, rejecting any additional values.
+    class Args(TypedArgs):
+        items: list = arg(nargs="+", default=[])
+
+    assert parse(Args, []).items == []
+    assert parse(Args, ["--items", "foo"]).items == ["foo"]
+    assert parse(Args, ["--items", "foo", "bar"]).items == ["foo", "bar"]
+
+
 def test_nargs__with_default__positional() -> None:
     class Args(TypedArgs):
         actions: List[str] = arg(positional=True, default=["foo", "bar"])
