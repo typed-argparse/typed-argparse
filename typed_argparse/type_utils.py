@@ -115,6 +115,11 @@ class TypeAnnotation:
     def get_underlying_if_list(self) -> Optional["TypeAnnotation"]:
         if self.origin is list and len(self.args) >= 1:
             return TypeAnnotation(self.args[0])
+        if self.raw_type is list:
+            # A bare `list` annotation carries no element type; treat it like
+            # `List[str]` so an explicitly passed `nargs` is honored instead
+            # of being silently dropped.
+            return TypeAnnotation(str)
         return None
 
     def get_underlying_if_new_type(self) -> Optional["TypeAnnotation"]:
